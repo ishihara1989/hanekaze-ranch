@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>シロマ — 表情差分</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f0e9;color:#403b45;font-family:system-ui,sans-serif;padding:32px}main{max-width:1300px;margin:auto}h1{font-size:28px;margin:0 0 10px}p{color:#706675}nav{display:flex;gap:10px;margin:22px 0}button{padding:9px 18px;border:1px solid #bdb5bd;border-radius:9px;background:white;color:#403b45;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}figure{margin:0;border:1px solid #d9d1d6;border-radius:14px;overflow:hidden;background:#fff}.portrait{background-color:#e5e5e5;background-image:conic-gradient(#fff 25%,transparent 0 50%,#fff 0 75%,transparent 0);background-size:24px 24px}img{display:block;width:100%;height:auto}figcaption{padding:14px 18px;font-weight:600;display:flex;justify-content:space-between;align-items:center}a{font-size:12px;color:#886373;font-weight:400}body[data-bg="dark"] .portrait{background:#25303b}body[data-bg="light"] .portrait{background:#fff}@media(max-width:760px){body{padding:18px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}figcaption{padding:10px;font-size:13px}}
+</style>
+<main><h1>シロマ — 表情差分</h1><p>白いローブ・ピンク髪・青い目の秘書。1024 × 1536 px / 透過PNG / 全8種類</p>
+<nav aria-label="確認用の背景"><button data-bg="check">市松模様</button><button data-bg="light">白背景</button><button data-bg="dark">暗い背景</button></nav>
+<div class="grid"><figure><div class="portrait"><img src="shiroma-neutral.png" alt="通常（口閉じ）" width="1024" height="1536"></div><figcaption>通常（口閉じ）<a href="shiroma-neutral.png" download>PNGを保存</a></figcaption></figure>
+<figure><div class="portrait"><img src="shiroma-talk.png" alt="会話（口開き）" width="1024" height="1536"></div><figcaption>会話（口開き）<a href="shiroma-talk.png" download>PNGを保存</a></figcaption></figure>
+<figure><div class="portrait"><img src="shiroma-happy.png" alt="喜び" width="1024" height="1536"></div><figcaption>喜び<a href="shiroma-happy.png" download>PNGを保存</a></figcaption></figure>
+<figure><div class="portrait"><img src="shiroma-disappointed.png" alt="残念" width="1024" height="1536"></div><figcaption>残念<a href="shiroma-disappointed.png" download>PNGを保存</a></figcaption></figure>
+<figure><div class="portrait"><img src="shiroma-sad.png" alt="悲しい" width="1024" height="1536"></div><figcaption>悲しい<a href="shiroma-sad.png" download>PNGを保存</a></figcaption></figure>
+<figure><div class="portrait"><img src="shiroma-motivated.png" alt="やる気" width="1024" height="1536"></div><figcaption>やる気<a href="shiroma-motivated.png" download>PNGを保存</a></figcaption></figure><figure><div class="portrait"><img src="shiroma-overjoyed.png" alt="大喜び" width="1024" height="1536"></div><figcaption>大喜び<a href="shiroma-overjoyed.png" download>PNGを保存</a></figcaption></figure>
+<figure><div class="portrait"><img src="shiroma-ambiguous-smile.png" alt="曖昧な笑顔（下がり眉）" width="1024" height="1536"></div><figcaption>曖昧な笑顔（下がり眉）<a href="shiroma-ambiguous-smile.png" download>PNGを保存</a></figcaption></figure></div><p>通常と会話を同じ位置・サイズで切り替えると口の開閉を表現できます。</p></main>
+<script>document.querySelectorAll('button[data-bg]').forEach(button=>button.addEventListener('click',()=>document.body.dataset.bg=button.dataset.bg));</script></html>

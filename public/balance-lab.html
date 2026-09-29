@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183d36">
+  <title>距離適性ラボ — 羽風牧場</title>
+  <link rel="stylesheet" href="css/balance-lab.css">
+</head>
+<body>
+  <header class="topbar"><a href="/">❧ 羽風牧場</a><span>RACE SYSTEM / EXPERIMENT 01</span></header>
+  <main>
+    <div class="intro"><div><p class="eyebrow">WING & WIND · BALANCE LAB</p><h1>速さの、その先。</h1>
+      <p class="lead">距離適性ラボ <span>1200 — 3600 m</span></p>
+      <p class="muted">巡航力、予備容量、脚の耐久。7羽の走りから、得意距離が生まれる仕組みを探る。</p></div>
+      <div class="model-note"><b>3つの仕組みで、走りをつくる</b><p><span>A</span> 有酸素の供給出力 <span>W</span> 無酸素の予備容量 <span>L</span> 脚疲労</p><small>距離適性の直接補正なし。独立した実験用モデルです。</small></div>
+    </div>
+    <section class="panel" aria-labelledby="comparison-title">
+      <div class="section-top"><div><p class="eyebrow">01 / DISTANCE COMPARISON</p><h2 id="comparison-title">距離を変えると、主役が変わる。</h2></div><button id="export" class="secondary" disabled>設定と結果をJSON保存</button></div>
+      <div class="controls"><label>コース<select id="course"><option value="flat">平地</option><option value="hills">起伏あり（上り・下り2.5%）</option></select></label>
+        <label>共通の作戦ルール<select id="policy"></select></label>
+        <button id="recalculate">全距離を再計算</button>
+        <p id="status" role="status" aria-live="polite">計算を準備しています…</p></div>
+      <div id="matrix" class="table-scroll"></div>
+      <p class="footnote">各セルを押すと、その距離・個体の走りを下で確認できます。順位と時計は単独走の比較。平地の初期設定では、7羽がそれぞれ1つの距離で最速になります。</p>
+      <p id="protocol" class="footnote"></p>
+    </section>
+    <section class="panel pacing-panel" aria-labelledby="pacing-title">
+      <div class="section-top"><div><p class="eyebrow">PACING STUDY / 同じ個体で作戦を比較</p><h2 id="pacing-title">巡航からのラストスパートが速くなる例</h2></div><button id="compare-pacing">ユウナギ・2400mで比較する</button></div>
+      <p class="muted">無酸素エネルギーの使用で脚が疲れ、疲れた脚では走行コストが増える個体。序盤から使うと、その後の走行にも負担が残ります。</p>
+      <p class="footnote">平地・同じ個体・同じ物理式で比較。巡航倍率0.005刻み、スパート位置50m刻みで探索し、一定ペースも細かく調整します。下の7羽とは独立した追加例です。</p>
+      <p id="pacing-status" role="status" aria-live="polite"></p>
+      <div id="pacing-results"></div><div id="pacing-charts" class="charts"></div>
+      <details><summary>この例のパラメータ</summary><div id="pacing-parameters" class="table-scroll"></div><button id="apply-pacing" class="secondary">選択中の羽にこの例の設定を適用</button></details>
+    </section>
+    <div class="detail-layout">
+      <section class="panel" aria-labelledby="detail-title">
+        <div class="section-top"><div><p class="eyebrow">02 / UNDER THE FEATHERS</p><h2 id="detail-title">走りの内訳</h2></div><label>観察する距離<select id="distance"></select></label></div>
+        <div id="legend" class="legend" aria-label="観察する個体"></div>
+        <p class="footnote">太線が選択した個体。横軸は走行距離です。同じ地点でも到達する時刻は異なります。</p>
+        <div id="summary" class="summary"></div>
+        <div id="charts" class="charts"><p class="muted">比較計算の完了後に表示します。</p></div>
+        <div id="laps" class="table-scroll"></div>
+      </section>
+      <aside class="panel editor-panel" aria-labelledby="editor-title">
+        <p class="eyebrow">03 / PARAMETER WORKBENCH</p><h2 id="editor-title">個体を調整する</h2>
+        <label>編集する個体<select id="bird"></select></label><p id="bird-description" class="muted"></p>
+        <form id="parameters"><div id="parameter-fields"></div><p id="derived" class="footnote"></p>
+          <button type="submit">この設定で全距離を再計算</button><button id="reset" type="button" class="secondary">7羽を初期設定に戻す</button></form>
+        <p class="footnote">変更は「再計算」で反映され、このページを開いている間だけ保持されます。遺伝・育成画面に表示する能力への対応は今後検討します。</p>
+      </aside>
+    </div>
+    <section class="explanation"><div><b>予備容量が切れると</b><p>有酸素で供給できる出力に制限され、速いペースを維持できなくなります。</p></div><div><b>脚を使いすぎると</b><p>推進力の上限が下がります。予備容量が残っていても、加速やスパートが鈍ります。</p></div><div><b>比べてみる</b><p>ヒバナの2800mで「巡航」と「序盤を飛ばす」を比較。最初の400mで得たリードが、終盤の失速に変わります。</p></div></section>
+    <footer>HANEKAZE RANCH · 実験用の数値モデル / 刻み0.1秒 / 静止発走 / 乱数・接触・風よけなし</footer>
+  </main>
+  <script src="js/race-physics.js"></script><script src="js/balance-presets.js"></script><script src="js/balance-runner.js"></script><script src="js/balance-lab.js"></script>
+</body>
+</html>

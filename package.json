@@ -1,0 +1,14 @@
+{
+  "name": "hanekaze-ranch",
+  "version": "0.3.0",
+  "private": true,
+  "description": "配合・血統・レース観戦を楽しむ牧場ゲームのプロトタイプ",
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test tests/game.test.cjs tests/model.test.cjs tests/world.test.cjs tests/chocobo.test.cjs tests/balance.test.cjs tests/trait-mapping.test.cjs",
+    "balance": "node tools/simulate-balance.cjs",
+    "balance:report": "node tools/simulate-balance.cjs --write",
+    "balance:pacing": "node tools/compare-pacing.cjs --write",
+    "balance:mapping": "node tools/audit-trait-mapping.cjs --write"
+  }
+}

@@ -1,0 +1,5067 @@
+{
+  "modelVersion": 2,
+  "options": {
+    "dt": 0.1,
+    "course": "flat",
+    "policy": "search"
+  },
+  "presets": [
+    {
+      "id": "ember",
+      "name": "ヒバナ",
+      "color": "#bc482c",
+      "exampleDistance": 1200,
+      "description": "高い最高速と瞬間出力。長く踏み続けると脚が先に限界へ。",
+      "parameters": {
+        "criticalSpeed": 16,
+        "maxSpeed": 24,
+        "reserveCapacity": 3500,
+        "anaerobicPower": 80,
+        "maxForce": 10.5,
+        "cardioTau": 6,
+        "legEndurance": 125
+      }
+    },
+    {
+      "id": "zephyr",
+      "name": "ハヤテ",
+      "color": "#ac710e",
+      "exampleDistance": 1600,
+      "description": "短距離の速さを残しつつ、脚の持続を伸ばした型。",
+      "parameters": {
+        "criticalSpeed": 16.7,
+        "maxSpeed": 23.4,
+        "reserveCapacity": 3600,
+        "anaerobicPower": 65,
+        "maxForce": 10,
+        "cardioTau": 7,
+        "legEndurance": 165
+      }
+    },
+    {
+      "id": "jade",
+      "name": "ワカバ",
+      "color": "#47823d",
+      "exampleDistance": 2000,
+      "description": "速い巡航と早めのスパートを両立する中距離型。",
+      "parameters": {
+        "criticalSpeed": 17.4,
+        "maxSpeed": 22.8,
+        "reserveCapacity": 3700,
+        "anaerobicPower": 55,
+        "maxForce": 9.5,
+        "cardioTau": 8,
+        "legEndurance": 175
+      }
+    },
+    {
+      "id": "tide",
+      "name": "アオバ",
+      "color": "#16867b",
+      "exampleDistance": 2400,
+      "description": "巡航・容量・脚の耐久を釣り合わせたクラシック型。",
+      "parameters": {
+        "criticalSpeed": 18.1,
+        "maxSpeed": 22.2,
+        "reserveCapacity": 3800,
+        "anaerobicPower": 45,
+        "maxForce": 9,
+        "cardioTau": 9,
+        "legEndurance": 178
+      }
+    },
+    {
+      "id": "iris",
+      "name": "スミレ",
+      "color": "#4a71bb",
+      "exampleDistance": 2800,
+      "description": "瞬間的な速さを控え、長い巡航で差をつける型。",
+      "parameters": {
+        "criticalSpeed": 18.8,
+        "maxSpeed": 21.6,
+        "reserveCapacity": 3900,
+        "anaerobicPower": 36,
+        "maxForce": 8.5,
+        "cardioTau": 10,
+        "legEndurance": 190
+      }
+    },
+    {
+      "id": "dusk",
+      "name": "キキョウ",
+      "color": "#8360ae",
+      "exampleDistance": 3200,
+      "description": "大きな予備容量と高い脚耐久で終盤まで粘る型。",
+      "parameters": {
+        "criticalSpeed": 19.2,
+        "maxSpeed": 21,
+        "reserveCapacity": 4000,
+        "anaerobicPower": 30,
+        "maxForce": 8,
+        "cardioTau": 11,
+        "legEndurance": 200
+      }
+    },
+    {
+      "id": "snow",
+      "name": "シラユキ",
+      "color": "#a9557e",
+      "exampleDistance": 3600,
+      "description": "最高速と放出出力は低いが、巡航と脚の耐久に優れる長距離型。",
+      "parameters": {
+        "criticalSpeed": 19.5,
+        "maxSpeed": 20.4,
+        "reserveCapacity": 4100,
+        "anaerobicPower": 25,
+        "maxForce": 7.5,
+        "cardioTau": 12,
+        "legEndurance": 280
+      }
+    }
+  ],
+  "columns": [
+    {
+      "distance": 1200,
+      "results": [
+        {
+          "id": "ember",
+          "name": "ヒバナ",
+          "finished": true,
+          "time": 52.5653729759958,
+          "distance": 1200,
+          "parameters": {
+            "criticalSpeed": 16,
+            "maxSpeed": 24,
+            "reserveCapacity": 3500,
+            "anaerobicPower": 80,
+            "maxForce": 10.5,
+            "cardioTau": 6,
+            "legEndurance": 125,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 52.5653729759958,
+            "distance": 1200,
+            "speed": 23.23858310115453,
+            "aerobic": 51.57800630033712,
+            "reserve": 407.96792808052095,
+            "fatigue": 0.8394520023750403,
+            "energyUsed": 5572.804587071141,
+            "reserveSpent": 3092.03207191948,
+            "reserveRecovered": 0,
+            "power": 93.1280655727528,
+            "force": 4.001174092367829,
+            "acceleration": -0.36575920414966556,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 19.1919368417959,
+              "duration": 19.1919368417959,
+              "speed": 23.999803910736755,
+              "reserve": 2277.004804596335,
+              "fatigue": 0.4648855077421627
+            },
+            {
+              "distance": 800,
+              "time": 35.85861535540223,
+              "duration": 16.66667851360633,
+              "speed": 23.999999998010455,
+              "reserve": 1326.3529128767575,
+              "fatigue": 0.6552371552767167
+            },
+            {
+              "distance": 1200,
+              "time": 52.5653729759958,
+              "duration": 16.70675762059357,
+              "speed": 23.23858310115453,
+              "reserve": 407.96792808052095,
+              "fatigue": 0.8394520023750403
+            }
+          ],
+          "samples": [],
+          "rank": 1,
+          "gap": 0
+        },
+        {
+          "id": "zephyr",
+          "name": "ハヤテ",
+          "finished": true,
+          "time": 54.01630201973448,
+          "distance": 1200,
+          "parameters": {
+            "criticalSpeed": 16.7,
+            "maxSpeed": 23.4,
+            "reserveCapacity": 3600,
+            "anaerobicPower": 65,
+            "maxForce": 10,
+            "cardioTau": 7,
+            "legEndurance": 165,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 54.01630201973448,
+            "distance": 1200,
+            "speed": 23.399999999999974,
+            "aerobic": 55.35176122836835,
+            "reserve": 868.344074581454,
+            "fatigue": 0.5973128826618426,
+            "energyUsed": 5436.50622256294,
+            "reserveSpent": 2731.6559254185463,
+            "reserveRecovered": 0,
+            "power": 102.73161600000016,
+            "force": 4.390240000000012,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 19.82824898360934,
+              "duration": 19.82824898360934,
+              "speed": 23.399695830818676,
+              "reserve": 2504.1635556572355,
+              "fatigue": 0.32335920382444194
+            },
+            {
+              "distance": 800,
+              "time": 36.922284925574644,
+              "duration": 17.094035941965306,
+              "speed": 23.399999997703,
+              "reserve": 1679.2760760589063,
+              "fatigue": 0.46033671768369533
+            },
+            {
+              "distance": 1200,
+              "time": 54.01630201973448,
+              "duration": 17.094017094159838,
+              "speed": 23.399999999999974,
+              "reserve": 868.344074581454,
+              "fatigue": 0.5973128826618426
+            }
+          ],
+          "samples": [],
+          "rank": 2,
+          "gap": 1.4509290437386824
+        },
+        {
+          "id": "jade",
+          "name": "ワカバ",
+          "finished": true,
+          "time": 55.51878236128409,
+          "distance": 1200,
+          "parameters": {
+            "criticalSpeed": 17.4,
+            "maxSpeed": 22.8,
+            "reserveCapacity": 3700,
+            "anaerobicPower": 55,
+            "maxForce": 9.5,
+            "cardioTau": 8,
+            "legEndurance": 175,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 55.51878236128409,
+            "distance": 1200,
+            "speed": 22.799999999999976,
+            "aerobic": 59.310248890123745,
+            "reserve": 1360.0471978443743,
+            "fatigue": 0.529777398028657,
+            "energyUsed": 5287.497306181323,
+            "reserveSpent": 2339.952802155633,
+            "reserveRecovered": 0,
+            "power": 97.56940800000017,
+            "force": 4.279360000000012,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 20.43103797527075,
+              "duration": 20.43103797527075,
+              "speed": 22.799605516487585,
+              "reserve": 2727.5641743048927,
+              "fatigue": 0.28426332957487493
+            },
+            {
+              "distance": 800,
+              "time": 37.974922712022114,
+              "duration": 17.543884736751362,
+              "speed": 22.7999999978158,
+              "reserve": 2033.19185956869,
+              "fatigue": 0.40702115439364545
+            },
+            {
+              "distance": 1200,
+              "time": 55.51878236128409,
+              "duration": 17.543859649261975,
+              "speed": 22.799999999999976,
+              "reserve": 1360.0471978443743,
+              "fatigue": 0.529777398028657
+            }
+          ],
+          "samples": [],
+          "rank": 3,
+          "gap": 2.953409385288289
+        },
+        {
+          "id": "tide",
+          "name": "アオバ",
+          "finished": true,
+          "time": 57.16653196805878,
+          "distance": 1200,
+          "parameters": {
+            "criticalSpeed": 18.1,
+            "maxSpeed": 22.2,
+            "reserveCapacity": 3800,
+            "anaerobicPower": 45,
+            "maxForce": 9,
+            "cardioTau": 9,
+            "legEndurance": 178,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 57.16653196805878,
+            "distance": 1200,
+            "speed": 22.199999999999974,
+            "aerobic": 63.45876316000655,
+            "reserve": 1876.2368575205944,
+            "fatigue": 0.4888650934034861,
+            "energyUsed": 5140.108749165516,
+            "reserveSpent": 1923.7631424794047,
+            "reserveRecovered": 0,
+            "power": 92.60419200000017,
+            "force": 4.171360000000012,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.13045540725983,
+              "duration": 21.13045540725983,
+              "speed": 22.199379551912124,
+              "reserve": 2962.4862019722077,
+              "fatigue": 0.2592637172360263
+            },
+            {
+              "distance": 800,
+              "time": 39.148513949878804,
+              "duration": 18.018058542618974,
+              "speed": 22.199999997522827,
+              "reserve": 2404.5570730709173,
+              "fatigue": 0.374065577291456
+            },
+            {
+              "distance": 1200,
+              "time": 57.16653196805878,
+              "duration": 18.018018018179973,
+              "speed": 22.199999999999974,
+              "reserve": 1876.2368575205944,
+              "fatigue": 0.4888650934034861
+            }
+          ],
+          "samples": [],
+          "rank": 4,
+          "gap": 4.601158992062977
+        },
+        {
+          "id": "iris",
+          "name": "スミレ",
+          "finished": true,
+          "time": 58.91086254994469,
+          "distance": 1200,
+          "parameters": {
+            "criticalSpeed": 18.8,
+            "maxSpeed": 21.6,
+            "reserveCapacity": 3900,
+            "anaerobicPower": 36,
+            "maxForce": 8.5,
+            "cardioTau": 10,
+            "legEndurance": 190,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 58.91086254994469,
+            "distance": 1200,
+            "speed": 21.599999999999977,
+            "aerobic": 67.80331164385977,
+            "reserve": 2412.701935067105,
+            "fatigue": 0.43042880989826643,
+            "energyUsed": 4997.961257403834,
+            "reserveSpent": 1487.2980649329036,
+            "reserveRecovered": 0,
+            "power": 87.83078400000018,
+            "force": 4.066240000000013,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.873766026530994,
+              "duration": 21.873766026530994,
+              "speed": 21.5991138581188,
+              "reserve": 3203.0629095756053,
+              "fatigue": 0.22564856280691045
+            },
+            {
+              "distance": 800,
+              "time": 40.392344031257984,
+              "duration": 18.51857800472699,
+              "speed": 21.599999997496127,
+              "reserve": 2788.346019780819,
+              "fatigue": 0.328040189801232
+            },
+            {
+              "distance": 1200,
+              "time": 58.91086254994469,
+              "duration": 18.518518518686705,
+              "speed": 21.599999999999977,
+              "reserve": 2412.701935067105,
+              "fatigue": 0.43042880989826643
+            }
+          ],
+          "samples": [],
+          "rank": 5,
+          "gap": 6.345489573948889
+        },
+        {
+          "id": "dusk",
+          "name": "キキョウ",
+          "finished": true,
+          "time": 60.696129218445336,
+          "distance": 1200,
+          "parameters": {
+            "criticalSpeed": 19.2,
+            "maxSpeed": 21,
+            "reserveCapacity": 4000,
+            "anaerobicPower": 30,
+            "maxForce": 8,
+            "cardioTau": 11,
+            "legEndurance": 200,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 60.696129218445336,
+            "distance": 1200,
+            "speed": 20.999999999999975,
+            "aerobic": 70.34666140099432,
+            "reserve": 2854.9083627723453,
+            "fatigue": 0.38399881514283485,
+            "energyUsed": 4864.607985997605,
+            "reserveSpent": 1145.0916372276547,
+            "reserveRecovered": 0,
+            "power": 83.24400000000016,
+            "force": 3.9640000000000124,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.600831005460936,
+              "duration": 22.600831005460936,
+              "speed": 20.999129329202994,
+              "reserve": 3408.125694815734,
+              "fatigue": 0.1986166437406259
+            },
+            {
+              "distance": 800,
+              "time": 41.64851017070772,
+              "duration": 19.047679165246787,
+              "speed": 20.999999998290754,
+              "reserve": 3107.148929928524,
+              "fatigue": 0.2913090750423121
+            },
+            {
+              "distance": 1200,
+              "time": 60.696129218445336,
+              "duration": 19.047619047737612,
+              "speed": 20.999999999999975,
+              "reserve": 2854.9083627723453,
+              "fatigue": 0.38399881514283485
+            }
+          ],
+          "samples": [],
+          "rank": 6,
+          "gap": 8.130756242449536
+        },
+        {
+          "id": "snow",
+          "name": "シラユキ",
+          "finished": true,
+          "time": 62.610799696610925,
+          "distance": 1200,
+          "parameters": {
+            "criticalSpeed": 19.5,
+            "maxSpeed": 20.4,
+            "reserveCapacity": 4100,
+            "anaerobicPower": 25,
+            "maxForce": 7.5,
+            "cardioTau": 12,
+            "legEndurance": 280,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 62.610799696610925,
+            "distance": 1200,
+            "speed": 20.399999999999974,
+            "aerobic": 72.27143445825071,
+            "reserve": 3268.729276968541,
+            "fatigue": 0.25647581522935836,
+            "energyUsed": 4736.1247626573995,
+            "reserveSpent": 831.2707230314594,
+            "reserveRecovered": 0,
+            "power": 78.83865600000016,
+            "force": 3.8646400000000125,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.395058903968398,
+              "duration": 23.395058903968398,
+              "speed": 20.399232986280676,
+              "reserve": 3602.291112038472,
+              "fatigue": 0.1301609299775627
+            },
+            {
+              "distance": 800,
+              "time": 43.00295655928293,
+              "duration": 19.60789765531453,
+              "speed": 20.399999998977588,
+              "reserve": 3406.106724376461,
+              "fatigue": 0.19331918461984787
+            },
+            {
+              "distance": 1200,
+              "time": 62.610799696610925,
+              "duration": 19.607843137327997,
+              "speed": 20.399999999999974,
+              "reserve": 3268.729276968541,
+              "fatigue": 0.25647581522935836
+            }
+          ],
+          "samples": [],
+          "rank": 7,
+          "gap": 10.045426720615126
+        }
+      ]
+    },
+    {
+      "distance": 1600,
+      "results": [
+        {
+          "id": "ember",
+          "name": "ヒバナ",
+          "finished": true,
+          "time": 74.0849985233175,
+          "distance": 1600,
+          "parameters": {
+            "criticalSpeed": 16,
+            "maxSpeed": 24,
+            "reserveCapacity": 3500,
+            "anaerobicPower": 80,
+            "maxForce": 10.5,
+            "cardioTau": 6,
+            "legEndurance": 125,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.375,
+            "kickAt": 1200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 74.0849985233175,
+            "distance": 1600,
+            "speed": 15.199123119412798,
+            "aerobic": 48.122744583912045,
+            "reserve": 227.98286970347877,
+            "fatigue": 0.9178677977406918,
+            "energyUsed": 6837.284495755017,
+            "reserveSpent": 3273.678385422254,
+            "reserveRecovered": 1.661255125733109,
+            "power": 41.448969684037024,
+            "force": 2.7197377186783407,
+            "acceleration": -0.40930001484890866,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 20.361934658943028,
+              "duration": 20.361934658943028,
+              "speed": 21.999963552302976,
+              "reserve": 2493.6757126880566,
+              "fatigue": 0.42226595430387875
+            },
+            {
+              "distance": 800,
+              "time": 37.15260781708361,
+              "duration": 16.790673158140585,
+              "speed": 23.99998087178872,
+              "reserve": 1518.2438248976682,
+              "fatigue": 0.62657140144543
+            },
+            {
+              "distance": 1200,
+              "time": 53.82023112211925,
+              "duration": 16.66762330503564,
+              "speed": 23.92943742828204,
+              "reserve": 577.7506750291919,
+              "fatigue": 0.816380705133128
+            },
+            {
+              "distance": 1600,
+              "time": 74.0849985233175,
+              "duration": 20.26476740119824,
+              "speed": 15.199123119412798,
+              "reserve": 227.98286970347877,
+              "fatigue": 0.9178677977406918
+            }
+          ],
+          "samples": [],
+          "rank": 3,
+          "gap": 2.9746794095655815
+        },
+        {
+          "id": "zephyr",
+          "name": "ハヤテ",
+          "finished": true,
+          "time": 71.11031911375191,
+          "distance": 1600,
+          "parameters": {
+            "criticalSpeed": 16.7,
+            "maxSpeed": 23.4,
+            "reserveCapacity": 3600,
+            "anaerobicPower": 65,
+            "maxForce": 10,
+            "cardioTau": 7,
+            "legEndurance": 165,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 71.11031911375191,
+            "distance": 1600,
+            "speed": 23.399999999999974,
+            "aerobic": 55.368278354281856,
+            "reserve": 58.625649314907065,
+            "fatigue": 0.7342890476298144,
+            "energyUsed": 7192.602222563018,
+            "reserveSpent": 3541.374350685094,
+            "reserveRecovered": 0,
+            "power": 102.73161600000016,
+            "force": 4.390240000000012,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 19.82824898360934,
+              "duration": 19.82824898360934,
+              "speed": 23.399695830818676,
+              "reserve": 2504.1635556572355,
+              "fatigue": 0.32335920382444194
+            },
+            {
+              "distance": 800,
+              "time": 36.922284925574644,
+              "duration": 17.094035941965306,
+              "speed": 23.399999997703,
+              "reserve": 1679.2760760589063,
+              "fatigue": 0.46033671768369533
+            },
+            {
+              "distance": 1200,
+              "time": 54.01630201973448,
+              "duration": 17.094017094159838,
+              "speed": 23.399999999999974,
+              "reserve": 868.344074581454,
+              "fatigue": 0.5973128826618426
+            },
+            {
+              "distance": 1600,
+              "time": 71.11031911375191,
+              "duration": 17.09401709401743,
+              "speed": 23.399999999999974,
+              "reserve": 58.625649314907065,
+              "fatigue": 0.7342890476298144
+            }
+          ],
+          "samples": [],
+          "rank": 1,
+          "gap": 0
+        },
+        {
+          "id": "jade",
+          "name": "ワカバ",
+          "finished": true,
+          "time": 73.06264201040672,
+          "distance": 1600,
+          "parameters": {
+            "criticalSpeed": 17.4,
+            "maxSpeed": 22.8,
+            "reserveCapacity": 3700,
+            "anaerobicPower": 55,
+            "maxForce": 9.5,
+            "cardioTau": 8,
+            "legEndurance": 175,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 73.06264201040672,
+            "distance": 1600,
+            "speed": 22.799999999999976,
+            "aerobic": 59.34742652477214,
+            "reserve": 689.2706149997783,
+            "fatigue": 0.6525336416549196,
+            "energyUsed": 6999.241306181333,
+            "reserveSpent": 3010.7293850002297,
+            "reserveRecovered": 0,
+            "power": 97.56940800000017,
+            "force": 4.279360000000012,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 20.43103797527075,
+              "duration": 20.43103797527075,
+              "speed": 22.799605516487585,
+              "reserve": 2727.5641743048927,
+              "fatigue": 0.28426332957487493
+            },
+            {
+              "distance": 800,
+              "time": 37.974922712022114,
+              "duration": 17.543884736751362,
+              "speed": 22.7999999978158,
+              "reserve": 2033.19185956869,
+              "fatigue": 0.40702115439364545
+            },
+            {
+              "distance": 1200,
+              "time": 55.51878236128409,
+              "duration": 17.543859649261975,
+              "speed": 22.799999999999976,
+              "reserve": 1360.0471978443743,
+              "fatigue": 0.529777398028657
+            },
+            {
+              "distance": 1600,
+              "time": 73.06264201040672,
+              "duration": 17.54385964912263,
+              "speed": 22.799999999999976,
+              "reserve": 689.2706149997783,
+              "fatigue": 0.6525336416549196
+            }
+          ],
+          "samples": [],
+          "rank": 2,
+          "gap": 1.952322896654806
+        },
+        {
+          "id": "tide",
+          "name": "アオバ",
+          "finished": true,
+          "time": 75.18454998607604,
+          "distance": 1600,
+          "parameters": {
+            "criticalSpeed": 18.1,
+            "maxSpeed": 22.2,
+            "reserveCapacity": 3800,
+            "anaerobicPower": 45,
+            "maxForce": 9,
+            "cardioTau": 9,
+            "legEndurance": 178,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 75.18454998607604,
+            "distance": 1600,
+            "speed": 22.199999999999974,
+            "aerobic": 63.52813176610432,
+            "reserve": 1351.9147318409107,
+            "fatigue": 0.6036646095061636,
+            "energyUsed": 6808.652749165475,
+            "reserveSpent": 2448.0852681590895,
+            "reserveRecovered": 0,
+            "power": 92.60419200000017,
+            "force": 4.171360000000012,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.13045540725983,
+              "duration": 21.13045540725983,
+              "speed": 22.199379551912124,
+              "reserve": 2962.4862019722077,
+              "fatigue": 0.2592637172360263
+            },
+            {
+              "distance": 800,
+              "time": 39.148513949878804,
+              "duration": 18.018058542618974,
+              "speed": 22.199999997522827,
+              "reserve": 2404.5570730709173,
+              "fatigue": 0.374065577291456
+            },
+            {
+              "distance": 1200,
+              "time": 57.16653196805878,
+              "duration": 18.018018018179973,
+              "speed": 22.199999999999974,
+              "reserve": 1876.2368575205944,
+              "fatigue": 0.4888650934034861
+            },
+            {
+              "distance": 1600,
+              "time": 75.18454998607604,
+              "duration": 18.01801801801726,
+              "speed": 22.199999999999974,
+              "reserve": 1351.9147318409107,
+              "fatigue": 0.6036646095061636
+            }
+          ],
+          "samples": [],
+          "rank": 4,
+          "gap": 4.074230872324122
+        },
+        {
+          "id": "iris",
+          "name": "スミレ",
+          "finished": true,
+          "time": 77.42938106846181,
+          "distance": 1600,
+          "parameters": {
+            "criticalSpeed": 18.8,
+            "maxSpeed": 21.6,
+            "reserveCapacity": 3900,
+            "anaerobicPower": 36,
+            "maxForce": 8.5,
+            "cardioTau": 10,
+            "legEndurance": 190,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 77.42938106846181,
+            "distance": 1600,
+            "speed": 21.599999999999977,
+            "aerobic": 67.91744107025367,
+            "reserve": 2043.1884831442567,
+            "fatigue": 0.5328174299868,
+            "energyUsed": 6624.457257403735,
+            "reserveSpent": 1856.8115168557488,
+            "reserveRecovered": 0,
+            "power": 87.83078400000018,
+            "force": 4.066240000000013,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.873766026530994,
+              "duration": 21.873766026530994,
+              "speed": 21.5991138581188,
+              "reserve": 3203.0629095756053,
+              "fatigue": 0.22564856280691045
+            },
+            {
+              "distance": 800,
+              "time": 40.392344031257984,
+              "duration": 18.51857800472699,
+              "speed": 21.599999997496127,
+              "reserve": 2788.346019780819,
+              "fatigue": 0.328040189801232
+            },
+            {
+              "distance": 1200,
+              "time": 58.91086254994469,
+              "duration": 18.518518518686705,
+              "speed": 21.599999999999977,
+              "reserve": 2412.701935067105,
+              "fatigue": 0.43042880989826643
+            },
+            {
+              "distance": 1600,
+              "time": 77.42938106846181,
+              "duration": 18.51851851851712,
+              "speed": 21.599999999999977,
+              "reserve": 2043.1884831442567,
+              "fatigue": 0.5328174299868
+            }
+          ],
+          "samples": [],
+          "rank": 5,
+          "gap": 6.319061954709895
+        },
+        {
+          "id": "dusk",
+          "name": "キキョウ",
+          "finished": true,
+          "time": 79.74374826606436,
+          "distance": 1600,
+          "parameters": {
+            "criticalSpeed": 19.2,
+            "maxSpeed": 21,
+            "reserveCapacity": 4000,
+            "anaerobicPower": 30,
+            "maxForce": 8,
+            "cardioTau": 11,
+            "legEndurance": 200,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 79.74374826606436,
+            "distance": 1600,
+            "speed": 20.999999999999975,
+            "aerobic": 70.51528591289743,
+            "reserve": 2611.2925660811134,
+            "fatigue": 0.4766885552380809,
+            "energyUsed": 6450.207985997755,
+            "reserveSpent": 1388.7074339188853,
+            "reserveRecovered": 0,
+            "power": 83.24400000000016,
+            "force": 3.9640000000000124,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.600831005460936,
+              "duration": 22.600831005460936,
+              "speed": 20.999129329202994,
+              "reserve": 3408.125694815734,
+              "fatigue": 0.1986166437406259
+            },
+            {
+              "distance": 800,
+              "time": 41.64851017070772,
+              "duration": 19.047679165246787,
+              "speed": 20.999999998290754,
+              "reserve": 3107.148929928524,
+              "fatigue": 0.2913090750423121
+            },
+            {
+              "distance": 1200,
+              "time": 60.696129218445336,
+              "duration": 19.047619047737612,
+              "speed": 20.999999999999975,
+              "reserve": 2854.9083627723453,
+              "fatigue": 0.38399881514283485
+            },
+            {
+              "distance": 1600,
+              "time": 79.74374826606436,
+              "duration": 19.047619047619023,
+              "speed": 20.999999999999975,
+              "reserve": 2611.2925660811134,
+              "fatigue": 0.4766885552380809
+            }
+          ],
+          "samples": [],
+          "rank": 6,
+          "gap": 8.633429152312445
+        },
+        {
+          "id": "snow",
+          "name": "シラユキ",
+          "finished": true,
+          "time": 82.21864283386516,
+          "distance": 1600,
+          "parameters": {
+            "criticalSpeed": 19.5,
+            "maxSpeed": 20.4,
+            "reserveCapacity": 4100,
+            "anaerobicPower": 25,
+            "maxForce": 7.5,
+            "cardioTau": 12,
+            "legEndurance": 280,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 1600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 82.21864283386516,
+            "distance": 1600,
+            "speed": 20.399999999999974,
+            "aerobic": 72.50328390963989,
+            "reserve": 3142.8263615688757,
+            "fatigue": 0.31963244583670464,
+            "energyUsed": 6281.980762657389,
+            "reserveSpent": 957.1736384311247,
+            "reserveRecovered": 0,
+            "power": 78.83865600000016,
+            "force": 3.8646400000000125,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.395058903968398,
+              "duration": 23.395058903968398,
+              "speed": 20.399232986280676,
+              "reserve": 3602.291112038472,
+              "fatigue": 0.1301609299775627
+            },
+            {
+              "distance": 800,
+              "time": 43.00295655928293,
+              "duration": 19.60789765531453,
+              "speed": 20.399999998977588,
+              "reserve": 3406.106724376461,
+              "fatigue": 0.19331918461984787
+            },
+            {
+              "distance": 1200,
+              "time": 62.610799696610925,
+              "duration": 19.607843137327997,
+              "speed": 20.399999999999974,
+              "reserve": 3268.729276968541,
+              "fatigue": 0.25647581522935836
+            },
+            {
+              "distance": 1600,
+              "time": 82.21864283386516,
+              "duration": 19.607843137254235,
+              "speed": 20.399999999999974,
+              "reserve": 3142.8263615688757,
+              "fatigue": 0.31963244583670464
+            }
+          ],
+          "samples": [],
+          "rank": 7,
+          "gap": 11.108323720113248
+        }
+      ]
+    },
+    {
+      "distance": 2000,
+      "results": [
+        {
+          "id": "ember",
+          "name": "ヒバナ",
+          "finished": true,
+          "time": 101.46531454062456,
+          "distance": 2000,
+          "parameters": {
+            "criticalSpeed": 16,
+            "maxSpeed": 24,
+            "reserveCapacity": 3500,
+            "anaerobicPower": 80,
+            "maxForce": 10.5,
+            "cardioTau": 6,
+            "legEndurance": 125,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.3,
+            "kickAt": 400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 101.46531454062456,
+            "distance": 2000,
+            "speed": 13.525442465590729,
+            "aerobic": 42.731446204919976,
+            "reserve": 677.2482923709348,
+            "fatigue": 0.9269924512392892,
+            "energyUsed": 7744.385995869157,
+            "reserveSpent": 2827.0010277888728,
+            "reserveRecovered": 4.249320159807848,
+            "power": 34.768421384415454,
+            "force": 2.563536361119829,
+            "acceleration": -0.3722486772331243,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.271568673153627,
+              "duration": 21.271568673153627,
+              "speed": 20.799985079094636,
+              "reserve": 2634.4988984215875,
+              "fatigue": 0.3948555608533244
+            },
+            {
+              "distance": 800,
+              "time": 40.50233894408059,
+              "duration": 19.230770270926964,
+              "speed": 20.799999999974204,
+              "reserve": 2047.9214518462932,
+              "fatigue": 0.5408277685430471
+            },
+            {
+              "distance": 1200,
+              "time": 59.73310817485215,
+              "duration": 19.230769230771557,
+              "speed": 20.799999999999976,
+              "reserve": 1467.439810441088,
+              "fatigue": 0.6867999034699046
+            },
+            {
+              "distance": 1600,
+              "time": 78.96387740562126,
+              "duration": 19.230769230769113,
+              "speed": 20.799999999999976,
+              "reserve": 887.205361828922,
+              "fatigue": 0.8327720383966404
+            },
+            {
+              "distance": 2000,
+              "time": 101.46531454062456,
+              "duration": 22.5014371350033,
+              "speed": 13.525442465590729,
+              "reserve": 677.2482923709348,
+              "fatigue": 0.9269924512392892
+            }
+          ],
+          "samples": [],
+          "rank": 6,
+          "gap": 10.85881288109583
+        },
+        {
+          "id": "zephyr",
+          "name": "ハヤテ",
+          "finished": true,
+          "time": 92.5717590352668,
+          "distance": 2000,
+          "parameters": {
+            "criticalSpeed": 16.7,
+            "maxSpeed": 23.4,
+            "reserveCapacity": 3600,
+            "anaerobicPower": 65,
+            "maxForce": 10,
+            "cardioTau": 7,
+            "legEndurance": 165,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.325,
+            "kickAt": 400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 92.5717590352668,
+            "distance": 2000,
+            "speed": 18.1080615031842,
+            "aerobic": 55.36977865006303,
+            "reserve": 0,
+            "fatigue": 0.794911606334834,
+            "energyUsed": 8439.534121790064,
+            "reserveSpent": 3599.999999999993,
+            "reserveRecovered": 3.979039320256561e-16,
+            "power": 55.36977812237469,
+            "force": 3.041974390077698,
+            "acceleration": -0.4765476691321333,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 20.48090700973263,
+              "duration": 20.48090700973263,
+              "speed": 22.127437508572637,
+              "reserve": 2629.4115682416705,
+              "fatigue": 0.3063551401922429
+            },
+            {
+              "distance": 800,
+              "time": 38.55796454502708,
+              "duration": 18.077057535294454,
+              "speed": 22.12749999976042,
+              "reserve": 1952.8385792104448,
+              "fatigue": 0.4294603150653547
+            },
+            {
+              "distance": 1200,
+              "time": 56.635017985332595,
+              "duration": 18.077053440305512,
+              "speed": 22.127499999999973,
+              "reserve": 1289.2949753912594,
+              "fatigue": 0.5525652365625419
+            },
+            {
+              "distance": 1600,
+              "time": 74.71207142562203,
+              "duration": 18.077053440289433,
+              "speed": 22.127499999999973,
+              "reserve": 626.7362083170405,
+              "fatigue": 0.6756701580587527
+            },
+            {
+              "distance": 2000,
+              "time": 92.5717590352668,
+              "duration": 17.859687609644766,
+              "speed": 18.1080615031842,
+              "reserve": 0,
+              "fatigue": 0.794911606334834
+            }
+          ],
+          "samples": [],
+          "rank": 2,
+          "gap": 1.9652573757380623
+        },
+        {
+          "id": "jade",
+          "name": "ワカバ",
+          "finished": true,
+          "time": 90.60650165952873,
+          "distance": 2000,
+          "parameters": {
+            "criticalSpeed": 17.4,
+            "maxSpeed": 22.8,
+            "reserveCapacity": 3700,
+            "anaerobicPower": 55,
+            "maxForce": 9.5,
+            "cardioTau": 8,
+            "legEndurance": 175,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2000,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 90.60650165952873,
+            "distance": 2000,
+            "speed": 22.799999999999976,
+            "aerobic": 59.351574970872306,
+            "reserve": 18.758269104100407,
+            "fatigue": 0.7752898852811821,
+            "energyUsed": 8710.985306181345,
+            "reserveSpent": 3681.24173089591,
+            "reserveRecovered": 0,
+            "power": 97.56940800000017,
+            "force": 4.279360000000012,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 20.43103797527075,
+              "duration": 20.43103797527075,
+              "speed": 22.799605516487585,
+              "reserve": 2727.5641743048927,
+              "fatigue": 0.28426332957487493
+            },
+            {
+              "distance": 800,
+              "time": 37.974922712022114,
+              "duration": 17.543884736751362,
+              "speed": 22.7999999978158,
+              "reserve": 2033.19185956869,
+              "fatigue": 0.40702115439364545
+            },
+            {
+              "distance": 1200,
+              "time": 55.51878236128409,
+              "duration": 17.543859649261975,
+              "speed": 22.799999999999976,
+              "reserve": 1360.0471978443743,
+              "fatigue": 0.529777398028657
+            },
+            {
+              "distance": 1600,
+              "time": 73.06264201040672,
+              "duration": 17.54385964912263,
+              "speed": 22.799999999999976,
+              "reserve": 689.2706149997783,
+              "fatigue": 0.6525336416549196
+            },
+            {
+              "distance": 2000,
+              "time": 90.60650165952873,
+              "duration": 17.543859649122012,
+              "speed": 22.799999999999976,
+              "reserve": 18.758269104100407,
+              "fatigue": 0.7752898852811821
+            }
+          ],
+          "samples": [],
+          "rank": 1,
+          "gap": 0
+        },
+        {
+          "id": "tide",
+          "name": "アオバ",
+          "finished": true,
+          "time": 93.20256800409281,
+          "distance": 2000,
+          "parameters": {
+            "criticalSpeed": 18.1,
+            "maxSpeed": 22.2,
+            "reserveCapacity": 3800,
+            "anaerobicPower": 45,
+            "maxForce": 9,
+            "cardioTau": 9,
+            "legEndurance": 178,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2000,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 93.20256800409281,
+            "distance": 2000,
+            "speed": 22.199999999999974,
+            "aerobic": 63.53750095809946,
+            "reserve": 828.1326064436403,
+            "fatigue": 0.7184641256088421,
+            "energyUsed": 8477.196749165436,
+            "reserveSpent": 2971.867393556355,
+            "reserveRecovered": 0,
+            "power": 92.60419200000017,
+            "force": 4.171360000000012,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.13045540725983,
+              "duration": 21.13045540725983,
+              "speed": 22.199379551912124,
+              "reserve": 2962.4862019722077,
+              "fatigue": 0.2592637172360263
+            },
+            {
+              "distance": 800,
+              "time": 39.148513949878804,
+              "duration": 18.018058542618974,
+              "speed": 22.199999997522827,
+              "reserve": 2404.5570730709173,
+              "fatigue": 0.374065577291456
+            },
+            {
+              "distance": 1200,
+              "time": 57.16653196805878,
+              "duration": 18.018018018179973,
+              "speed": 22.199999999999974,
+              "reserve": 1876.2368575205944,
+              "fatigue": 0.4888650934034861
+            },
+            {
+              "distance": 1600,
+              "time": 75.18454998607604,
+              "duration": 18.01801801801726,
+              "speed": 22.199999999999974,
+              "reserve": 1351.9147318409107,
+              "fatigue": 0.6036646095061636
+            },
+            {
+              "distance": 2000,
+              "time": 93.20256800409281,
+              "duration": 18.018018018016775,
+              "speed": 22.199999999999974,
+              "reserve": 828.1326064436403,
+              "fatigue": 0.7184641256088421
+            }
+          ],
+          "samples": [],
+          "rank": 3,
+          "gap": 2.596066344564079
+        },
+        {
+          "id": "iris",
+          "name": "スミレ",
+          "finished": true,
+          "time": 95.94789958697858,
+          "distance": 2000,
+          "parameters": {
+            "criticalSpeed": 18.8,
+            "maxSpeed": 21.6,
+            "reserveCapacity": 3900,
+            "anaerobicPower": 36,
+            "maxForce": 8.5,
+            "cardioTau": 10,
+            "legEndurance": 190,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2000,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 95.94789958697858,
+            "distance": 2000,
+            "speed": 21.599999999999977,
+            "aerobic": 67.93535336687214,
+            "reserve": 1674.6372105372452,
+            "fatigue": 0.6352060500753266,
+            "energyUsed": 8250.953257403635,
+            "reserveSpent": 2225.3627894627593,
+            "reserveRecovered": 0,
+            "power": 87.83078400000018,
+            "force": 4.066240000000013,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.873766026530994,
+              "duration": 21.873766026530994,
+              "speed": 21.5991138581188,
+              "reserve": 3203.0629095756053,
+              "fatigue": 0.22564856280691045
+            },
+            {
+              "distance": 800,
+              "time": 40.392344031257984,
+              "duration": 18.51857800472699,
+              "speed": 21.599999997496127,
+              "reserve": 2788.346019780819,
+              "fatigue": 0.328040189801232
+            },
+            {
+              "distance": 1200,
+              "time": 58.91086254994469,
+              "duration": 18.518518518686705,
+              "speed": 21.599999999999977,
+              "reserve": 2412.701935067105,
+              "fatigue": 0.43042880989826643
+            },
+            {
+              "distance": 1600,
+              "time": 77.42938106846181,
+              "duration": 18.51851851851712,
+              "speed": 21.599999999999977,
+              "reserve": 2043.1884831442567,
+              "fatigue": 0.5328174299868
+            },
+            {
+              "distance": 2000,
+              "time": 95.94789958697858,
+              "duration": 18.51851851851677,
+              "speed": 21.599999999999977,
+              "reserve": 1674.6372105372452,
+              "fatigue": 0.6352060500753266
+            }
+          ],
+          "samples": [],
+          "rank": 4,
+          "gap": 5.341397927449847
+        },
+        {
+          "id": "dusk",
+          "name": "キキョウ",
+          "finished": true,
+          "time": 98.79136731368315,
+          "distance": 2000,
+          "parameters": {
+            "criticalSpeed": 19.2,
+            "maxSpeed": 21,
+            "reserveCapacity": 4000,
+            "anaerobicPower": 30,
+            "maxForce": 8,
+            "cardioTau": 11,
+            "legEndurance": 200,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2000,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 98.79136731368315,
+            "distance": 2000,
+            "speed": 20.999999999999975,
+            "aerobic": 70.54513292237239,
+            "reserve": 2369.20333243003,
+            "fatigue": 0.569378295333327,
+            "energyUsed": 8035.807985997904,
+            "reserveSpent": 1630.7966675699718,
+            "reserveRecovered": 0,
+            "power": 83.24400000000016,
+            "force": 3.9640000000000124,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.600831005460936,
+              "duration": 22.600831005460936,
+              "speed": 20.999129329202994,
+              "reserve": 3408.125694815734,
+              "fatigue": 0.1986166437406259
+            },
+            {
+              "distance": 800,
+              "time": 41.64851017070772,
+              "duration": 19.047679165246787,
+              "speed": 20.999999998290754,
+              "reserve": 3107.148929928524,
+              "fatigue": 0.2913090750423121
+            },
+            {
+              "distance": 1200,
+              "time": 60.696129218445336,
+              "duration": 19.047619047737612,
+              "speed": 20.999999999999975,
+              "reserve": 2854.9083627723453,
+              "fatigue": 0.38399881514283485
+            },
+            {
+              "distance": 1600,
+              "time": 79.74374826606436,
+              "duration": 19.047619047619023,
+              "speed": 20.999999999999975,
+              "reserve": 2611.2925660811134,
+              "fatigue": 0.4766885552380809
+            },
+            {
+              "distance": 2000,
+              "time": 98.79136731368315,
+              "duration": 19.047619047618795,
+              "speed": 20.999999999999975,
+              "reserve": 2369.20333243003,
+              "fatigue": 0.569378295333327
+            }
+          ],
+          "samples": [],
+          "rank": 5,
+          "gap": 8.184865654154422
+        },
+        {
+          "id": "snow",
+          "name": "シラユキ",
+          "finished": true,
+          "time": 101.8264859711193,
+          "distance": 2000,
+          "parameters": {
+            "criticalSpeed": 19.5,
+            "maxSpeed": 20.4,
+            "reserveCapacity": 4100,
+            "anaerobicPower": 25,
+            "maxForce": 7.5,
+            "cardioTau": 12,
+            "legEndurance": 280,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2000,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 101.8264859711193,
+            "distance": 2000,
+            "speed": 20.399999999999974,
+            "aerobic": 72.54852941513519,
+            "reserve": 3019.162706478527,
+            "fatigue": 0.3827890764440509,
+            "energyUsed": 7827.836762657379,
+            "reserveSpent": 1080.8372935214697,
+            "reserveRecovered": 0,
+            "power": 78.83865600000016,
+            "force": 3.8646400000000125,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.395058903968398,
+              "duration": 23.395058903968398,
+              "speed": 20.399232986280676,
+              "reserve": 3602.291112038472,
+              "fatigue": 0.1301609299775627
+            },
+            {
+              "distance": 800,
+              "time": 43.00295655928293,
+              "duration": 19.60789765531453,
+              "speed": 20.399999998977588,
+              "reserve": 3406.106724376461,
+              "fatigue": 0.19331918461984787
+            },
+            {
+              "distance": 1200,
+              "time": 62.610799696610925,
+              "duration": 19.607843137327997,
+              "speed": 20.399999999999974,
+              "reserve": 3268.729276968541,
+              "fatigue": 0.25647581522935836
+            },
+            {
+              "distance": 1600,
+              "time": 82.21864283386516,
+              "duration": 19.607843137254235,
+              "speed": 20.399999999999974,
+              "reserve": 3142.8263615688757,
+              "fatigue": 0.31963244583670464
+            },
+            {
+              "distance": 2000,
+              "time": 101.8264859711193,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 3019.162706478527,
+              "fatigue": 0.3827890764440509
+            }
+          ],
+          "samples": [],
+          "rank": 7,
+          "gap": 11.219984311590565
+        }
+      ]
+    },
+    {
+      "distance": 2400,
+      "results": [
+        {
+          "id": "ember",
+          "name": "ヒバナ",
+          "finished": true,
+          "time": 132.54504922576152,
+          "distance": 2400,
+          "parameters": {
+            "criticalSpeed": 16,
+            "maxSpeed": 24,
+            "reserveCapacity": 3500,
+            "anaerobicPower": 80,
+            "maxForce": 10.5,
+            "cardioTau": 6,
+            "legEndurance": 125,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.175,
+            "kickAt": 400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 132.54504922576152,
+            "distance": 2400,
+            "speed": 12.364406139374607,
+            "aerobic": 38.417943365504954,
+            "reserve": 1356.851248718224,
+            "fatigue": 0.9328421753050394,
+            "energyUsed": 8607.76561937471,
+            "reserveSpent": 2149.468604714731,
+            "reserveRecovered": 6.3198534329591425,
+            "power": 30.53564607234414,
+            "force": 2.4626203966474507,
+            "acceleration": -0.3523855883602276,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.178723160941868,
+              "duration": 23.178723160941868,
+              "speed": 18.79999684531451,
+              "reserve": 2883.0135590531686,
+              "fatigue": 0.3404333166412274
+            },
+            {
+              "distance": 800,
+              "time": 44.455319148936404,
+              "duration": 21.276595987994536,
+              "speed": 18.799999999998672,
+              "reserve": 2530.3617039589444,
+              "fatigue": 0.4659467243259689
+            },
+            {
+              "distance": 1200,
+              "time": 65.73191489361699,
+              "duration": 21.276595744680584,
+              "speed": 18.799999999999976,
+              "reserve": 2182.2546681913695,
+              "fatigue": 0.5914601186115126
+            },
+            {
+              "distance": 1600,
+              "time": 87.00851063829539,
+              "duration": 21.276595744678403,
+              "speed": 18.799999999999976,
+              "reserve": 1834.2786915403299,
+              "fatigue": 0.7169735128970447
+            },
+            {
+              "distance": 2000,
+              "time": 108.2851063829738,
+              "duration": 21.276595744678403,
+              "speed": 18.799999999999976,
+              "reserve": 1486.306494216118,
+              "fatigue": 0.8424869071825769
+            },
+            {
+              "distance": 2400,
+              "time": 132.54504922576152,
+              "duration": 24.259942842787723,
+              "speed": 12.364406139374607,
+              "reserve": 1356.851248718224,
+              "fatigue": 0.9328421753050394
+            }
+          ],
+          "samples": [],
+          "rank": 7,
+          "gap": 21.09373196858415
+        },
+        {
+          "id": "zephyr",
+          "name": "ハヤテ",
+          "finished": true,
+          "time": 115.39495514237998,
+          "distance": 2400,
+          "parameters": {
+            "criticalSpeed": 16.7,
+            "maxSpeed": 23.4,
+            "reserveCapacity": 3600,
+            "anaerobicPower": 65,
+            "maxForce": 10,
+            "cardioTau": 7,
+            "legEndurance": 165,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.275,
+            "kickAt": 200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 115.39495514237998,
+            "distance": 2400,
+            "speed": 17.807145891129075,
+            "aerobic": 55.36984918554329,
+            "reserve": 0,
+            "fatigue": 0.8552328672538517,
+            "energyUsed": 9703.2506186513,
+            "reserveSpent": 3600.0000000000027,
+            "reserveRecovered": 1.1368683772161603e-16,
+            "power": 55.36984916529575,
+            "force": 3.1021261799769144,
+            "acceleration": -0.3715504041098878,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.023489617763406,
+              "duration": 21.023489617763406,
+              "speed": 21.29247215001422,
+              "reserve": 2720.5704611348942,
+              "fatigue": 0.29479443474947165
+            },
+            {
+              "distance": 800,
+              "time": 39.809449011089164,
+              "duration": 18.785959393325758,
+              "speed": 21.29249999993456,
+              "reserve": 2142.2073694456917,
+              "fatigue": 0.4098039706818365
+            },
+            {
+              "distance": 1200,
+              "time": 58.595406507865256,
+              "duration": 18.785957496776092,
+              "speed": 21.292499999999972,
+              "reserve": 1576.0922105034895,
+              "fatigue": 0.5248134001215331
+            },
+            {
+              "distance": 1600,
+              "time": 77.38136400463613,
+              "duration": 18.78595749677087,
+              "speed": 21.292499999999972,
+              "reserve": 1010.8136683420786,
+              "fatigue": 0.6398228295609737
+            },
+            {
+              "distance": 2000,
+              "time": 96.1673215014066,
+              "duration": 18.78595749677048,
+              "speed": 21.292499999999972,
+              "reserve": 445.59227457870924,
+              "fatigue": 0.7548322590004143
+            },
+            {
+              "distance": 2400,
+              "time": 115.39495514237998,
+              "duration": 19.22763364097338,
+              "speed": 17.807145891129075,
+              "reserve": 0,
+              "fatigue": 0.8552328672538517
+            }
+          ],
+          "samples": [],
+          "rank": 4,
+          "gap": 3.9436378852026195
+        },
+        {
+          "id": "jade",
+          "name": "ワカバ",
+          "finished": true,
+          "time": 111.98456638492264,
+          "distance": 2400,
+          "parameters": {
+            "criticalSpeed": 17.4,
+            "maxSpeed": 22.8,
+            "reserveCapacity": 3700,
+            "anaerobicPower": 55,
+            "maxForce": 9.5,
+            "cardioTau": 8,
+            "legEndurance": 175,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.275,
+            "kickAt": 0,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 111.98456638492264,
+            "distance": 2400,
+            "speed": 17.734147211144,
+            "aerobic": 59.35205999876113,
+            "reserve": 0,
+            "fatigue": 0.8373334770514094,
+            "energyUsed": 9998.572644887618,
+            "reserveSpent": 3699.9999999999936,
+            "reserveRecovered": 3.410605131648481e-16,
+            "power": 59.35205977234121,
+            "force": 3.34283491915649,
+            "acceleration": -0.11682301666644174,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 20.708459845982173,
+              "duration": 20.708459845982173,
+              "speed": 22.184862014340176,
+              "reserve": 2782.5889514856663,
+              "fatigue": 0.2775130502507985
+            },
+            {
+              "distance": 800,
+              "time": 38.73866945059883,
+              "duration": 18.030209604616655,
+              "speed": 22.18499999945352,
+              "reserve": 2161.9941136356415,
+              "fatigue": 0.39413638779981086
+            },
+            {
+              "distance": 1200,
+              "time": 56.768870036616484,
+              "duration": 18.030200586017656,
+              "speed": 22.18499999999997,
+              "reserve": 1562.2047906741182,
+              "fatigue": 0.5107591957060074
+            },
+            {
+              "distance": 1600,
+              "time": 74.79907062259791,
+              "duration": 18.030200585981426,
+              "speed": 22.18499999999997,
+              "reserve": 964.5999419795603,
+              "fatigue": 0.6273820036101062
+            },
+            {
+              "distance": 2000,
+              "time": 92.82927120857882,
+              "duration": 18.030200585980907,
+              "speed": 22.18499999999997,
+              "reserve": 367.22446815387417,
+              "fatigue": 0.744004811514205
+            },
+            {
+              "distance": 2400,
+              "time": 111.98456638492264,
+              "duration": 19.155295176343827,
+              "speed": 17.734147211144,
+              "reserve": 0,
+              "fatigue": 0.8373334770514094
+            }
+          ],
+          "samples": [],
+          "rank": 2,
+          "gap": 0.5332491277452789
+        },
+        {
+          "id": "tide",
+          "name": "アオバ",
+          "finished": true,
+          "time": 111.45131725717737,
+          "distance": 2400,
+          "parameters": {
+            "criticalSpeed": 18.1,
+            "maxSpeed": 22.2,
+            "reserveCapacity": 3800,
+            "anaerobicPower": 45,
+            "maxForce": 9,
+            "cardioTau": 9,
+            "legEndurance": 178,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 111.45131725717737,
+            "distance": 2400,
+            "speed": 20.61094618187928,
+            "aerobic": 63.53877139371744,
+            "reserve": 371.3574699590631,
+            "fatigue": 0.8244321807381827,
+            "energyUsed": 10093.467073448643,
+            "reserveSpent": 3428.6425300409333,
+            "reserveRecovered": 0,
+            "power": 74.76136122353203,
+            "force": 3.6223143878656625,
+            "acceleration": -0.28157683555758295,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.13045540725983,
+              "duration": 21.13045540725983,
+              "speed": 22.199379551912124,
+              "reserve": 2962.4862019722077,
+              "fatigue": 0.2592637172360263
+            },
+            {
+              "distance": 800,
+              "time": 39.148513949878804,
+              "duration": 18.018058542618974,
+              "speed": 22.199999997522827,
+              "reserve": 2404.5570730709173,
+              "fatigue": 0.374065577291456
+            },
+            {
+              "distance": 1200,
+              "time": 57.16653196805878,
+              "duration": 18.018018018179973,
+              "speed": 22.199999999999974,
+              "reserve": 1876.2368575205944,
+              "fatigue": 0.4888650934034861
+            },
+            {
+              "distance": 1600,
+              "time": 75.18454998607604,
+              "duration": 18.01801801801726,
+              "speed": 22.199999999999974,
+              "reserve": 1351.9147318409107,
+              "fatigue": 0.6036646095061636
+            },
+            {
+              "distance": 2000,
+              "time": 93.20256800409281,
+              "duration": 18.018018018016775,
+              "speed": 22.199999999999974,
+              "reserve": 828.1326064436403,
+              "fatigue": 0.7184641256088421
+            },
+            {
+              "distance": 2400,
+              "time": 111.45131725717737,
+              "duration": 18.248749253084554,
+              "speed": 20.61094618187928,
+              "reserve": 371.3574699590631,
+              "fatigue": 0.8244321807381827
+            }
+          ],
+          "samples": [],
+          "rank": 1,
+          "gap": 0
+        },
+        {
+          "id": "iris",
+          "name": "スミレ",
+          "finished": true,
+          "time": 114.46641810549706,
+          "distance": 2400,
+          "parameters": {
+            "criticalSpeed": 18.8,
+            "maxSpeed": 21.6,
+            "reserveCapacity": 3900,
+            "anaerobicPower": 36,
+            "maxForce": 8.5,
+            "cardioTau": 10,
+            "legEndurance": 190,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 114.46641810549706,
+            "distance": 2400,
+            "speed": 21.599999999999977,
+            "aerobic": 67.9381646425026,
+            "reserve": 1306.236949398497,
+            "fatigue": 0.7375946701638627,
+            "energyUsed": 9877.449257403687,
+            "reserveSpent": 2593.7630506015066,
+            "reserveRecovered": 0,
+            "power": 87.83078400000018,
+            "force": 4.066240000000013,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.873766026530994,
+              "duration": 21.873766026530994,
+              "speed": 21.5991138581188,
+              "reserve": 3203.0629095756053,
+              "fatigue": 0.22564856280691045
+            },
+            {
+              "distance": 800,
+              "time": 40.392344031257984,
+              "duration": 18.51857800472699,
+              "speed": 21.599999997496127,
+              "reserve": 2788.346019780819,
+              "fatigue": 0.328040189801232
+            },
+            {
+              "distance": 1200,
+              "time": 58.91086254994469,
+              "duration": 18.518518518686705,
+              "speed": 21.599999999999977,
+              "reserve": 2412.701935067105,
+              "fatigue": 0.43042880989826643
+            },
+            {
+              "distance": 1600,
+              "time": 77.42938106846181,
+              "duration": 18.51851851851712,
+              "speed": 21.599999999999977,
+              "reserve": 2043.1884831442567,
+              "fatigue": 0.5328174299868
+            },
+            {
+              "distance": 2000,
+              "time": 95.94789958697858,
+              "duration": 18.51851851851677,
+              "speed": 21.599999999999977,
+              "reserve": 1674.6372105372452,
+              "fatigue": 0.6352060500753266
+            },
+            {
+              "distance": 2400,
+              "time": 114.46641810549706,
+              "duration": 18.518518518518476,
+              "speed": 21.599999999999977,
+              "reserve": 1306.236949398497,
+              "fatigue": 0.7375946701638627
+            }
+          ],
+          "samples": [],
+          "rank": 3,
+          "gap": 3.0151008483196904
+        },
+        {
+          "id": "dusk",
+          "name": "キキョウ",
+          "finished": true,
+          "time": 117.83898636130193,
+          "distance": 2400,
+          "parameters": {
+            "criticalSpeed": 19.2,
+            "maxSpeed": 21,
+            "reserveCapacity": 4000,
+            "anaerobicPower": 30,
+            "maxForce": 8,
+            "cardioTau": 11,
+            "legEndurance": 200,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 117.83898636130193,
+            "distance": 2400,
+            "speed": 20.999999999999975,
+            "aerobic": 70.55041581147756,
+            "reserve": 2127.3843059639257,
+            "fatigue": 0.6620680354285728,
+            "energyUsed": 9621.407985997896,
+            "reserveSpent": 1872.615694036073,
+            "reserveRecovered": 0,
+            "power": 83.24400000000016,
+            "force": 3.9640000000000124,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.600831005460936,
+              "duration": 22.600831005460936,
+              "speed": 20.999129329202994,
+              "reserve": 3408.125694815734,
+              "fatigue": 0.1986166437406259
+            },
+            {
+              "distance": 800,
+              "time": 41.64851017070772,
+              "duration": 19.047679165246787,
+              "speed": 20.999999998290754,
+              "reserve": 3107.148929928524,
+              "fatigue": 0.2913090750423121
+            },
+            {
+              "distance": 1200,
+              "time": 60.696129218445336,
+              "duration": 19.047619047737612,
+              "speed": 20.999999999999975,
+              "reserve": 2854.9083627723453,
+              "fatigue": 0.38399881514283485
+            },
+            {
+              "distance": 1600,
+              "time": 79.74374826606436,
+              "duration": 19.047619047619023,
+              "speed": 20.999999999999975,
+              "reserve": 2611.2925660811134,
+              "fatigue": 0.4766885552380809
+            },
+            {
+              "distance": 2000,
+              "time": 98.79136731368315,
+              "duration": 19.047619047618795,
+              "speed": 20.999999999999975,
+              "reserve": 2369.20333243003,
+              "fatigue": 0.569378295333327
+            },
+            {
+              "distance": 2400,
+              "time": 117.83898636130193,
+              "duration": 19.04761904761878,
+              "speed": 20.999999999999975,
+              "reserve": 2127.3843059639257,
+              "fatigue": 0.6620680354285728
+            }
+          ],
+          "samples": [],
+          "rank": 5,
+          "gap": 6.387669104124569
+        },
+        {
+          "id": "snow",
+          "name": "シラユキ",
+          "finished": true,
+          "time": 121.43432910837343,
+          "distance": 2400,
+          "parameters": {
+            "criticalSpeed": 19.5,
+            "maxSpeed": 20.4,
+            "reserveCapacity": 4100,
+            "anaerobicPower": 25,
+            "maxForce": 7.5,
+            "cardioTau": 12,
+            "legEndurance": 280,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 121.43432910837343,
+            "distance": 2400,
+            "speed": 20.399999999999974,
+            "aerobic": 72.55735908838037,
+            "reserve": 2895.9360439040565,
+            "fatigue": 0.4459457070513972,
+            "energyUsed": 9373.692762657505,
+            "reserveSpent": 1204.0639560959407,
+            "reserveRecovered": 0,
+            "power": 78.83865600000016,
+            "force": 3.8646400000000125,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.395058903968398,
+              "duration": 23.395058903968398,
+              "speed": 20.399232986280676,
+              "reserve": 3602.291112038472,
+              "fatigue": 0.1301609299775627
+            },
+            {
+              "distance": 800,
+              "time": 43.00295655928293,
+              "duration": 19.60789765531453,
+              "speed": 20.399999998977588,
+              "reserve": 3406.106724376461,
+              "fatigue": 0.19331918461984787
+            },
+            {
+              "distance": 1200,
+              "time": 62.610799696610925,
+              "duration": 19.607843137327997,
+              "speed": 20.399999999999974,
+              "reserve": 3268.729276968541,
+              "fatigue": 0.25647581522935836
+            },
+            {
+              "distance": 1600,
+              "time": 82.21864283386516,
+              "duration": 19.607843137254235,
+              "speed": 20.399999999999974,
+              "reserve": 3142.8263615688757,
+              "fatigue": 0.31963244583670464
+            },
+            {
+              "distance": 2000,
+              "time": 101.8264859711193,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 3019.162706478527,
+              "fatigue": 0.3827890764440509
+            },
+            {
+              "distance": 2400,
+              "time": 121.43432910837343,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 2895.9360439040565,
+              "fatigue": 0.4459457070513972
+            }
+          ],
+          "samples": [],
+          "rank": 6,
+          "gap": 9.983011851196068
+        }
+      ]
+    },
+    {
+      "distance": 2800,
+      "results": [
+        {
+          "id": "ember",
+          "name": "ヒバナ",
+          "finished": true,
+          "time": 169.06531051262996,
+          "distance": 2800,
+          "parameters": {
+            "criticalSpeed": 16,
+            "maxSpeed": 24,
+            "reserveCapacity": 3500,
+            "anaerobicPower": 80,
+            "maxForce": 10.5,
+            "cardioTau": 6,
+            "legEndurance": 125,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.075,
+            "kickAt": 400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 169.06531051262996,
+            "distance": 2800,
+            "speed": 10.115411827513684,
+            "aerobic": 29.898989520079912,
+            "reserve": 2288.552480644917,
+            "fatigue": 0.9440422683106303,
+            "energyUsed": 9385.604808186028,
+            "reserveSpent": 1221.856565328564,
+            "reserveRecovered": 10.409045973474242,
+            "power": 23.832647960255677,
+            "force": 2.35,
+            "acceleration": -0.2614049599937002,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 25.05581389287997,
+              "duration": 25.05581389287997,
+              "speed": 17.19999928105799,
+              "reserve": 3090.511591864374,
+              "fatigue": 0.3009224813542751
+            },
+            {
+              "distance": 800,
+              "time": 48.31162790697713,
+              "duration": 23.255814014097158,
+              "speed": 17.19999999999992,
+              "reserve": 2933.3443207526866,
+              "fatigue": 0.4135089505692047
+            },
+            {
+              "distance": 1200,
+              "time": 71.56744186046494,
+              "duration": 23.25581395348781,
+              "speed": 17.199999999999974,
+              "reserve": 2779.55667181584,
+              "fatigue": 0.5260954170415226
+            },
+            {
+              "distance": 1600,
+              "time": 94.82325581395162,
+              "duration": 23.25581395348668,
+              "speed": 17.199999999999974,
+              "reserve": 2625.8390951103797,
+              "fatigue": 0.6386818835138504
+            },
+            {
+              "distance": 2000,
+              "time": 118.0790697674383,
+              "duration": 23.25581395348668,
+              "speed": 17.199999999999974,
+              "reserve": 2472.1229713242883,
+              "fatigue": 0.7512683499861782
+            },
+            {
+              "distance": 2400,
+              "time": 141.3348837209277,
+              "duration": 23.255813953489408,
+              "speed": 17.199999999999974,
+              "reserve": 2318.4068776631707,
+              "fatigue": 0.863854816458519
+            },
+            {
+              "distance": 2800,
+              "time": 169.06531051262996,
+              "duration": 27.730426791702257,
+              "speed": 10.115411827513684,
+              "reserve": 2288.552480644917,
+              "fatigue": 0.9440422683106303
+            }
+          ],
+          "samples": [],
+          "rank": 7,
+          "gap": 35.452100347309994
+        },
+        {
+          "id": "zephyr",
+          "name": "ハヤテ",
+          "finished": true,
+          "time": 140.2406092723917,
+          "distance": 2800,
+          "parameters": {
+            "criticalSpeed": 16.7,
+            "maxSpeed": 23.4,
+            "reserveCapacity": 3600,
+            "anaerobicPower": 65,
+            "maxForce": 10,
+            "cardioTau": 7,
+            "legEndurance": 165,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.25,
+            "kickAt": 0,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 140.2406092723917,
+            "distance": 2800,
+            "speed": 13.797548374417664,
+            "aerobic": 44.963721471266396,
+            "reserve": 75.41015277564463,
+            "fatigue": 0.912518702424204,
+            "energyUsed": 10884.837262258246,
+            "reserveSpent": 3530.4173791504645,
+            "reserveRecovered": 5.827531926106448,
+            "power": 36.98915633228401,
+            "force": 2.6752361823072537,
+            "acceleration": -0.28945232850406805,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.327011436528146,
+              "duration": 21.327011436528146,
+              "speed": 20.874980898737864,
+              "reserve": 2768.0955144517984,
+              "fatigue": 0.2889506063270319
+            },
+            {
+              "distance": 800,
+              "time": 40.488689410026865,
+              "duration": 19.16167797349872,
+              "speed": 20.874999999965365,
+              "reserve": 2239.2134989847896,
+              "fatigue": 0.4001931341009353
+            },
+            {
+              "distance": 1200,
+              "time": 59.65036605673578,
+              "duration": 19.161676646708912,
+              "speed": 20.874999999999975,
+              "reserve": 1722.1496597795003,
+              "fatigue": 0.5114355909371987
+            },
+            {
+              "distance": 1600,
+              "time": 78.81204270344075,
+              "duration": 19.161676646704976,
+              "speed": 20.874999999999975,
+              "reserve": 1205.8508993407906,
+              "fatigue": 0.6226780477733231
+            },
+            {
+              "distance": 2000,
+              "time": 97.97371935014542,
+              "duration": 19.161676646704663,
+              "speed": 20.874999999999975,
+              "reserve": 689.6016707599526,
+              "fatigue": 0.7339205046094475
+            },
+            {
+              "distance": 2400,
+              "time": 117.14626122732554,
+              "duration": 19.172541877180123,
+              "speed": 20.629294883660762,
+              "reserve": 179.74924615598687,
+              "fatigue": 0.8440268150279421
+            },
+            {
+              "distance": 2800,
+              "time": 140.2406092723917,
+              "duration": 23.09434804506617,
+              "speed": 13.797548374417664,
+              "reserve": 75.41015277564463,
+              "fatigue": 0.912518702424204
+            }
+          ],
+          "samples": [],
+          "rank": 5,
+          "gap": 6.627399107071739
+        },
+        {
+          "id": "jade",
+          "name": "ワカバ",
+          "finished": true,
+          "time": 135.55806945388045,
+          "distance": 2800,
+          "parameters": {
+            "criticalSpeed": 17.4,
+            "maxSpeed": 22.8,
+            "reserveCapacity": 3700,
+            "anaerobicPower": 55,
+            "maxForce": 9.5,
+            "cardioTau": 8,
+            "legEndurance": 175,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.25,
+            "kickAt": 600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 135.55806945388045,
+            "distance": 2800,
+            "speed": 14.306822489322798,
+            "aerobic": 48.29643489645678,
+            "reserve": 9.503596055118571,
+            "fatigue": 0.8985852735651984,
+            "energyUsed": 11246.630556226875,
+            "reserveSpent": 3697.5721123410563,
+            "reserveRecovered": 7.075708396180516,
+            "power": 39.45324449851285,
+            "force": 2.7524690503426377,
+            "acceleration": -0.2693581658690275,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 20.94192232897589,
+              "duration": 20.94192232897589,
+              "speed": 21.749924488215534,
+              "reserve": 2825.22125757492,
+              "fatigue": 0.27255572649626286
+            },
+            {
+              "distance": 800,
+              "time": 39.33273196078073,
+              "duration": 18.39080963180484,
+              "speed": 21.749999999766914,
+              "reserve": 2257.1600498725334,
+              "fatigue": 0.38508623060880315
+            },
+            {
+              "distance": 1200,
+              "time": 57.723536558497806,
+              "duration": 18.39080459771708,
+              "speed": 21.749999999999975,
+              "reserve": 1709.5150554022057,
+              "fatigue": 0.4976164536035416
+            },
+            {
+              "distance": 1600,
+              "time": 76.11434115619875,
+              "duration": 18.390804597700942,
+              "speed": 21.749999999999975,
+              "reserve": 1163.9192244047897,
+              "fatigue": 0.6101466765974073
+            },
+            {
+              "distance": 2000,
+              "time": 94.50514575389923,
+              "duration": 18.39080459770048,
+              "speed": 21.749999999999975,
+              "reserve": 618.5290758617458,
+              "fatigue": 0.7226768995912727
+            },
+            {
+              "distance": 2400,
+              "time": 112.85720702629044,
+              "duration": 18.35206127239121,
+              "speed": 21.069355010649,
+              "reserve": 81.65159700881277,
+              "fatigue": 0.8330967437317733
+            },
+            {
+              "distance": 2800,
+              "time": 135.55806945388045,
+              "duration": 22.70086242759001,
+              "speed": 14.306822489322798,
+              "reserve": 9.503596055118571,
+              "fatigue": 0.8985852735651984
+            }
+          ],
+          "samples": [],
+          "rank": 3,
+          "gap": 1.9448592885604796
+        },
+        {
+          "id": "tide",
+          "name": "アオバ",
+          "finished": true,
+          "time": 134.57667172829622,
+          "distance": 2800,
+          "parameters": {
+            "criticalSpeed": 18.1,
+            "maxSpeed": 22.2,
+            "reserveCapacity": 3800,
+            "anaerobicPower": 45,
+            "maxForce": 9,
+            "cardioTau": 9,
+            "legEndurance": 178,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.225,
+            "kickAt": 600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 134.57667172829622,
+            "distance": 2800,
+            "speed": 14.249161586112116,
+            "aerobic": 49.29849459434997,
+            "reserve": 362.61427391427304,
+            "fatigue": 0.8874749533728286,
+            "energyUsed": 11355.220570170086,
+            "reserveSpent": 3447.6388979368685,
+            "reserveRecovered": 10.253171851146174,
+            "power": 39.46418044031697,
+            "force": 2.7647220288873364,
+            "acceleration": -0.25028847006744687,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.140417974992594,
+              "duration": 21.140417974992594,
+              "speed": 22.17191952884371,
+              "reserve": 2964.5876019423413,
+              "fatigue": 0.25901363379717757
+            },
+            {
+              "distance": 800,
+              "time": 39.1808212529213,
+              "duration": 18.040403277928704,
+              "speed": 22.172499997718564,
+              "reserve": 2410.0558066104363,
+              "fatigue": 0.37355470744831054
+            },
+            {
+              "distance": 1200,
+              "time": 57.221186570468575,
+              "duration": 18.040365317547277,
+              "speed": 22.172499999999978,
+              "reserve": 1885.1227135268618,
+              "fatigue": 0.4880935924248832
+            },
+            {
+              "distance": 1600,
+              "time": 75.26155188786635,
+              "duration": 18.04036531739777,
+              "speed": 22.172499999999978,
+              "reserve": 1364.176444778271,
+              "fatigue": 0.6026324773928616
+            },
+            {
+              "distance": 2000,
+              "time": 93.30191720526363,
+              "duration": 18.04036531739729,
+              "speed": 22.172499999999978,
+              "reserve": 843.7673189938428,
+              "fatigue": 0.7171713623608402
+            },
+            {
+              "distance": 2400,
+              "time": 111.54956649200628,
+              "duration": 18.247649286742643,
+              "speed": 20.67185266103459,
+              "reserve": 385.1176400770759,
+              "fatigue": 0.8234736117021252
+            },
+            {
+              "distance": 2800,
+              "time": 134.57667172829622,
+              "duration": 23.02710523628994,
+              "speed": 14.249161586112116,
+              "reserve": 362.61427391427304,
+              "fatigue": 0.8874749533728286
+            }
+          ],
+          "samples": [],
+          "rank": 2,
+          "gap": 0.9634615629762493
+        },
+        {
+          "id": "iris",
+          "name": "スミレ",
+          "finished": true,
+          "time": 133.61321016531997,
+          "distance": 2800,
+          "parameters": {
+            "criticalSpeed": 18.8,
+            "maxSpeed": 21.6,
+            "reserveCapacity": 3900,
+            "anaerobicPower": 36,
+            "maxForce": 8.5,
+            "cardioTau": 10,
+            "legEndurance": 190,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2800,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 133.61321016531997,
+            "distance": 2800,
+            "speed": 19.05754009485375,
+            "aerobic": 67.65824668808533,
+            "reserve": 1073.6742675374192,
+            "fatigue": 0.8260919705410835,
+            "energyUsed": 11408.05677387484,
+            "reserveSpent": 2826.5500126607963,
+            "reserveRecovered": 0.2242801982097144,
+            "power": 64.87224860932677,
+            "force": 3.3994306124064395,
+            "acceleration": -0.25725377543361544,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.873766026530994,
+              "duration": 21.873766026530994,
+              "speed": 21.5991138581188,
+              "reserve": 3203.0629095756053,
+              "fatigue": 0.22564856280691045
+            },
+            {
+              "distance": 800,
+              "time": 40.392344031257984,
+              "duration": 18.51857800472699,
+              "speed": 21.599999997496127,
+              "reserve": 2788.346019780819,
+              "fatigue": 0.328040189801232
+            },
+            {
+              "distance": 1200,
+              "time": 58.91086254994469,
+              "duration": 18.518518518686705,
+              "speed": 21.599999999999977,
+              "reserve": 2412.701935067105,
+              "fatigue": 0.43042880989826643
+            },
+            {
+              "distance": 1600,
+              "time": 77.42938106846181,
+              "duration": 18.51851851851712,
+              "speed": 21.599999999999977,
+              "reserve": 2043.1884831442567,
+              "fatigue": 0.5328174299868
+            },
+            {
+              "distance": 2000,
+              "time": 95.94789958697858,
+              "duration": 18.51851851851677,
+              "speed": 21.599999999999977,
+              "reserve": 1674.6372105372452,
+              "fatigue": 0.6352060500753266
+            },
+            {
+              "distance": 2400,
+              "time": 114.46641810549706,
+              "duration": 18.518518518518476,
+              "speed": 21.599999999999977,
+              "reserve": 1306.236949398497,
+              "fatigue": 0.7375946701638627
+            },
+            {
+              "distance": 2800,
+              "time": 133.61321016531997,
+              "duration": 19.146792059822914,
+              "speed": 19.05754009485375,
+              "reserve": 1073.6742675374192,
+              "fatigue": 0.8260919705410835
+            }
+          ],
+          "samples": [],
+          "rank": 1,
+          "gap": 0
+        },
+        {
+          "id": "dusk",
+          "name": "キキョウ",
+          "finished": true,
+          "time": 136.88660540892073,
+          "distance": 2800,
+          "parameters": {
+            "criticalSpeed": 19.2,
+            "maxSpeed": 21,
+            "reserveCapacity": 4000,
+            "anaerobicPower": 30,
+            "maxForce": 8,
+            "cardioTau": 11,
+            "legEndurance": 200,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2800,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 136.88660540892073,
+            "distance": 2800,
+            "speed": 20.999999999999975,
+            "aerobic": 70.55135089487364,
+            "reserve": 1885.6131056900028,
+            "fatigue": 0.7547577755238188,
+            "energyUsed": 11207.007985997872,
+            "reserveSpent": 2114.3868943099956,
+            "reserveRecovered": 0,
+            "power": 83.24400000000016,
+            "force": 3.9640000000000124,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.600831005460936,
+              "duration": 22.600831005460936,
+              "speed": 20.999129329202994,
+              "reserve": 3408.125694815734,
+              "fatigue": 0.1986166437406259
+            },
+            {
+              "distance": 800,
+              "time": 41.64851017070772,
+              "duration": 19.047679165246787,
+              "speed": 20.999999998290754,
+              "reserve": 3107.148929928524,
+              "fatigue": 0.2913090750423121
+            },
+            {
+              "distance": 1200,
+              "time": 60.696129218445336,
+              "duration": 19.047619047737612,
+              "speed": 20.999999999999975,
+              "reserve": 2854.9083627723453,
+              "fatigue": 0.38399881514283485
+            },
+            {
+              "distance": 1600,
+              "time": 79.74374826606436,
+              "duration": 19.047619047619023,
+              "speed": 20.999999999999975,
+              "reserve": 2611.2925660811134,
+              "fatigue": 0.4766885552380809
+            },
+            {
+              "distance": 2000,
+              "time": 98.79136731368315,
+              "duration": 19.047619047618795,
+              "speed": 20.999999999999975,
+              "reserve": 2369.20333243003,
+              "fatigue": 0.569378295333327
+            },
+            {
+              "distance": 2400,
+              "time": 117.83898636130193,
+              "duration": 19.04761904761878,
+              "speed": 20.999999999999975,
+              "reserve": 2127.3843059639257,
+              "fatigue": 0.6620680354285728
+            },
+            {
+              "distance": 2800,
+              "time": 136.88660540892073,
+              "duration": 19.047619047618795,
+              "speed": 20.999999999999975,
+              "reserve": 1885.6131056900028,
+              "fatigue": 0.7547577755238188
+            }
+          ],
+          "samples": [],
+          "rank": 4,
+          "gap": 3.27339524360076
+        },
+        {
+          "id": "snow",
+          "name": "シラユキ",
+          "finished": true,
+          "time": 141.0421722456276,
+          "distance": 2800,
+          "parameters": {
+            "criticalSpeed": 19.5,
+            "maxSpeed": 20.4,
+            "reserveCapacity": 4100,
+            "anaerobicPower": 25,
+            "maxForce": 7.5,
+            "cardioTau": 12,
+            "legEndurance": 280,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 2800,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 141.0421722456276,
+            "distance": 2800,
+            "speed": 20.399999999999974,
+            "aerobic": 72.55908220088838,
+            "reserve": 2772.79466055194,
+            "fatigue": 0.5091023376587435,
+            "energyUsed": 10919.548762657674,
+            "reserveSpent": 1327.2053394480554,
+            "reserveRecovered": 0,
+            "power": 78.83865600000016,
+            "force": 3.8646400000000125,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.395058903968398,
+              "duration": 23.395058903968398,
+              "speed": 20.399232986280676,
+              "reserve": 3602.291112038472,
+              "fatigue": 0.1301609299775627
+            },
+            {
+              "distance": 800,
+              "time": 43.00295655928293,
+              "duration": 19.60789765531453,
+              "speed": 20.399999998977588,
+              "reserve": 3406.106724376461,
+              "fatigue": 0.19331918461984787
+            },
+            {
+              "distance": 1200,
+              "time": 62.610799696610925,
+              "duration": 19.607843137327997,
+              "speed": 20.399999999999974,
+              "reserve": 3268.729276968541,
+              "fatigue": 0.25647581522935836
+            },
+            {
+              "distance": 1600,
+              "time": 82.21864283386516,
+              "duration": 19.607843137254235,
+              "speed": 20.399999999999974,
+              "reserve": 3142.8263615688757,
+              "fatigue": 0.31963244583670464
+            },
+            {
+              "distance": 2000,
+              "time": 101.8264859711193,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 3019.162706478527,
+              "fatigue": 0.3827890764440509
+            },
+            {
+              "distance": 2400,
+              "time": 121.43432910837343,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 2895.9360439040565,
+              "fatigue": 0.4459457070513972
+            },
+            {
+              "distance": 2800,
+              "time": 141.0421722456276,
+              "duration": 19.607843137254164,
+              "speed": 20.399999999999974,
+              "reserve": 2772.79466055194,
+              "fatigue": 0.5091023376587435
+            }
+          ],
+          "samples": [],
+          "rank": 6,
+          "gap": 7.4289620803076275
+        }
+      ]
+    },
+    {
+      "distance": 3200,
+      "results": [
+        {
+          "id": "ember",
+          "name": "ヒバナ",
+          "finished": true,
+          "time": 213.1022421225386,
+          "distance": 3200,
+          "parameters": {
+            "criticalSpeed": 16,
+            "maxSpeed": 24,
+            "reserveCapacity": 3500,
+            "anaerobicPower": 80,
+            "maxForce": 10.5,
+            "cardioTau": 6,
+            "legEndurance": 125,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 0.975,
+            "kickAt": 400,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 213.1022421225386,
+            "distance": 3200,
+            "speed": 8.602743889673906,
+            "aerobic": 23.773709201045957,
+            "reserve": 3287.6662046694855,
+            "fatigue": 0.955791759073376,
+            "energyUsed": 10064.204954813626,
+            "reserveSpent": 224.93956561804552,
+            "reserveRecovered": 12.605770287522695,
+            "power": 20.251002931527257,
+            "force": 2.35,
+            "acceleration": -0.14704166295138782,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 27.3448717834186,
+              "duration": 27.3448717834186,
+              "speed": 15.599999876778078,
+              "reserve": 3280.522978774388,
+              "fatigue": 0.26529925763615064
+            },
+            {
+              "distance": 800,
+              "time": 52.98589743589812,
+              "duration": 25.641025652479517,
+              "speed": 15.599999999999987,
+              "reserve": 3278.5892951834758,
+              "fatigue": 0.36773140622117895
+            },
+            {
+              "distance": 1200,
+              "time": 78.62692307692399,
+              "duration": 25.64102564102587,
+              "speed": 15.599999999999987,
+              "reserve": 3278.5623539146827,
+              "fatigue": 0.4701635543822143
+            },
+            {
+              "distance": 1600,
+              "time": 104.26794871794907,
+              "duration": 25.64102564102508,
+              "speed": 15.599999999999987,
+              "reserve": 3278.561978541481,
+              "fatigue": 0.5725957025432598
+            },
+            {
+              "distance": 2000,
+              "time": 129.90897435897415,
+              "duration": 25.64102564102508,
+              "speed": 15.599999999999987,
+              "reserve": 3278.561973311439,
+              "fatigue": 0.6750278507043093
+            },
+            {
+              "distance": 2400,
+              "time": 155.54999999999922,
+              "duration": 25.641025641025067,
+              "speed": 15.599999999999987,
+              "reserve": 3278.5619732385726,
+              "fatigue": 0.7774599988653588
+            },
+            {
+              "distance": 2800,
+              "time": 181.1910256410243,
+              "duration": 25.641025641025095,
+              "speed": 15.599999999999987,
+              "reserve": 3278.561973237555,
+              "fatigue": 0.8798921470264084
+            },
+            {
+              "distance": 3200,
+              "time": 213.1022421225386,
+              "duration": 31.911216481514288,
+              "speed": 8.602743889673906,
+              "reserve": 3287.6662046694855,
+              "fatigue": 0.955791759073376
+            }
+          ],
+          "samples": [],
+          "rank": 7,
+          "gap": 55.693464807203725
+        },
+        {
+          "id": "zephyr",
+          "name": "ハヤテ",
+          "finished": true,
+          "time": 172.23363184083505,
+          "distance": 3200,
+          "parameters": {
+            "criticalSpeed": 16.7,
+            "maxSpeed": 23.4,
+            "reserveCapacity": 3600,
+            "anaerobicPower": 65,
+            "maxForce": 10,
+            "cardioTau": 7,
+            "legEndurance": 165,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.15,
+            "kickAt": 600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 172.23363184083505,
+            "distance": 3200,
+            "speed": 12.328722546278364,
+            "aerobic": 39.03766056046036,
+            "reserve": 950.179379166382,
+            "fatigue": 0.9211682019222078,
+            "energyUsed": 11673.281904170213,
+            "reserveSpent": 2658.966803577911,
+            "reserveRecovered": 9.14618274430061,
+            "power": 31.32629376798863,
+            "force": 2.5352540076834615,
+            "acceleration": -0.2754561213355776,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.766350154319667,
+              "duration": 22.766350154319667,
+              "speed": 19.20499552758343,
+              "reserve": 2969.260261594674,
+              "fatigue": 0.2647475630370392
+            },
+            {
+              "distance": 800,
+              "time": 43.594259890586585,
+              "duration": 20.827909736266918,
+              "speed": 19.204999999997426,
+              "reserve": 2641.928865194037,
+              "fatigue": 0.36266728515377467
+            },
+            {
+              "distance": 1200,
+              "time": 64.42216928918162,
+              "duration": 20.82790939859504,
+              "speed": 19.204999999999973,
+              "reserve": 2324.5032655550503,
+              "fatigue": 0.46058699247542906
+            },
+            {
+              "distance": 1600,
+              "time": 85.25007868777513,
+              "duration": 20.827909398593505,
+              "speed": 19.204999999999973,
+              "reserve": 2007.5831084799818,
+              "fatigue": 0.5585066997970766
+            },
+            {
+              "distance": 2000,
+              "time": 106.07798808636862,
+              "duration": 20.82790939859349,
+              "speed": 19.204999999999973,
+              "reserve": 1690.6887425494997,
+              "fatigue": 0.6564264071187242
+            },
+            {
+              "distance": 2400,
+              "time": 126.90589748495995,
+              "duration": 20.82790939859133,
+              "speed": 19.204999999999973,
+              "reserve": 1373.7956926564677,
+              "fatigue": 0.7543461144403616
+            },
+            {
+              "distance": 2800,
+              "time": 147.2440203059706,
+              "duration": 20.338122821010643,
+              "speed": 19.729566457281564,
+              "reserve": 989.4173309139522,
+              "fatigue": 0.8588055584307257
+            },
+            {
+              "distance": 3200,
+              "time": 172.23363184083505,
+              "duration": 24.98961153486445,
+              "speed": 12.328722546278364,
+              "reserve": 950.179379166382,
+              "fatigue": 0.9211682019222078
+            }
+          ],
+          "samples": [],
+          "rank": 6,
+          "gap": 14.824854525500172
+        },
+        {
+          "id": "jade",
+          "name": "ワカバ",
+          "finished": true,
+          "time": 165.83273259235372,
+          "distance": 3200,
+          "parameters": {
+            "criticalSpeed": 17.4,
+            "maxSpeed": 22.8,
+            "reserveCapacity": 3700,
+            "anaerobicPower": 55,
+            "maxForce": 9.5,
+            "cardioTau": 8,
+            "legEndurance": 175,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.175,
+            "kickAt": 0,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 165.83273259235372,
+            "distance": 3200,
+            "speed": 11.710406128235295,
+            "aerobic": 37.36848245205974,
+            "reserve": 693.0294672562345,
+            "fatigue": 0.9148316192997633,
+            "energyUsed": 12108.864195084921,
+            "reserveSpent": 3021.040228042205,
+            "reserveRecovered": 14.069695298430936,
+            "power": 29.402163515852127,
+            "force": 2.505522685137947,
+            "acceleration": -0.24531286964515048,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.80625600161497,
+              "duration": 21.80625600161497,
+              "speed": 20.44498286332925,
+              "reserve": 2966.215225707109,
+              "fatigue": 0.2573113722040779
+            },
+            {
+              "distance": 800,
+              "time": 41.37094295921558,
+              "duration": 19.564686957600614,
+              "speed": 20.444999999976456,
+              "reserve": 2557.9443652163545,
+              "fatigue": 0.35871616706370263
+            },
+            {
+              "distance": 1200,
+              "time": 60.93562870145295,
+              "duration": 19.564685742237366,
+              "speed": 20.444999999999975,
+              "reserve": 2168.560255544927,
+              "fatigue": 0.46012090369031605
+            },
+            {
+              "distance": 1600,
+              "time": 80.5003144436876,
+              "duration": 19.56468574223465,
+              "speed": 20.444999999999975,
+              "reserve": 1780.813166540954,
+              "fatigue": 0.5615256403168449
+            },
+            {
+              "distance": 2000,
+              "time": 100.06500018592203,
+              "duration": 19.56468574223443,
+              "speed": 20.444999999999975,
+              "reserve": 1393.2079677236434,
+              "fatigue": 0.6629303769433695
+            },
+            {
+              "distance": 2400,
+              "time": 119.62968592815646,
+              "duration": 19.56468574223443,
+              "speed": 20.444999999999975,
+              "reserve": 1005.6150669830319,
+              "fatigue": 0.764335113569894
+            },
+            {
+              "distance": 2800,
+              "time": 139.46680078564515,
+              "duration": 19.837114857488686,
+              "speed": 18.820846391316888,
+              "reserve": 682.7968765839232,
+              "fatigue": 0.858016930134156
+            },
+            {
+              "distance": 3200,
+              "time": 165.83273259235372,
+              "duration": 26.365931806708574,
+              "speed": 11.710406128235295,
+              "reserve": 693.0294672562345,
+              "fatigue": 0.9148316192997633
+            }
+          ],
+          "samples": [],
+          "rank": 5,
+          "gap": 8.423955277018848
+        },
+        {
+          "id": "tide",
+          "name": "アオバ",
+          "finished": true,
+          "time": 164.2956575011172,
+          "distance": 3200,
+          "parameters": {
+            "criticalSpeed": 18.1,
+            "maxSpeed": 22.2,
+            "reserveCapacity": 3800,
+            "anaerobicPower": 45,
+            "maxForce": 9,
+            "cardioTau": 9,
+            "legEndurance": 178,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.125,
+            "kickAt": 600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 164.2956575011172,
+            "distance": 3200,
+            "speed": 13.32873534457229,
+            "aerobic": 45.183792790090955,
+            "reserve": 1347.24990267863,
+            "fatigue": 0.8939693968458267,
+            "energyUsed": 12161.407481520484,
+            "reserveSpent": 2465.965952391403,
+            "reserveRecovered": 13.215855070029919,
+            "power": 35.690050223560156,
+            "force": 2.6728575989328185,
+            "acceleration": -0.24032816746221025,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.111104808350866,
+              "duration": 22.111104808350866,
+              "speed": 20.362473180596993,
+              "reserve": 3135.795413110818,
+              "fatigue": 0.2410650224849608
+            },
+            {
+              "distance": 800,
+              "time": 41.75506006375117,
+              "duration": 19.643955255400307,
+              "speed": 20.362499999965117,
+              "reserve": 2809.0587549261663,
+              "fatigue": 0.3401239164782524
+            },
+            {
+              "distance": 1200,
+              "time": 61.39901340936426,
+              "duration": 19.643953345613085,
+              "speed": 20.362499999999976,
+              "reserve": 2510.2555290539162,
+              "fatigue": 0.4391827213837289
+            },
+            {
+              "distance": 1600,
+              "time": 81.04296675497308,
+              "duration": 19.64395334560882,
+              "speed": 20.362499999999976,
+              "reserve": 2214.6015654012735,
+              "fatigue": 0.5382415262890848
+            },
+            {
+              "distance": 2000,
+              "time": 100.68692010058172,
+              "duration": 19.643953345608637,
+              "speed": 20.362499999999976,
+              "reserve": 1919.3026448083667,
+              "fatigue": 0.637300331194434
+            },
+            {
+              "distance": 2400,
+              "time": 120.33087344619035,
+              "duration": 19.643953345608637,
+              "speed": 20.362499999999976,
+              "reserve": 1624.0437529854069,
+              "fatigue": 0.7363591360997832
+            },
+            {
+              "distance": 2800,
+              "time": 139.9693075719006,
+              "duration": 19.638434125710248,
+              "speed": 19.636128630466754,
+              "reserve": 1342.0656625556176,
+              "fatigue": 0.8330064474123234
+            },
+            {
+              "distance": 3200,
+              "time": 164.2956575011172,
+              "duration": 24.326349929216605,
+              "speed": 13.32873534457229,
+              "reserve": 1347.24990267863,
+              "fatigue": 0.8939693968458267
+            }
+          ],
+          "samples": [],
+          "rank": 4,
+          "gap": 6.886880185782331
+        },
+        {
+          "id": "iris",
+          "name": "スミレ",
+          "finished": true,
+          "time": 158.632932903531,
+          "distance": 3200,
+          "parameters": {
+            "criticalSpeed": 18.8,
+            "maxSpeed": 21.6,
+            "reserveCapacity": 3900,
+            "anaerobicPower": 36,
+            "maxForce": 8.5,
+            "cardioTau": 10,
+            "legEndurance": 190,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 3200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 158.632932903531,
+            "distance": 3200,
+            "speed": 13.126186141053367,
+            "aerobic": 44.94510899928239,
+            "reserve": 1091.8449291091267,
+            "fatigue": 0.8823596907152051,
+            "energyUsed": 12617.224864931977,
+            "reserveSpent": 2826.5500126607963,
+            "reserveRecovered": 18.394941769917708,
+            "power": 35.21510919018436,
+            "force": 2.6784672108858123,
+            "acceleration": -0.21295831889041436,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 21.873766026530994,
+              "duration": 21.873766026530994,
+              "speed": 21.5991138581188,
+              "reserve": 3203.0629095756053,
+              "fatigue": 0.22564856280691045
+            },
+            {
+              "distance": 800,
+              "time": 40.392344031257984,
+              "duration": 18.51857800472699,
+              "speed": 21.599999997496127,
+              "reserve": 2788.346019780819,
+              "fatigue": 0.328040189801232
+            },
+            {
+              "distance": 1200,
+              "time": 58.91086254994469,
+              "duration": 18.518518518686705,
+              "speed": 21.599999999999977,
+              "reserve": 2412.701935067105,
+              "fatigue": 0.43042880989826643
+            },
+            {
+              "distance": 1600,
+              "time": 77.42938106846181,
+              "duration": 18.51851851851712,
+              "speed": 21.599999999999977,
+              "reserve": 2043.1884831442567,
+              "fatigue": 0.5328174299868
+            },
+            {
+              "distance": 2000,
+              "time": 95.94789958697858,
+              "duration": 18.51851851851677,
+              "speed": 21.599999999999977,
+              "reserve": 1674.6372105372452,
+              "fatigue": 0.6352060500753266
+            },
+            {
+              "distance": 2400,
+              "time": 114.46641810549706,
+              "duration": 18.518518518518476,
+              "speed": 21.599999999999977,
+              "reserve": 1306.236949398497,
+              "fatigue": 0.7375946701638627
+            },
+            {
+              "distance": 2800,
+              "time": 133.61321016531997,
+              "duration": 19.146792059822914,
+              "speed": 19.05754009485375,
+              "reserve": 1073.6742675374192,
+              "fatigue": 0.8260919705410835
+            },
+            {
+              "distance": 3200,
+              "time": 158.632932903531,
+              "duration": 25.019722738211044,
+              "speed": 13.126186141053367,
+              "reserve": 1091.8449291091267,
+              "fatigue": 0.8823596907152051
+            }
+          ],
+          "samples": [],
+          "rank": 2,
+          "gap": 1.2241555881961403
+        },
+        {
+          "id": "dusk",
+          "name": "キキョウ",
+          "finished": true,
+          "time": 157.40877731533487,
+          "distance": 3200,
+          "parameters": {
+            "criticalSpeed": 19.2,
+            "maxSpeed": 21,
+            "reserveCapacity": 4000,
+            "anaerobicPower": 30,
+            "maxForce": 8,
+            "cardioTau": 11,
+            "legEndurance": 200,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 3200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 157.40877731533487,
+            "distance": 3200,
+            "speed": 17.340623260129256,
+            "aerobic": 64.69073697297053,
+            "reserve": 1825.0785595445213,
+            "fatigue": 0.8272829273952528,
+            "energyUsed": 12632.199339768042,
+            "reserveSpent": 2180.0789179931294,
+            "reserveRecovered": 5.157477537652067,
+            "power": 55.2965507607336,
+            "force": 3.184783930281639,
+            "acceleration": -0.22107388862284114,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.600831005460936,
+              "duration": 22.600831005460936,
+              "speed": 20.999129329202994,
+              "reserve": 3408.125694815734,
+              "fatigue": 0.1986166437406259
+            },
+            {
+              "distance": 800,
+              "time": 41.64851017070772,
+              "duration": 19.047679165246787,
+              "speed": 20.999999998290754,
+              "reserve": 3107.148929928524,
+              "fatigue": 0.2913090750423121
+            },
+            {
+              "distance": 1200,
+              "time": 60.696129218445336,
+              "duration": 19.047619047737612,
+              "speed": 20.999999999999975,
+              "reserve": 2854.9083627723453,
+              "fatigue": 0.38399881514283485
+            },
+            {
+              "distance": 1600,
+              "time": 79.74374826606436,
+              "duration": 19.047619047619023,
+              "speed": 20.999999999999975,
+              "reserve": 2611.2925660811134,
+              "fatigue": 0.4766885552380809
+            },
+            {
+              "distance": 2000,
+              "time": 98.79136731368315,
+              "duration": 19.047619047618795,
+              "speed": 20.999999999999975,
+              "reserve": 2369.20333243003,
+              "fatigue": 0.569378295333327
+            },
+            {
+              "distance": 2400,
+              "time": 117.83898636130193,
+              "duration": 19.04761904761878,
+              "speed": 20.999999999999975,
+              "reserve": 2127.3843059639257,
+              "fatigue": 0.6620680354285728
+            },
+            {
+              "distance": 2800,
+              "time": 136.88660540892073,
+              "duration": 19.047619047618795,
+              "speed": 20.999999999999975,
+              "reserve": 1885.6131056900028,
+              "fatigue": 0.7547577755238188
+            },
+            {
+              "distance": 3200,
+              "time": 157.40877731533487,
+              "duration": 20.522171906414144,
+              "speed": 17.340623260129256,
+              "reserve": 1825.0785595445213,
+              "fatigue": 0.8272829273952528
+            }
+          ],
+          "samples": [],
+          "rank": 1,
+          "gap": 0
+        },
+        {
+          "id": "snow",
+          "name": "シラユキ",
+          "finished": true,
+          "time": 160.65001538288172,
+          "distance": 3200,
+          "parameters": {
+            "criticalSpeed": 19.5,
+            "maxSpeed": 20.4,
+            "reserveCapacity": 4100,
+            "anaerobicPower": 25,
+            "maxForce": 7.5,
+            "cardioTau": 12,
+            "legEndurance": 280,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 3200,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 160.65001538288172,
+            "distance": 3200,
+            "speed": 20.399999999999974,
+            "aerobic": 72.55941846649733,
+            "reserve": 2649.6699194589246,
+            "fatigue": 0.5722589682660898,
+            "energyUsed": 12465.404762657843,
+            "reserveSpent": 1450.3300805410736,
+            "reserveRecovered": 0,
+            "power": 78.83865600000016,
+            "force": 3.8646400000000125,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.395058903968398,
+              "duration": 23.395058903968398,
+              "speed": 20.399232986280676,
+              "reserve": 3602.291112038472,
+              "fatigue": 0.1301609299775627
+            },
+            {
+              "distance": 800,
+              "time": 43.00295655928293,
+              "duration": 19.60789765531453,
+              "speed": 20.399999998977588,
+              "reserve": 3406.106724376461,
+              "fatigue": 0.19331918461984787
+            },
+            {
+              "distance": 1200,
+              "time": 62.610799696610925,
+              "duration": 19.607843137327997,
+              "speed": 20.399999999999974,
+              "reserve": 3268.729276968541,
+              "fatigue": 0.25647581522935836
+            },
+            {
+              "distance": 1600,
+              "time": 82.21864283386516,
+              "duration": 19.607843137254235,
+              "speed": 20.399999999999974,
+              "reserve": 3142.8263615688757,
+              "fatigue": 0.31963244583670464
+            },
+            {
+              "distance": 2000,
+              "time": 101.8264859711193,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 3019.162706478527,
+              "fatigue": 0.3827890764440509
+            },
+            {
+              "distance": 2400,
+              "time": 121.43432910837343,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 2895.9360439040565,
+              "fatigue": 0.4459457070513972
+            },
+            {
+              "distance": 2800,
+              "time": 141.0421722456276,
+              "duration": 19.607843137254164,
+              "speed": 20.399999999999974,
+              "reserve": 2772.79466055194,
+              "fatigue": 0.5091023376587435
+            },
+            {
+              "distance": 3200,
+              "time": 160.65001538288172,
+              "duration": 19.60784313725412,
+              "speed": 20.399999999999974,
+              "reserve": 2649.6699194589246,
+              "fatigue": 0.5722589682660898
+            }
+          ],
+          "samples": [],
+          "rank": 3,
+          "gap": 3.2412380675468455
+        }
+      ]
+    },
+    {
+      "distance": 3600,
+      "results": [
+        {
+          "id": "ember",
+          "name": "ヒバナ",
+          "finished": true,
+          "time": 266.7255736089663,
+          "distance": 3600,
+          "parameters": {
+            "criticalSpeed": 16,
+            "maxSpeed": 24,
+            "reserveCapacity": 3500,
+            "anaerobicPower": 80,
+            "maxForce": 10.5,
+            "cardioTau": 6,
+            "legEndurance": 125,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 0.9,
+            "kickAt": 600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 266.7255736089663,
+            "distance": 3600,
+            "speed": 6.838874537770556,
+            "aerobic": 16.88971039852158,
+            "reserve": 3328.7381700854853,
+            "fatigue": 0.9924410773819726,
+            "energyUsed": 10757.833701350293,
+            "reserveSpent": 185.9825897328146,
+            "reserveRecovered": 14.720759818287165,
+            "power": 16.080117109447084,
+            "force": 2.35,
+            "acceleration": -0.03728487526075141,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 29.415277775188034,
+              "duration": 29.415277775188034,
+              "speed": 14.399999974279597,
+              "reserve": 3338.5058271035577,
+              "fatigue": 0.24086741888297597
+            },
+            {
+              "distance": 800,
+              "time": 57.19305555555593,
+              "duration": 27.777777780367895,
+              "speed": 14.399999999999988,
+              "reserve": 3337.626506533887,
+              "fatigue": 0.33740459236258735
+            },
+            {
+              "distance": 1200,
+              "time": 84.97083333333156,
+              "duration": 27.777777777775626,
+              "speed": 14.399999999999988,
+              "reserve": 3337.6179258772872,
+              "fatigue": 0.433941765759968
+            },
+            {
+              "distance": 1600,
+              "time": 112.74861111110671,
+              "duration": 27.777777777775157,
+              "speed": 14.399999999999988,
+              "reserve": 3337.6178421423747,
+              "fatigue": 0.5304789391573487
+            },
+            {
+              "distance": 2000,
+              "time": 140.52638888888185,
+              "duration": 27.777777777775142,
+              "speed": 14.399999999999988,
+              "reserve": 3337.617841325256,
+              "fatigue": 0.6270161125547294
+            },
+            {
+              "distance": 2400,
+              "time": 168.30416666665704,
+              "duration": 27.777777777775185,
+              "speed": 14.399999999999988,
+              "reserve": 3337.6178413172834,
+              "fatigue": 0.7235532859521101
+            },
+            {
+              "distance": 2800,
+              "time": 196.08194444443217,
+              "duration": 27.77777777777513,
+              "speed": 14.399999999999988,
+              "reserve": 3337.617841317214,
+              "fatigue": 0.8200904593494909
+            },
+            {
+              "distance": 3200,
+              "time": 223.28570133521995,
+              "duration": 27.203756890787787,
+              "speed": 14.046969091932842,
+              "reserve": 3315.8423832333724,
+              "fatigue": 0.9177858700698647
+            },
+            {
+              "distance": 3600,
+              "time": 266.7255736089663,
+              "duration": 43.43987227374632,
+              "speed": 6.838874537770556,
+              "reserve": 3328.7381700854853,
+              "fatigue": 0.9924410773819726
+            }
+          ],
+          "samples": [],
+          "rank": 7,
+          "gap": 86.4677150888304
+        },
+        {
+          "id": "zephyr",
+          "name": "ハヤテ",
+          "finished": true,
+          "time": 207.5340868031562,
+          "distance": 3600,
+          "parameters": {
+            "criticalSpeed": 16.7,
+            "maxSpeed": 23.4,
+            "reserveCapacity": 3600,
+            "anaerobicPower": 65,
+            "maxForce": 10,
+            "cardioTau": 7,
+            "legEndurance": 165,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.075,
+            "kickAt": 600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 207.5340868031562,
+            "distance": 3600,
+            "speed": 10.501180154835168,
+            "aerobic": 31.864725925549944,
+            "reserve": 1944.0860808867365,
+            "fatigue": 0.9306003672573463,
+            "energyUsed": 12447.950991680214,
+            "reserveSpent": 1669.0770135724283,
+            "reserveRecovered": 13.163094459164341,
+            "power": 25.067256733628874,
+            "force": 2.3811438039581865,
+            "acceleration": -0.2621611023768472,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 24.128108778453964,
+              "duration": 24.128108778453964,
+              "speed": 17.952498513926454,
+              "reserve": 3132.6109883748913,
+              "fatigue": 0.24171340103782196
+            },
+            {
+              "distance": 800,
+              "time": 46.40912825511803,
+              "duration": 22.281019476664063,
+              "speed": 17.952499999999688,
+              "reserve": 2961.960486539724,
+              "fatigue": 0.3313400553262548
+            },
+            {
+              "distance": 1200,
+              "time": 68.69014761175407,
+              "duration": 22.281019356636044,
+              "speed": 17.952499999999972,
+              "reserve": 2799.629759762054,
+              "fatigue": 0.42096670509938133
+            },
+            {
+              "distance": 1600,
+              "time": 90.97116696838965,
+              "duration": 22.281019356635582,
+              "speed": 17.952499999999972,
+              "reserve": 2637.643973760603,
+              "fatigue": 0.5105933548725091
+            },
+            {
+              "distance": 2000,
+              "time": 113.25218632502525,
+              "duration": 22.281019356635596,
+              "speed": 17.952499999999972,
+              "reserve": 2475.6724893336354,
+              "fatigue": 0.600220004645626
+            },
+            {
+              "distance": 2400,
+              "time": 135.53320568165836,
+              "duration": 22.28101935663311,
+              "speed": 17.952499999999972,
+              "reserve": 2313.70159787127,
+              "fatigue": 0.6898466544187328
+            },
+            {
+              "distance": 2800,
+              "time": 157.81422503829114,
+              "duration": 22.281019356632783,
+              "speed": 17.952499999999972,
+              "reserve": 2151.730730993921,
+              "fatigue": 0.7794733041918384
+            },
+            {
+              "distance": 3200,
+              "time": 179.64026810861526,
+              "duration": 21.82604307032412,
+              "speed": 18.20435815203235,
+              "reserve": 1937.283502448685,
+              "fatigue": 0.8730565410852101
+            },
+            {
+              "distance": 3600,
+              "time": 207.5340868031562,
+              "duration": 27.893818694540954,
+              "speed": 10.501180154835168,
+              "reserve": 1944.0860808867365,
+              "fatigue": 0.9306003672573463
+            }
+          ],
+          "samples": [],
+          "rank": 6,
+          "gap": 27.276228283020345
+        },
+        {
+          "id": "jade",
+          "name": "ワカバ",
+          "finished": true,
+          "time": 199.78546629050552,
+          "distance": 3600,
+          "parameters": {
+            "criticalSpeed": 17.4,
+            "maxSpeed": 22.8,
+            "reserveCapacity": 3700,
+            "anaerobicPower": 55,
+            "maxForce": 9.5,
+            "cardioTau": 8,
+            "legEndurance": 175,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.075,
+            "kickAt": 600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 199.78546629050552,
+            "distance": 3600,
+            "speed": 11.424428482173987,
+            "aerobic": 36.163598327350876,
+            "reserve": 1966.8362386871013,
+            "fatigue": 0.9163755055084081,
+            "energyUsed": 12810.937183796474,
+            "reserveSpent": 1748.0045930502083,
+            "reserveRecovered": 14.840831737316494,
+            "power": 28.413677495850543,
+            "force": 2.481830685145144,
+            "acceleration": -0.24245818012757803,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.33138423476303,
+              "duration": 23.33138423476303,
+              "speed": 18.704996893411625,
+              "reserve": 3176.9401912020207,
+              "fatigue": 0.23657890774517312
+            },
+            {
+              "distance": 800,
+              "time": 44.71604098453888,
+              "duration": 21.38465674977585,
+              "speed": 18.704999999998783,
+              "reserve": 2988.9411904661156,
+              "fatigue": 0.3256247748652881
+            },
+            {
+              "distance": 1200,
+              "time": 66.100697493494,
+              "duration": 21.384656508955118,
+              "speed": 18.704999999999973,
+              "reserve": 2817.1594882402733,
+              "fatigue": 0.4146706326212588
+            },
+            {
+              "distance": 1600,
+              "time": 87.48535400244769,
+              "duration": 21.384656508953697,
+              "speed": 18.704999999999973,
+              "reserve": 2646.4974054601357,
+              "fatigue": 0.503716490377226
+            },
+            {
+              "distance": 2000,
+              "time": 108.87001051140138,
+              "duration": 21.384656508953682,
+              "speed": 18.704999999999973,
+              "reserve": 2475.912619215831,
+              "fatigue": 0.5927623481331818
+            },
+            {
+              "distance": 2400,
+              "time": 130.25466702035507,
+              "duration": 21.384656508953697,
+              "speed": 18.704999999999973,
+              "reserve": 2305.333169507325,
+              "fatigue": 0.6818082058891376
+            },
+            {
+              "distance": 2800,
+              "time": 151.63932352930877,
+              "duration": 21.384656508953697,
+              "speed": 18.704999999999973,
+              "reserve": 2134.7540882311687,
+              "fatigue": 0.7708540636450935
+            },
+            {
+              "distance": 3200,
+              "time": 172.86573479946736,
+              "duration": 21.226411270158593,
+              "speed": 18.33574558285959,
+              "reserve": 1952.7706149187702,
+              "fatigue": 0.8598796755141652
+            },
+            {
+              "distance": 3600,
+              "time": 199.78546629050552,
+              "duration": 26.919731491038164,
+              "speed": 11.424428482173987,
+              "reserve": 1966.8362386871013,
+              "fatigue": 0.9163755055084081
+            }
+          ],
+          "samples": [],
+          "rank": 5,
+          "gap": 19.527607770369656
+        },
+        {
+          "id": "tide",
+          "name": "アオバ",
+          "finished": true,
+          "time": 197.71773378015322,
+          "distance": 3600,
+          "parameters": {
+            "criticalSpeed": 18.1,
+            "maxSpeed": 22.2,
+            "reserveCapacity": 3800,
+            "anaerobicPower": 45,
+            "maxForce": 9,
+            "cardioTau": 9,
+            "legEndurance": 178,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.05,
+            "kickAt": 600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 197.71773378015322,
+            "distance": 3600,
+            "speed": 11.514417304516348,
+            "aerobic": 37.30040271438718,
+            "reserve": 2456.0286156658426,
+            "fatigue": 0.9056820313260745,
+            "energyUsed": 12930.093007076694,
+            "reserveSpent": 1362.8633425543176,
+            "reserveRecovered": 18.891958220166558,
+            "power": 28.90648009834485,
+            "force": 2.5055218190288904,
+            "acceleration": -0.22689784135382915,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.190308203386312,
+              "duration": 23.190308203386312,
+              "speed": 19.004994622728614,
+              "reserve": 3292.702342015015,
+              "fatigue": 0.22703963298140933
+            },
+            {
+              "distance": 800,
+              "time": 44.23740148394644,
+              "duration": 21.04709328056013,
+              "speed": 19.00499999999734,
+              "reserve": 3143.671505720489,
+              "fatigue": 0.31649348864501553
+            },
+            {
+              "distance": 1200,
+              "time": 65.28449435424444,
+              "duration": 21.047092870298002,
+              "speed": 19.004999999999978,
+              "reserve": 3020.334691297386,
+              "fatigue": 0.40594732804366734
+            },
+            {
+              "distance": 1600,
+              "time": 86.33158722454091,
+              "duration": 21.047092870296467,
+              "speed": 19.004999999999978,
+              "reserve": 2899.4764993958834,
+              "fatigue": 0.4954011674423108
+            },
+            {
+              "distance": 2000,
+              "time": 107.37868009483739,
+              "duration": 21.04709287029648,
+              "speed": 19.004999999999978,
+              "reserve": 2778.8574078484125,
+              "fatigue": 0.5848550068409543
+            },
+            {
+              "distance": 2400,
+              "time": 128.42577296513167,
+              "duration": 21.04709287029428,
+              "speed": 19.004999999999978,
+              "reserve": 2658.261381491502,
+              "fatigue": 0.6743088462395883
+            },
+            {
+              "distance": 2800,
+              "time": 149.47286583542564,
+              "duration": 21.047092870293966,
+              "speed": 19.004999999999978,
+              "reserve": 2537.667580129818,
+              "fatigue": 0.7637626856382211
+            },
+            {
+              "distance": 3200,
+              "time": 170.59729861223272,
+              "duration": 21.124432776807083,
+              "speed": 18.055318373343294,
+              "reserve": 2437.5721668357023,
+              "fatigue": 0.8498553402145227
+            },
+            {
+              "distance": 3600,
+              "time": 197.71773378015322,
+              "duration": 27.120435167920505,
+              "speed": 11.514417304516348,
+              "reserve": 2456.0286156658426,
+              "fatigue": 0.9056820313260745
+            }
+          ],
+          "samples": [],
+          "rank": 4,
+          "gap": 17.459875260017355
+        },
+        {
+          "id": "iris",
+          "name": "スミレ",
+          "finished": true,
+          "time": 189.88007509095218,
+          "distance": 3600,
+          "parameters": {
+            "criticalSpeed": 18.8,
+            "maxSpeed": 21.6,
+            "reserveCapacity": 3900,
+            "anaerobicPower": 36,
+            "maxForce": 8.5,
+            "cardioTau": 10,
+            "legEndurance": 190,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.075,
+            "kickAt": 0,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 189.88007509095218,
+            "distance": 3600,
+            "speed": 11.31796468932884,
+            "aerobic": 36.92041741939253,
+            "reserve": 2078.349734979163,
+            "fatigue": 0.8948442563916157,
+            "energyUsed": 13437.387368884254,
+            "reserveSpent": 1846.465079910939,
+            "reserveRecovered": 24.814814890088776,
+            "power": 28.483340597532347,
+            "force": 2.5121633301437796,
+            "acceleration": -0.20205332838778878,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.548509778338715,
+              "duration": 22.548509778338715,
+              "speed": 20.20995069455954,
+              "reserve": 3324.544764622127,
+              "fatigue": 0.21417471544735472
+            },
+            {
+              "distance": 800,
+              "time": 42.34069540391073,
+              "duration": 19.792185625572014,
+              "speed": 20.209999999942124,
+              "reserve": 3091.412948447761,
+              "fatigue": 0.30588988233482967
+            },
+            {
+              "distance": 1200,
+              "time": 62.132877491990584,
+              "duration": 19.792182088079855,
+              "speed": 20.209999999999976,
+              "reserve": 2896.439393827077,
+              "fatigue": 0.3976048974019518
+            },
+            {
+              "distance": 1600,
+              "time": 81.92505958006521,
+              "duration": 19.792182088074625,
+              "speed": 20.209999999999976,
+              "reserve": 2706.7383669164897,
+              "fatigue": 0.4893199124688964
+            },
+            {
+              "distance": 2000,
+              "time": 101.7172416681397,
+              "duration": 19.792182088074497,
+              "speed": 20.209999999999976,
+              "reserve": 2517.765882617544,
+              "fatigue": 0.5810349275358411
+            },
+            {
+              "distance": 2400,
+              "time": 121.50942375621224,
+              "duration": 19.792182088072536,
+              "speed": 20.209999999999976,
+              "reserve": 2328.894066165762,
+              "fatigue": 0.6727499426027765
+            },
+            {
+              "distance": 2800,
+              "time": 141.30160584428452,
+              "duration": 19.79218208807228,
+              "speed": 20.209999999999976,
+              "reserve": 2140.0361596886664,
+              "fatigue": 0.7644649576697108
+            },
+            {
+              "distance": 3200,
+              "time": 161.91988197708625,
+              "duration": 20.618276132801725,
+              "speed": 17.485063249077218,
+              "reserve": 2056.7345099816507,
+              "fatigue": 0.8429865372258112
+            },
+            {
+              "distance": 3600,
+              "time": 189.88007509095218,
+              "duration": 27.960193113865927,
+              "speed": 11.31796468932884,
+              "reserve": 2078.349734979163,
+              "fatigue": 0.8948442563916157
+            }
+          ],
+          "samples": [],
+          "rank": 3,
+          "gap": 9.622216570816306
+        },
+        {
+          "id": "dusk",
+          "name": "キキョウ",
+          "finished": true,
+          "time": 184.74581550253473,
+          "distance": 3600,
+          "parameters": {
+            "criticalSpeed": 19.2,
+            "maxSpeed": 21,
+            "reserveCapacity": 4000,
+            "anaerobicPower": 30,
+            "maxForce": 8,
+            "cardioTau": 11,
+            "legEndurance": 200,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1.075,
+            "kickAt": 800,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 184.74581550253473,
+            "distance": 3600,
+            "speed": 12.915783725442097,
+            "aerobic": 44.27808327214814,
+            "reserve": 2108.1056978718525,
+            "fatigue": 0.8694125517870767,
+            "energyUsed": 13721.961652617432,
+            "reserveSpent": 1915.0150686395323,
+            "reserveRecovered": 23.12076651138379,
+            "power": 34.67083698849197,
+            "force": 2.680459193584015,
+            "acceleration": -0.18876287906798309,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 22.740596978358557,
+              "duration": 22.740596978358557,
+              "speed": 20.639658244827906,
+              "reserve": 3435.081287366156,
+              "fatigue": 0.19612681468086507
+            },
+            {
+              "distance": 800,
+              "time": 42.12046594852485,
+              "duration": 19.379868970166296,
+              "speed": 20.63999999946691,
+              "reserve": 3181.906820511906,
+              "fatigue": 0.2862190860971226
+            },
+            {
+              "distance": 1200,
+              "time": 61.50031090980253,
+              "duration": 19.379844961277676,
+              "speed": 20.639999999999972,
+              "reserve": 2977.465872536457,
+              "fatigue": 0.37631032742224035
+            },
+            {
+              "distance": 1600,
+              "time": 80.88015587104118,
+              "duration": 19.379844961238653,
+              "speed": 20.639999999999972,
+              "reserve": 2781.3935069778504,
+              "fatigue": 0.4664015687457512
+            },
+            {
+              "distance": 2000,
+              "time": 100.26000083227966,
+              "duration": 19.379844961238476,
+              "speed": 20.639999999999972,
+              "reserve": 2586.758299670289,
+              "fatigue": 0.5564928100692554
+            },
+            {
+              "distance": 2400,
+              "time": 119.63984579352001,
+              "duration": 19.37984496124035,
+              "speed": 20.639999999999972,
+              "reserve": 2392.3699042998596,
+              "fatigue": 0.6465840513927643
+            },
+            {
+              "distance": 2800,
+              "time": 139.01969075476063,
+              "duration": 19.37984496124062,
+              "speed": 20.639999999999972,
+              "reserve": 2198.0238953187777,
+              "fatigue": 0.7366752927162743
+            },
+            {
+              "distance": 3200,
+              "time": 158.94510666212392,
+              "duration": 19.925415907363288,
+              "speed": 18.25778540542724,
+              "reserve": 2087.3354247133248,
+              "fatigue": 0.8162706282411689
+            },
+            {
+              "distance": 3600,
+              "time": 184.74581550253473,
+              "duration": 25.800708840410806,
+              "speed": 12.915783725442097,
+              "reserve": 2108.1056978718525,
+              "fatigue": 0.8694125517870767
+            }
+          ],
+          "samples": [],
+          "rank": 2,
+          "gap": 4.487956982398856
+        },
+        {
+          "id": "snow",
+          "name": "シラユキ",
+          "finished": true,
+          "time": 180.25785852013587,
+          "distance": 3600,
+          "parameters": {
+            "criticalSpeed": 19.5,
+            "maxSpeed": 20.4,
+            "reserveCapacity": 4100,
+            "anaerobicPower": 25,
+            "maxForce": 7.5,
+            "cardioTau": 12,
+            "legEndurance": 280,
+            "recoveryRate": 0.08,
+            "fatigueCost": 0,
+            "anaerobicFatigue": 0,
+            "linearCost": 2.2,
+            "cubicCost": 0.004,
+            "initialAerobic": 0.35
+          },
+          "strategy": {
+            "pace": 1,
+            "kickAt": 3600,
+            "openingBoost": 0,
+            "openingDuration": 18
+          },
+          "state": {
+            "time": 180.25785852013587,
+            "distance": 3600,
+            "speed": 20.399999999999974,
+            "aerobic": 72.5594840887426,
+            "reserve": 2526.5484261050715,
+            "fatigue": 0.635415598873436,
+            "energyUsed": 14011.26076265801,
+            "reserveSpent": 1573.4515738949326,
+            "reserveRecovered": 0,
+            "power": 78.83865600000016,
+            "force": 3.8646400000000125,
+            "acceleration": 0,
+            "slope": 0
+          },
+          "splits": [
+            {
+              "distance": 400,
+              "time": 23.395058903968398,
+              "duration": 23.395058903968398,
+              "speed": 20.399232986280676,
+              "reserve": 3602.291112038472,
+              "fatigue": 0.1301609299775627
+            },
+            {
+              "distance": 800,
+              "time": 43.00295655928293,
+              "duration": 19.60789765531453,
+              "speed": 20.399999998977588,
+              "reserve": 3406.106724376461,
+              "fatigue": 0.19331918461984787
+            },
+            {
+              "distance": 1200,
+              "time": 62.610799696610925,
+              "duration": 19.607843137327997,
+              "speed": 20.399999999999974,
+              "reserve": 3268.729276968541,
+              "fatigue": 0.25647581522935836
+            },
+            {
+              "distance": 1600,
+              "time": 82.21864283386516,
+              "duration": 19.607843137254235,
+              "speed": 20.399999999999974,
+              "reserve": 3142.8263615688757,
+              "fatigue": 0.31963244583670464
+            },
+            {
+              "distance": 2000,
+              "time": 101.8264859711193,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 3019.162706478527,
+              "fatigue": 0.3827890764440509
+            },
+            {
+              "distance": 2400,
+              "time": 121.43432910837343,
+              "duration": 19.607843137254136,
+              "speed": 20.399999999999974,
+              "reserve": 2895.9360439040565,
+              "fatigue": 0.4459457070513972
+            },
+            {
+              "distance": 2800,
+              "time": 141.0421722456276,
+              "duration": 19.607843137254164,
+              "speed": 20.399999999999974,
+              "reserve": 2772.79466055194,
+              "fatigue": 0.5091023376587435
+            },
+            {
+              "distance": 3200,
+              "time": 160.65001538288172,
+              "duration": 19.60784313725412,
+              "speed": 20.399999999999974,
+              "reserve": 2649.6699194589246,
+              "fatigue": 0.5722589682660898
+            },
+            {
+              "distance": 3600,
+              "time": 180.25785852013587,
+              "duration": 19.60784313725415,
+              "speed": 20.399999999999974,
+              "reserve": 2526.5484261050715,
+              "fatigue": 0.635415598873436
+            }
+          ],
+          "samples": [],
+          "rank": 1,
+          "gap": 0
+        }
+      ]
+    }
+  ],
+  "overpace": {
+    "id": "ember",
+    "distance": 2800,
+    "steady": {
+      "finished": true,
+      "time": 174.17514217056285,
+      "distance": 2800,
+      "parameters": {
+        "criticalSpeed": 16,
+        "maxSpeed": 24,
+        "reserveCapacity": 3500,
+        "anaerobicPower": 80,
+        "maxForce": 10.5,
+        "cardioTau": 6,
+        "legEndurance": 125,
+        "recoveryRate": 0.08,
+        "fatigueCost": 0,
+        "anaerobicFatigue": 0,
+        "linearCost": 2.2,
+        "cubicCost": 0.004,
+        "initialAerobic": 0.35
+      },
+      "strategy": {
+        "pace": 1,
+        "kickAt": 400,
+        "openingBoost": 0,
+        "openingDuration": 18
+      },
+      "state": {
+        "time": 174.17514217056285,
+        "distance": 2800,
+        "speed": 14.7117585410224,
+        "aerobic": 46.81926170469833,
+        "reserve": 2992.26425361955,
+        "fatigue": 0.919231671134656,
+        "energyUsed": 9223.934574673205,
+        "reserveSpent": 510.0228737034644,
+        "reserveRecovered": 2.2871273230229816,
+        "power": 39.770807688068096,
+        "force": 2.6964839422879376,
+        "acceleration": -0.3736638462012453,
+        "slope": 0
+      },
+      "splits": [
+        {
+          "distance": 400,
+          "time": 26.727499982091047,
+          "duration": 26.727499982091047,
+          "speed": 15.99999980238279,
+          "reserve": 3254.007864164112,
+          "fatigue": 0.2738076363028989
+        },
+        {
+          "distance": 800,
+          "time": 51.727500000000404,
+          "duration": 25.000000017909358,
+          "speed": 15.999999999999988,
+          "reserve": 3251.3819743398353,
+          "fatigue": 0.3785289602002994
+        },
+        {
+          "distance": 1200,
+          "time": 76.72750000000028,
+          "duration": 24.999999999999872,
+          "speed": 15.999999999999988,
+          "reserve": 3251.341262953843,
+          "fatigue": 0.4832502834002978
+        },
+        {
+          "distance": 1600,
+          "time": 101.72750000000028,
+          "duration": 25,
+          "speed": 15.999999999999988,
+          "reserve": 3251.3406317704735,
+          "fatigue": 0.5879716066003003
+        },
+        {
+          "distance": 2000,
+          "time": 126.72750000000028,
+          "duration": 25,
+          "speed": 15.999999999999988,
+          "reserve": 3251.340621984695,
+          "fatigue": 0.692692929800303
+        },
+        {
+          "distance": 2400,
+          "time": 151.72750000000028,
+          "duration": 25,
+          "speed": 15.999999999999988,
+          "reserve": 3251.340621832972,
+          "fatigue": 0.7974142530003054
+        },
+        {
+          "distance": 2800,
+          "time": 174.17514217056285,
+          "duration": 22.447642170562574,
+          "speed": 14.7117585410224,
+          "reserve": 2992.26425361955,
+          "fatigue": 0.919231671134656
+        }
+      ],
+      "samples": []
+    },
+    "rush": {
+      "finished": true,
+      "time": 196.88376507863774,
+      "distance": 2800,
+      "parameters": {
+        "criticalSpeed": 16,
+        "maxSpeed": 24,
+        "reserveCapacity": 3500,
+        "anaerobicPower": 80,
+        "maxForce": 10.5,
+        "cardioTau": 6,
+        "legEndurance": 125,
+        "recoveryRate": 0.08,
+        "fatigueCost": 0,
+        "anaerobicFatigue": 0,
+        "linearCost": 2.2,
+        "cubicCost": 0.004,
+        "initialAerobic": 0.35
+      },
+      "strategy": {
+        "pace": 1,
+        "kickAt": 400,
+        "openingBoost": 0.35,
+        "openingDuration": 35
+      },
+      "state": {
+        "time": 196.88376507863774,
+        "distance": 2800,
+        "speed": 6.358301435147422,
+        "aerobic": 15.18576079660301,
+        "reserve": 1996.1431482989062,
+        "fatigue": 1,
+        "energyUsed": 9226.920542853453,
+        "reserveSpent": 1524.2478361829837,
+        "reserveRecovered": 20.390984481889735,
+        "power": 14.9447747630249,
+        "force": 2.35,
+        "acceleration": -0.011771874163660889,
+        "slope": 0
+      },
+      "splits": [
+        {
+          "distance": 400,
+          "time": 20.64696174609051,
+          "duration": 20.64696174609051,
+          "speed": 21.599973000917895,
+          "reserve": 2539.8450698924494,
+          "fatigue": 0.4133894398192213
+        },
+        {
+          "distance": 800,
+          "time": 40.130635794211116,
+          "duration": 19.483674048120605,
+          "speed": 16.16259299527573,
+          "reserve": 2008.035778217086,
+          "fatigue": 0.5451421836074551
+        },
+        {
+          "distance": 1200,
+          "time": 65.11590080449518,
+          "duration": 24.985265010284067,
+          "speed": 16.000000005304308,
+          "reserve": 1979.1550649539383,
+          "fatigue": 0.6492971736517823
+        },
+        {
+          "distance": 1600,
+          "time": 90.11590080401356,
+          "duration": 24.99999999951838,
+          "speed": 16.000000000000025,
+          "reserve": 1978.679051379856,
+          "fatigue": 0.7540184968330642
+        },
+        {
+          "distance": 2000,
+          "time": 115.11590080401356,
+          "duration": 25,
+          "speed": 16.000000000000025,
+          "reserve": 1978.6716713342162,
+          "fatigue": 0.8587398200330668
+        },
+        {
+          "distance": 2400,
+          "time": 143.19819107448652,
+          "duration": 28.082290270472953,
+          "speed": 10.489843646314968,
+          "reserve": 1988.4423591485397,
+          "fatigue": 0.941221946110214
+        },
+        {
+          "distance": 2800,
+          "time": 196.88376507863774,
+          "duration": 53.68557400415122,
+          "speed": 6.358301435147422,
+          "reserve": 1996.1431482989062,
+          "fatigue": 1
+        }
+      ],
+      "samples": []
+    }
+  }
+}
