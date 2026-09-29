@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+
+# Test and coverage output
+coverage/
+.nyc_output/
+
+# Logs and runtime output
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE metadata
+.vscode/
+.idea/
+
+# Common build output (keep source assets under public/ tracked)
+dist/
+build/
