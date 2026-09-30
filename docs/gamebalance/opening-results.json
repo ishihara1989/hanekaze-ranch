@@ -1,0 +1,962 @@
+[
+  {
+    "mother": "ハルノコムギ",
+    "sire": "チョコエクレア",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 23784
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "カフェガナッシュ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 21894
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "メープルブレッド",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 5,
+    "lowest": 14152,
+    "closing": 35209
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ヘーゼルビスコッティ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 4,
+    "lowest": 14152,
+    "closing": 31059
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "キャラメルフォンダン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 15,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 21814
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ピスタチオサブレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 20354
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ジンジャースナップ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 26404
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "カカオニブ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 4,
+    "lowest": 14152,
+    "closing": 28824
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ウォールナット",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 20704
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ハニーヨーグルト",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 15,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 18894
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ビターブラウニー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 20964
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "シナモンチャイ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 20004
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "アールグレイ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 21724
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "バニラカスタード",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 18434
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ミルクブランマンジェ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 22524
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "スパイスショコラ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 4,
+    "lowest": 14152,
+    "closing": 23284
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "フランボワーズ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 4,
+    "lowest": 14152,
+    "closing": 26994
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ショコラフラン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 27194
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "オートミール",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 4月 第2週",
+    "races": 15,
+    "wins": 1,
+    "lowest": 14152,
+    "closing": 19419
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ライラスク",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 15,
+    "wins": 4,
+    "lowest": 14152,
+    "closing": 30439
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "マロンパルフェ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 23284
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "セサミチュイル",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 21649
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "レモンソルベ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 19544
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "デーツプディング",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 15,
+    "wins": 5,
+    "lowest": 14152,
+    "closing": 34349
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "アーモンドヌガー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 20514
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ココナッツラッシー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 15,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 22529
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "コクトウカヌレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 20054
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "オレンジコンフィ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 19834
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ローズマリーフォカッチャ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 20234
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "カモミールシフォン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 14152,
+    "closing": 21529
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ホワイトスフレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 4月 第2週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 17309
+  },
+  {
+    "mother": "ハルノコムギ",
+    "sire": "ペッパークラッカー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 14152,
+    "closing": 20194
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "チョコエクレア",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 5月 第2週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 19449
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "カフェガナッシュ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 12月 第2週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13590,
+    "closing": 15874
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "メープルブレッド",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 17944
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ヘーゼルビスコッティ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 19694
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "キャラメルフォンダン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 5月 第2週",
+    "races": 14,
+    "wins": 1,
+    "lowest": 13752,
+    "closing": 18089
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ピスタチオサブレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 12月 第2週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13640,
+    "closing": 15964
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ジンジャースナップ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 18134
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "カカオニブ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 20834
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ウォールナット",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 5月 第2週",
+    "races": 14,
+    "wins": 1,
+    "lowest": 13752,
+    "closing": 16699
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ハニーヨーグルト",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 8月 第1週",
+    "races": 14,
+    "wins": 1,
+    "lowest": 13585,
+    "closing": 14499
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ビターブラウニー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 7月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13730,
+    "closing": 15579
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "シナモンチャイ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 6月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13735,
+    "closing": 16229
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "アールグレイ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 7月 第1週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13752,
+    "closing": 15509
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "バニラカスタード",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "4年 1月 第3週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13635,
+    "closing": 15584
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ミルクブランマンジェ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 7月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13730,
+    "closing": 15579
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "スパイスショコラ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 4月 第2週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 17894
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "フランボワーズ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "4年 1月 第3週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13477,
+    "closing": 14109
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ショコラフラン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 22184
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "オートミール",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "4年 1月 第1週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13107,
+    "closing": 13954
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ライラスク",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 4,
+    "lowest": 13752,
+    "closing": 25634
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "マロンパルフェ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 5月 第2週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 18514
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "セサミチュイル",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 8月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13680,
+    "closing": 16194
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "レモンソルベ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 7月 第1週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13752,
+    "closing": 14669
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "デーツプディング",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 22184
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "アーモンドヌガー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 7月 第1週",
+    "races": 14,
+    "wins": 1,
+    "lowest": 13636,
+    "closing": 15344
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ココナッツラッシー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 8月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13746,
+    "closing": 15824
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "コクトウカヌレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "未勝利",
+    "races": 13,
+    "wins": 0,
+    "lowest": 13706,
+    "closing": 14834
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "オレンジコンフィ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 4月 第2週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 17519
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ローズマリーフォカッチャ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 7月 第1週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13730,
+    "closing": 14109
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "カモミールシフォン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 8月 第2週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13746,
+    "closing": 16149
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ホワイトスフレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "未勝利",
+    "races": 13,
+    "wins": 0,
+    "lowest": 13706,
+    "closing": 14924
+  },
+  {
+    "mother": "ミズノシズク",
+    "sire": "ペッパークラッカー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 4月 第2週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 17799
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "チョコエクレア",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 19354
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "カフェガナッシュ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 18224
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "メープルブレッド",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 20464
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ヘーゼルビスコッティ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 4,
+    "lowest": 13752,
+    "closing": 24604
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "キャラメルフォンダン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 18534
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ピスタチオサブレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 17794
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ジンジャースナップ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 15,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 25924
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "カカオニブ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 4,
+    "lowest": 13752,
+    "closing": 26369
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ウォールナット",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 18154
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ハニーヨーグルト",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 19164
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ビターブラウニー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 20364
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "シナモンチャイ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 18424
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "アールグレイ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 16854
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "バニラカスタード",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 16904
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ミルクブランマンジェ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 21034
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "スパイスショコラ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 19264
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "フランボワーズ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 17304
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ショコラフラン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 4,
+    "lowest": 13752,
+    "closing": 25194
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "オートミール",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 1月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 19674
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ライラスク",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 4,
+    "lowest": 13752,
+    "closing": 27199
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "マロンパルフェ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 17214
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "セサミチュイル",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 5,
+    "lowest": 13752,
+    "closing": 28889
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "レモンソルベ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 17684
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "デーツプディング",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 4,
+    "lowest": 13752,
+    "closing": 25979
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "アーモンドヌガー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 5月 第2週",
+    "races": 14,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 18569
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ココナッツラッシー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 15,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 24414
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "コクトウカヌレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 4月 第2週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 18589
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "オレンジコンフィ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 20044
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ローズマリーフォカッチャ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 5月 第2週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 18239
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "カモミールシフォン",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 13,
+    "wins": 2,
+    "lowest": 13752,
+    "closing": 19514
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ホワイトスフレ",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 4月 第2週",
+    "races": 13,
+    "wins": 1,
+    "lowest": 13752,
+    "closing": 17409
+  },
+  {
+    "mother": "アカネノハネ",
+    "sire": "ペッパークラッカー",
+    "firstRace": "3年 1月 第1週",
+    "firstWin": "3年 2月 第1週",
+    "races": 14,
+    "wins": 3,
+    "lowest": 13752,
+    "closing": 20044
+  }
+]

@@ -71,20 +71,21 @@
     throw new RangeError('Course must have ordered, non-overlapping segments and slopes within ±0.2');
   }
   // A target speed is a rider request, not a direct velocity assignment.
-  function step(state, p, dt, targetSpeed, slope = 0) {
+  function step(state, p, dt, targetSpeed, slope = 0, traction = 1) {
     if (!Number.isFinite(dt) || dt <= 0 || dt > .5 || !Number.isFinite(targetSpeed) ||
-        !Number.isFinite(slope) || Math.abs(slope) > .2) throw new RangeError('Invalid step');
+        !Number.isFinite(slope) || Math.abs(slope) > .2 || !Number.isFinite(traction) || traction < .7 || traction > 1) throw new RangeError('Invalid step');
     const v = state.speed;
     const demandAcceleration = clamp((clamp(targetSpeed, 0, p.maxSpeed) - v) / 1.5, -4, 6);
     const load = resistance(v, p) + 9.81 * slope;
     const requestedForce = Math.max(0, load + demandAcceleration);
     // Retain a small locomotion force even at full fatigue, so exhaustion means slowing.
-    const forceLimit = Math.max(p.linearCost + .15, p.maxForce * (1 - .88 * state.fatigue ** 2));
+    const forceLimit = Math.max(p.linearCost + .15, p.maxForce * traction * (1 - .88 * state.fatigue ** 2));
     const wantedForce = Math.min(requestedForce, forceLimit);
     // Mid-step speed prices start-up acceleration even when current velocity is zero.
     const workSpeed = Math.max(.5, v + .5 * Math.max(0, wantedForce - load) * dt);
     // Tired legs may also lose efficiency, so early fatigue has a continuing cost.
-    const workCost = workSpeed * (1 + p.fatigueCost * state.fatigue ** 2);
+    // Force is effective ground thrust; muscle work pays for energy lost at contact.
+    const workCost = workSpeed * (1 + p.fatigueCost * state.fatigue ** 2) / traction;
     const requestedPower = wantedForce * workCost;
     const maxAerobic = criticalPower(p);
     const aerobicTarget = Math.min(maxAerobic, requestedPower);
@@ -98,7 +99,7 @@
     const acceleration = Math.max(-4, demandAcceleration < 0 ? Math.min(force - load, demandAcceleration) : force - load);
     const speed = clamp(v + acceleration * dt, 0, p.maxSpeed);
     // Fixed reference load keeps high-force sprinters from automatically gaining endurance.
-    const legLoad = (force / 4) ** 3 + .04 * Math.max(0, acceleration) ** 2 +
+    const legLoad = (force / (4 * traction)) ** 3 + .04 * Math.max(0, acceleration) ** 2 +
       .03 * Math.max(0, -slope) * v ** 2;
     return {time: state.time + dt, distance: state.distance + (v + speed) * .5 * dt,
       speed, aerobic: nextAerobic, reserve: clamp(state.reserve - spent + recovered, 0, p.reserveCapacity),

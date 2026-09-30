@@ -3,6 +3,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const files = {'/':'index.html','/index.html':'index.html','/css/style.css':'css/style.css','/js/game.js':'js/game.js','/js/model.js':'js/model.js','/js/world.js':'js/world.js','/js/world-views.js':'js/world-views.js'};
 for (const file of ['chocobo-preview.html','js/chocobo-preview.js','js/chocobo-animation.js',
+  'css/ranch.css','js/ranch-engine.js','js/ranch-ui.js','js/trait-mapping.js','js/ranch-genetics.js','js/ranch-ground.js',
+  'assets/moogle/trainer.png',
+  ...['neutral','talk','happy','motivated','sad','disappointed','overjoyed','ambiguous-smile'].map(expression=>`assets/shiroma/shiroma-${expression}.png`),
   'balance-lab.html','css/balance-lab.css','js/race-physics.js','js/balance-presets.js','js/balance-runner.js','js/balance-worker.js','js/balance-lab.js',
   'vendor/three/three.module.js','vendor/three/GLTFLoader.js','vendor/three/OrbitControls.js','vendor/three/BufferGeometryUtils.js',
   'assets/chocobo/chocobo-racer.glb','assets/chocobo/chocobo-racer.blend','assets/chocobo/manifest.json',

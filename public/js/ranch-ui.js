@@ -1,0 +1,238 @@
+/* A quiet, report-first interface. Only deliberate purchase and breeding require decisions. */
+(() => {
+  'use strict';
+  const R=Ranch,$=selector=>document.querySelector(selector);
+  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money=n=>Math.round(n).toLocaleString('ja-JP');
+  const ICONS={home:'⌂',birds:'♧',breed:'⚭',facilities:'▱',notebook:'▤',settings:'⚙'};
+  const LABELS={home:'今週の牧場',birds:'チョコボ',breed:'配合',facilities:'施設',notebook:'牧場手帳',market:'繁殖牝羽セール',settings:'設定'};
+  const role=b=>({young:'幼羽',racing:'競走羽',mare:'繁殖牝羽',stud:'種牡羽',retired:'引退',archived:'記録'}[b.role]);
+  const kind=b=>({root:'源流',home:'自家製',general:'一般',founder:'始祖'}[b.kind]);
+  const SIRE_TABS=[['root','源流'],['public','他の牧場'],['founder','始祖'],['home','自家牧場']];
+  const sireGroup=b=>b.kind==='root'?'root':b.kind==='founder'?'founder':b.owner==='player'?'home':'public';
+  const traitLabels={...Object.fromEntries(R.Mapping.ABILITIES.map(a=>[a.key,a.label])),...R.MANAGEMENT,...R.PERSONALITY,...R.Genetics.APTITUDES,...R.Genetics.DEVELOPMENT};
+  const colorText=b=>`羽色：${R.Genetics.COLORS[b.color]} / 額羽：${R.Genetics.CRESTS[b.crest]}`;
+  const groundText=e=>{
+    const surface=e.surface==='turf'?'芝':'ダート';
+    if(Number.isFinite(e.cushion))return `${surface}・${R.Ground.GOING[e.going]||'良'}・${R.Ground.label(e.cushion)}`;
+    if(!e.trackId)return surface;
+    const ground=R.Ground.conditions(e);return `${surface}・${R.Ground.GOING[ground.going]}・${ground.label}`;
+  };
+  let artSerial=0;
+  const sireChoices={};
+  let sireTab='root',rootTrait='';
+  let state,page='home',modal=null,damId='',sireId='',busy=false,saveOK=true,saveBlocked=false,notice='',birdFilter='all',notebookTab='calendar',returnFocus=null;
+  try {
+    const raw=localStorage.getItem(R.SAVE_KEY);
+    state=raw?JSON.parse(raw):R.initial();
+    if(!R.validState(state))throw Error('invalid save');
+    R.upgradeState(state);
+  } catch {
+    state=R.initial();saveBlocked=true;saveOK=false;
+    notice='保存データを読み込めませんでした。元のデータを保護しています。設定からリセットすると新しく保存できます。';
+  }
+  function save() {
+    if(saveBlocked)return;
+    try{localStorage.setItem(R.SAVE_KEY,JSON.stringify(state));saveOK=true;}
+    catch{saveOK=false;notice='自動保存ができません。設定からデータを書き出してください。';}
+  }
+  function button(action,text,extra='',className='button primary'){return `<button class="${className}" data-action="${action}" ${extra}>${text}</button>`;}
+  function heading(kicker,title,description=''){return `<div class="page-heading"><span class="eyebrow">${kicker}</span><h1>${title}</h1>${description?`<p>${description}</p>`:''}</div>`;}
+  function portrait(expression='talk',speaker='shiroma') {return `<img class="portrait ${speaker}" src="assets/${speaker==='moogle'?'moogle/trainer.png':`shiroma/shiroma-${expression}.png`}" alt="${speaker==='moogle'?'トレーナーのモーグリ':'シロマ'}">`;}
+  function avatar(speaker='shiroma'){return `<span class="avatar">${portrait('neutral',speaker)}</span>`;}
+  function note(text,speaker='shiroma'){return `<div class="character-note">${avatar(speaker)}<div><span class="speaker">${speaker==='moogle'?'モーグリ / トレーナー':'シロマ / 牧場のパートナー'}</span><p>${esc(text)}</p></div></div>`;}
+  function birdArt(b) {
+    const palette={yellow:'#e7bf60',golden:'#dca635',red:'#ce6e60',blue:'#88afc1',green:'#87ad7b',rose:'#dca49d',white:'#f2eee3',black:'#454653',purple:'#a08bbb',gray:'#aaaeb2'};
+    const color=palette[b.color],gradient=`crest-${++artSerial}`,crest=b.crest==='rainbow'?`url(#${gradient})`:palette[b.crest];
+    return `<svg class="chocobo-art" viewBox="0 0 160 140" role="img" aria-label="${colorText(b)}">${b.crest==='rainbow'?`<defs><linearGradient id="${gradient}"><stop stop-color="#d9646c"/><stop offset=".25" stop-color="#edc660"/><stop offset=".5" stop-color="#81b17a"/><stop offset=".75" stop-color="#80afce"/><stop offset="1" stop-color="#a987c9"/></linearGradient></defs>`:''}<ellipse cx="81" cy="127" rx="41" ry="5" fill="#2c5534" opacity=".1"/><path d="M66 104l-8 20m34-20 5 20m-50 1h20m22 0h20" fill="none" stroke="#a9783f" stroke-width="5" stroke-linecap="round"/><path d="M60 75Q24 85 18 53q18 1 31 18Q29 46 34 35q22 8 29 30" fill="${color}"/><ellipse cx="79" cy="86" rx="37" ry="29" fill="${color}" stroke="#526449" stroke-opacity=".2"/><path d="M93 75q-9-35 10-43t30 20q2 24-22 33" fill="${color}" stroke="#526449" stroke-opacity=".2"/><path d="m99 33-6-20q16 0 19 17l4-21q14 13 9 27" fill="${crest}" stroke="#526449" stroke-opacity=".25"/><path d="m128 51 20 9-22 8" fill="#c18c48"/><ellipse cx="123" cy="46" rx="3.8" ry="5" fill="${b.color==='black'?'#f2eee3':'#344c3e'}"/><circle cx="124" cy="44" r="1.1" fill="#fff"/><path d="M63 71q-20 4-8 25t30-3q1-13-22-22" fill="#fff" opacity=".23"/>${b.color==='golden'?'<path d="m26 14 3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#e6c45d"/>':''}</svg>`;
+  }
+  function landscape(){return `<svg class="landscape" viewBox="0 0 1200 570" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#dce8db"/><stop offset="1" stop-color="#f4edd4"/></linearGradient><linearGradient id="field" x2="0" y2="1"><stop stop-color="#adb88a"/><stop offset="1" stop-color="#7b936b"/></linearGradient></defs><path fill="url(#sky)" d="M0 0h1200v570H0z"/><circle cx="925" cy="100" r="43" fill="#fff5d2" opacity=".8"/><path d="M0 280Q140 160 330 251T720 231T1200 184V570H0" fill="#c9d5bb"/><path d="M0 335Q183 254 348 294T698 273T1200 295V570H0" fill="#b8c69e"/><path d="M0 385Q220 290 434 346T780 310T1200 352V570H0" fill="url(#field)"/><path d="M594 330q-42 96 90 240h152Q587 394 623 332" fill="#d9d5b7" opacity=".8"/><g fill="#698560"><ellipse cx="183" cy="310" rx="50" ry="66"/><ellipse cx="127" cy="323" rx="40" ry="57"/><ellipse cx="1070" cy="299" rx="62" ry="84"/></g><g fill="#8d7560"><path d="M178 322h7v73h-7zM124 341h7v65h-7zM1065 327h9v72h-9z"/><path d="M424 300h114v73H424" fill="#e3dbc0"/><path d="m410 304 70-57 73 57" fill="#92796a"/><path d="M468 331h26v42h-26" fill="#7b7c60"/><path d="M438 324h16v19h-16m53-19h17v19h-17" fill="#abae83"/></g><g stroke="#e5e3c9" stroke-width="5" fill="none" opacity=".85"><path d="M40 410v64m75-79v62m75-80v65m75-76v60m75-70v61m-300-28 300-42m-300 65 300-42M838 378v63m78-64v69m79-63v72m76-66v71m75-63v72m-308-75 308 24m-308 3 308 26"/></g><g fill="#e8e7bf" opacity=".8"><circle cx="390" cy="439" r="2"/><circle cx="422" cy="470" r="3"/><circle cx="315" cy="484" r="2"/><circle cx="230" cy="512" r="3"/><circle cx="976" cy="511" r="3"/><circle cx="935" cy="484" r="2"/></g></svg>`;}
+  function journey() {
+    const index={buy:0,breed:1,grow:2,running:3}[state.stage];
+    const steps=['最初の一羽','はじめての配合','誕生を待つ','育てて、走る'];
+    return `<ol class="journey" aria-label="牧場のはじめ方">${steps.map((text,i)=>`<li class="${i===index?'current':i<index?'done':''}"><span>${i<index?'✓':String(i+1).padStart(2,'0')}</span>${text}</li>`).join('')}</ol>`;
+  }
+  function home() {
+    if(state.reports.length)return reportPage(state.reports[0]);
+    const stage=state.stage,first=stage==='buy',pair=stage==='breed',pregnancy=R.own(state).find(b=>b.pregnancy),young=R.own(state).find(b=>b.role==='young');
+    const title=first?'ここから、\n私たちの牧場。':pair?'次の世代へ、\n小さなはじまり。':pregnancy?'新しい命に、\n会える日を待って。':young?'ゆっくり育つ、\n大きな夢。':'今週も、\nいっしょに育てよう。';
+    const text=first?'ようこそ、羽風牧場へ。私はシロマ。これから、あなたと一緒にこの牧場を育てていきます。まずはセールで、お母さんになる一羽を迎えましょう。':pair?'いい子を迎えられましたね。次は、お父さんを選びましょう。血統の細かなことは、少しずつわかれば大丈夫です。':pregnancy?`${pregnancy.name}は穏やかに過ごしています。${R.when(pregnancy.pregnancy.due)}には、新しい家族に会えそうですよ。`:
+      young?'子どもたちのお世話は私に任せてください。2歳になる年の1月に、名前を登録してモーグリに預けましょう。それまでは、週を進めながら成長を見守れます。':'モーグリが調教と出走予定を考えてくれています。気になることがあれば手帳を開いて、なければ次の週へ進みましょう。';
+    const action=first?button('nav','繁殖牝羽セールへ <span>→</span>','data-page="market"'):pair?button('nav','はじめての配合へ <span>→</span>','data-page="breed"'):button('advance','次の週へ <span>→</span>');
+    return `${heading('OUR LITTLE RANCH',first?'牧場の、はじめの日。':'おかえりなさい。',R.when(state.week)+' ・ '+season())}<section class="home-scene">${landscape()}<div class="scene-copy"><span class="eyebrow">${first?'A NEW BEGINNING':'WING & WIND'}</span><h2>${title.replace('\n','<br>')}</h2><p>ひとつの出会いから、<br>いつか、ダービーの夢へ。</p></div>${portrait(first?'happy':'neutral')}<div class="dialogue"><div class="dialogue-top"><span class="speaker">シロマ</span><span>あなたと牧場を育てるパートナー</span></div><p>${esc(text)}</p><div class="dialogue-actions">${action}${!first&&!pair?button('advance-month','4週まとめて進める','','button quiet'):''}</div></div></section>${!state.milestones.win?journey():''}<div class="home-bottom"><div><span class="eyebrow">THIS WEEK</span><h3>${first?'まずは、ひとつだけ。':pair?'相手を選んだら、あとは見守る。':pregnancy?`出産まで、あと${pregnancy.pregnancy.due-state.week}週。`:young?'今は、のびのび育つ時間。':'調教も出走も、おまかせで。'}</h3><p>${first?'2月〜3月のセールで、繁殖牝羽を迎えます。':pair?'源流はいつでも利用可能。自家製種牡羽の配合料金は無料です。':'週を進めると、シロマが出来事をお知らせします。'}</p></div><button class="notebook-link" data-action="nav" data-page="notebook"><span>▤</span><div>牧場手帳をひらく<small>予定・収支・これまでの記録</small></div><b>↗</b></button></div>`;
+  }
+  function season(){const m=R.date(state.week).month;return m>=3&&m<=5?'春のやわらかな風':m>=6&&m<=8?'夏のまぶしい草原':m>=9&&m<=11?'秋の澄んだ空気':'冬の静かな牧場';}
+  function reportPage(r) {
+    const type={weekly:'WEEKLY LETTER',monthly:'MONTHLY LETTER',annual:'A YEAR TO REMEMBER',event:'OUR MEMORIES',birth:'A NEW LIFE',registration:'READY TO RUN',founder:'A NEW LEGACY'}[r.type];
+    return `${heading(type,esc(r.title),R.when(r.week))}<section class="letter"><div class="letter-body"><div class="letter-from">${avatar()}<span>シロマから、あなたへ</span><span class="stamp">W & W</span></div><p class="letter-message">${esc(r.text)}</p>${r.notes?.map(n=>`<p class="soft-note">${esc(n)}</p>`).join('')||''}${r.income!==undefined?`<div class="finance-strip"><span>収入<strong>+ ${money(r.income)} <small>G</small></strong></span><span>支出<strong>− ${money(r.expense)} <small>G</small></strong></span><span>今のギル<strong>${money(state.money)} <small>G</small></strong></span></div>`:''}${r.results?.length?`<div class="race-results">${r.results.map(x=>`<button class="result-row" data-action="result" data-id="${x.birdId}" data-week="${x.week}"><b class="placing">${x.rank}<small>着</small></b><span><strong>${esc(x.birdName)}</strong><small>${esc(x.name)} ・ ${x.distance}m</small></span><span>+${money(x.reward)} G <small>結果を見る ↗</small></span></button>`).join('')}</div>`:''}${r.type==='registration'?registration(r):''}${r.type==='birth'?`<div class="birth-card">${birdArt(R.bird(state,r.birdId))}<div><b>${esc(R.bird(state,r.birdId).name)}</b><p>穏やかな平原でお世話しています。</p>${button('detail','この子に会う',`data-id="${r.birdId}"`,'button quiet')}</div></div>`:''}<div class="letter-actions">${r.type==='founder'?button('promote','始祖入りを受ける',`data-id="${r.birdId}"`):''}${button('ack',r.type==='registration'?'この名前と方針で、モーグリに任せる →':state.reports.length>1?'つづきを聞く →':'報告を閉じる →')}<span>${state.reports.length>1?`あと${state.reports.length-1}件の報告`:r.change!==undefined?`今週の収支 ${r.change>=0?'+':''}${money(r.change)} G`:''}</span></div></div><div class="letter-portrait">${portrait(r.expression)}<span>SHIROMA</span></div></section>`;
+  }
+  function policyOptions(value){return `<option value="steady" ${value==='steady'?'selected':''}>着実に勝ちを積み上げる</option><option value="challenge" ${value==='challenge'?'selected':''}>積極的に重賞へ挑む</option>`;}
+  function registration(r) {
+    return `<div class="registration">${note('名前と方針が決まったら、調教とレース選びは任せるクポ！ 疲れたときには、ちゃんと休ませるクポ。','moogle')}${r.birdIds.map(id=>{const b=R.bird(state,id);return `<div class="registration-row"><label>競走羽の名前<input data-register-name="${id}" value="${esc(b.name)}" maxlength="20"></label><label>トレーナーへの方針<select data-register-policy="${id}">${policyOptions(b.policy)}</select></label></div>`;}).join('')}<p class="muted">名前・方針はチョコボ画面から後で変更できます。</p></div>`;
+  }
+  function market() {
+    const birds=state.sale.map(id=>R.bird(state,id)).filter(b=>b.owner==='sale');
+    return `${heading('MARE SALE','最初の出会いを、ここで。','繁殖牝羽セール / 毎年2月〜3月')}${note(R.saleOpen(state)?'気になる子を一羽、選んでみましょう。どの子も源流との配合ができます。購入後の配合やお世話のために、ギルは少し残しておきたいですね。':'今年のセールはお休みです。次は2月に開かれますよ。')}${R.saleOpen(state)?`<div class="bird-grid sale-grid">${birds.map((b,i)=>`<article class="bird-card"><div class="bird-illustration ${b.color}"><span class="lot">LOT ${String(i+1).padStart(2,'0')}</span>${birdArt(b)}<span class="tag">${R.age(state,b)}歳 ・ 牝</span></div><div class="bird-card-body"><h2>${esc(b.name)}</h2><p>${esc(b.comment)}</p><div class="card-bottom"><strong>${money(b.price)} <small>G</small></strong>${button('buy-dialog','この子を迎える',`data-id="${b.id}" ${state.money<b.price?'disabled':''}`,'button outline')}</div></div></article>`).join('')||'<div class="empty">今年のセールの子は、みんな牧場に迎えられました。</div>'}</div><p class="page-footnote">購入はこのあと確認できます。源流の配合料金は600 Gです。</p>`:'<div class="empty">春のセールで、また新しい出会いを。</div>'}`;
+  }
+  function breedPage() {
+    const mares=R.own(state).filter(b=>b.role==='mare'),allSires=R.sires(state);
+    const sires=allSires.filter(b=>sireGroup(b)===sireTab).filter(b=>{
+      if(sireTab!=='root'||!rootTrait)return true;
+      const profile=R.ROOTS.find(r=>r.lineage===b.lineage);
+      return profile?.primary===rootTrait||profile?.secondary===rootTrait||profile?.strengths.includes(rootTrait);
+    });
+    if(!mares.some(b=>b.id===damId))damId=mares[0]?.id||'';
+    if(!sires.some(b=>b.id===sireId))sireId=sires[0]?.id||'';
+    sireChoices[sireTab]=sireId;
+    const dam=R.bird(state,damId),sire=R.bird(state,sireId),reason=R.breedingReason(state,dam,sire);
+    const empty={root:'この持ち味を持つ源流は見つかりませんでした。',public:'今は、他の牧場から利用できる種牡羽がいません。',founder:'始祖はまだいません。自家製種牡羽の産駒が3羽以上でGⅠ勝利、合計7勝以上を挙げると、年末にオファーが届きます。',home:'自家製の種牡羽はまだいません。育てた牡羽が繁殖入りすると、無料で配合できます。'};
+    const tabs=`<div class="tabs sire-tabs" role="tablist" aria-label="種牡羽の区分">${SIRE_TABS.map(([key,label])=>button('sire-tab',`${label} <small>${allSires.filter(b=>sireGroup(b)===key).length}</small>`,`id="sire-tab-${key}" data-tab="${key}" role="tab" aria-selected="${sireTab===key}" aria-controls="sire-panel" tabindex="${sireTab===key?0:-1}"`,`tab ${sireTab===key?'active':''}`)).join('')}</div>`;
+    const filter=sireTab==='root'?`<label class="sire-filter" for="root-trait">つなぎたい持ち味<select id="root-trait"><option value="">すべての持ち味</option>${Object.entries(traitLabels).map(([key,label])=>`<option value="${key}" ${rootTrait===key?'selected':''}>${label}</option>`).join('')}</select><span class="muted">${sires.length} / 32羽</span></label>`:'';
+    const list=sires.map(b=>`<button class="sire-option ${b.id===sireId?'selected':''}" data-action="select-sire" data-id="${b.id}" aria-pressed="${b.id===sireId}"><span class="radio-mark"></span><span class="sire-info"><span class="tag">${kind(b)}</span><strong>${esc(b.name)}</strong><small>${esc(b.comment||R.observe(state,b))}</small><small>${colorText(b)}</small></span><span class="sire-price">${R.breedFee(b)?money(R.breedFee(b))+' G':'無料'}</span></button>`).join('');
+    return `${heading('THE NEXT GENERATION','次の世代へ、つなぐ。','相手を選ぶ時間も、牧場の楽しみ。')}${note('どんな子に育つか、私も楽しみです。血統の持ち味を手がかりに、相手を選んでみましょう。子どもの能力や性格は、育つにつれて見えてきます。')}${!dam?`<div class="empty"><h2>まずは、お母さんを迎えましょう。</h2>${button('nav','繁殖牝羽セールへ','data-page="market"')}</div>`:`<div class="breeding-layout"><section class="paper mother-panel"><span class="eyebrow">MOTHER</span><label for="dam-choice">繁殖牝羽</label><select id="dam-choice">${mares.map(b=>`<option value="${b.id}" ${b.id===damId?'selected':''}>${esc(b.name)}</option>`).join('')}</select>${birdArt(dam)}<h2>${esc(dam.name)}</h2><p>${esc(R.observe(state,dam))}</p>${dam.pregnancy?`<div class="soft-note">出産予定 ${R.when(dam.pregnancy.due)}</div>`:''}</section><section class="paper sire-panel"><div class="section-title"><div><span class="eyebrow">FATHER</span><h2>種牡羽を選ぶ</h2></div><span class="muted">${allSires.length}羽</span></div>${tabs}<div id="sire-panel" role="tabpanel" aria-labelledby="sire-tab-${sireTab}">${filter}<div class="sire-list">${list||`<p class="sire-empty">${empty[sireTab]}</p>`}</div></div></section></div><section class="breeding-confirm"><div><span class="eyebrow">YOUR PAIRING</span><h3>${esc(dam.name)} <span>×</span> ${esc(sire?.name||'種牡羽を選んでください')}</h3><p>${reason||'出産まで4週。子ども用の羽房を1枠予約します。'}</p></div>${button('breed-dialog',`配合をお願いする${sire?` <span>${money(R.breedFee(sire))} G</span>`:''}`,reason?'disabled':'')}</section>`}`;
+  }
+  function birdsPage() {
+    const all=R.own(state),birds=all.filter(b=>birdFilter==='all'||b.role===birdFilter);
+    return `${heading('OUR CHOCOBOS','一羽ずつ、違う物語。','詳しく知りたい子を選ぶと、シロマやモーグリが様子を教えてくれます。')}<div class="tabs">${[['all','みんな'],['young','幼羽'],['racing','競走羽'],['mare','繁殖牝羽'],['stud','種牡羽']].map(([k,n])=>button('filter',`${n} <small>${all.filter(b=>k==='all'||b.role===k).length}</small>`,`data-filter="${k}" aria-pressed="${birdFilter===k}"`,`tab ${birdFilter===k?'active':''}`)).join('')}</div>${birds.length?`<div class="bird-grid">${birds.map(b=>`<button class="bird-card selectable" data-action="detail" data-id="${b.id}"><div class="bird-illustration ${b.color}"><span class="lot">${role(b)}</span>${birdArt(b)}<span class="tag">${R.age(state,b)===null?'時を超える血統':R.age(state,b)+'歳'} ・ ${b.sex==='F'?'牝':'牡'}</span></div><div class="bird-card-body"><h2>${esc(b.name)}</h2><p>${b.pregnancy?'新しい命を待っています':b.role==='young'?'放牧地で、のびのび成長中':b.role==='racing'?`${b.races}戦 ${b.wins}勝 ・ ${b.health?'療養中':b.condition<75||b.strain>25?'休養中':'モーグリにおまかせ'}`:b.role==='stud'?kind(b)+'種牡羽':'次の世代へつなぐ一羽'}</p><div class="card-bottom"><span>${b.g1?'GⅠ '+b.g1+'勝':b.color==='golden'?'黄金の羽':'羽風牧場'}</span><span>会いにいく ↗</span></div></div></button>`).join('')}</div>`:`<div class="empty"><span class="empty-feather">♧</span><h2>${all.length?'この羽房は、まだ空いています。':'まだ、羽音のない牧場。'}</h2><p>最初の出会いを、シロマと一緒に。</p>${button('nav','今週の牧場へ','data-page="home"')}</div>`}`;
+  }
+  function facilitiesPage() {
+    const cap=R.capacity(state);
+    return `${heading('ROOM TO GROW','夢に合わせて、少しずつ。','必要なときに、必要な設備を。建設・拡張の効果はすぐに反映されます。')}<div class="capacity-strip"><span>幼羽・競走羽 <b>${R.racingCount(state)} / ${cap.racing}</b></span><span>繁殖牝羽 <b>${R.own(state).filter(b=>b.role==='mare').length} / ${cap.mare}</b></span><span>種牡羽 <b>${R.own(state).filter(b=>b.role==='stud').length} / ${cap.stud}</b></span></div><div class="facility-grid">${Object.entries(R.FACILITIES).map(([key,f])=>{const reason=R.facilityReason(state,key),level=state.facilities[key],locked=!!f.lock&&reason.includes('で建設')||reason.includes('すると建設');return `<article class="paper facility ${locked?'locked':''}"><div class="section-title"><span class="facility-symbol">${{stalls:'⌂',course:'◎',hill:'△',pool:'≋',spa:'♨',clinic:'✚',meadow:'♧',forest:'♤',shop:'▧',lab:'⚗',statue:'♜',museum:'♛'}[key]}</span><span class="tag">${level?'Lv. '+level:locked?'未解放':'未建設'}</span></div><h2>${f.name}</h2><p>${f.description}</p><div class="card-bottom"><span>${level>=f.max?'完成':locked?f.lock:money(R.facilityCost(state,key))+' G'}</span>${button('build-dialog',level?'拡張':'建設',`data-key="${key}" ${reason?'disabled':''}`,'button outline small')}</div>${reason&&level<f.max&&!locked?`<small class="muted">${reason}</small>`:''}</article>`;}).join('')}</div>`;
+  }
+  function notebook() {
+    let content='';
+    if(notebookTab==='calendar') {
+      const plans=R.own(state).filter(b=>b.role==='racing').map(b=>({b,e:R.nextRace(state,b)}));
+      content=`${note('無理な連戦はしないクポ。元気と脚の状態を見て、方針に合うレースを選ぶクポ。','moogle')}<section class="paper"><h2>これからの予定</h2>${plans.map(({b,e})=>`<div class="list-row"><span><b>${esc(b.name)}</b><small>${b.policy==='steady'?'着実に勝ちを積み上げる':'積極的に重賞へ挑む'}</small></span><span>${e?`${R.when(e.week)}<small>${esc(e.name)} / ${e.distance}m</small><small>${esc(e.track?.name||'')} / ${groundText(e)}</small>`:'休養・調教'}</span></div>`).join('')||'<p class="muted">デビューまでは、シロマと成長を見守りましょう。</p>'}<div class="list-row"><span><b>繁殖牝羽セール</b><small>毎年 2月〜3月</small></span>${button('nav',R.saleOpen(state)?'セールを見る →':'開催案内','data-page="market"','button quiet')}</div><div class="list-row"><span><b>競走羽の名前登録</b><small>2歳になる年の1月第1週</small></span><span class="muted">報告から登録できます</span></div><div class="list-row"><span><b>年度表彰・始祖入りの審査</b><small>12月第4週</small></span><span class="muted">シロマがお知らせします</span></div></section>`;
+    } else if(notebookTab==='accounts') content=`<div class="finance-strip paper"><span>現在のギル<strong>${money(state.money)} G</strong></span><span>未払金<strong>${money(state.debt)} G</strong></span><span>ファン<strong>${money(state.birds.filter(b=>b.owner==='player').reduce((n,b)=>n+b.fans,0))} 人</strong></span></div><section class="paper"><h2>収支の記録</h2>${state.ledger.slice(-60).reverse().map(l=>`<div class="list-row"><span>${esc(l.note)}<small>${R.when(l.week)}</small></span><b class="${l.amount>0?'positive':''}">${l.amount>0?'+':''}${money(l.amount)} G</b></div>`).join('')||'<p class="muted">これからの歩みを、ここに記録します。</p>'}</section>`;
+    else if(notebookTab==='records') content=`<section class="paper"><h2>牧場の思い出</h2>${Object.entries(state.milestones).filter(([k])=>!k.includes(':')).map(([k,w])=>`<div class="list-row"><b>${{purchase:'最初の仲間',breeding:'はじめての配合',birth:'はじめての誕生',win:'レース初勝利',g1:'GⅠ初勝利',derby:'ダービー初勝利'}[k]||esc(k)}</b><span>${R.when(w)}</span></div>`).join('')||'<p class="muted">一歩ずつ、私たちの記録を増やしていきましょう。</p>'}<h2 class="section-gap">年度表彰</h2>${state.awards.map(a=>`<div class="list-row"><span>${a.year}年 ${esc(a.title)}</span><b>${esc(a.name)}</b></div>`).join('')||'<p class="muted">年末に、今年の活躍を振り返ります。</p>'}${state.founderOffers.length?'<h2 class="section-gap">始祖入りのオファー</h2>':''}${state.founderOffers.map(id=>`<div class="list-row"><b>${esc(R.bird(state,id).name)}</b>${button('promote','始祖入りを受ける',`data-id="${id}"`,'button outline')}</div>`).join('')}</section>`;
+    else content=`<section class="paper"><h2>シロマの報告を読み返す</h2>${state.journal.slice().reverse().map(r=>`<details class="journal-entry"><summary><span>${esc(r.title)}</span><small>${R.when(r.week)}</small></summary><p>${esc(r.text)}</p></details>`).join('')||'<p class="muted">まだ報告はありません。</p>'}</section>`;
+    return `${heading('RANCH NOTEBOOK','知りたいことを、知りたいときに。')}<div class="tabs">${[['calendar','予定'],['accounts','収支'],['records','記録・表彰'],['letters','報告の便り']].map(([k,n])=>button('notebook-tab',n,`data-tab="${k}"`,`tab ${notebookTab===k?'active':''}`)).join('')}</div>${content}`;
+  }
+  function settings() {return `${heading('AT YOUR OWN PACE','牧場の設定。')}<section class="paper settings"><div class="settings-row"><div><h2>自動保存</h2><p>購入・配合・週送りなどの操作ごとに保存します。</p></div><span class="tag">${saveOK?'保存できています':'保存できていません'}</span></div><div class="settings-row"><div><h2>ファンのボーナス</h2><p>特別な記録を達成したときの、ファン増加量を調整します。</p></div><select id="difficulty" aria-label="ファンのボーナス">${[['easy','多め'],['normal','標準'],['hard','控えめ']].map(([k,n])=>`<option value="${k}" ${state.difficulty===k?'selected':''}>${n}</option>`).join('')}</select></div><div class="settings-row"><div><h2>牧場データのバックアップ</h2><p>新しい進行のセーブデータを書き出します。</p></div>${button('export','書き出す','','button outline')}</div><div class="settings-row"><div><h2>バックアップから再開</h2><p>新しい進行のセーブデータを読み込みます。</p></div>${button('import','読み込む','','button outline')}<input id="import-file" type="file" accept=".json,application/json" hidden></div><div class="settings-row reset-row"><div><h2>牧場を最初から始める</h2><p>3月第1週・所有0羽から、シロマとの出会いをもう一度。<br>実行前に確認画面が開きます。</p></div>${button('reset-dialog','セーブをリセット','','button danger-outline')}</div></section>`;}
+  function research(b) {
+    const level=R.labLevel(state);
+    if(!level)return `<div class="research-locked"><span>⚗</span><div><b>まだ、数字ではわからないこと。</b><p>GⅠ初勝利で研究所が解放されます。それまでは、一緒に過ごして得意なことを見つけましょう。</p></div></div>`;
+    const table=(scores,labels,min=50,max=150)=>`<div class="ability-grid">${Object.entries(labels).map(([k,n])=>`<div><span>${n}</span><b>${Math.round(scores[k])}</b><meter min="${min}" max="${max}" value="${scores[k]}">${Math.round(scores[k])}</meter></div>`).join('')}</div>`;
+    const traits=b.genome.traits,growth=R.Genetics.growth(traits),percent=group=>Object.fromEntries(Object.entries(group).map(([key,pair])=>[key,mean(pair)*100]));
+    return `<details class="research"><summary>研究所の観察記録 <span>公開段階 ${level} / 3</span></summary><h3>性格</h3>${table(b.personality,R.PERSONALITY)}${level>=2?`<h3>${b.role==='young'?'現在の成長評価':'現在の身体能力'}</h3>${table(R.currentAbilities(state,b),Object.fromEntries(R.Mapping.ABILITIES.map(a=>[a.key,a.label])))}<h3>管理の資質</h3>${table(b.management,R.MANAGEMENT)}<h3>羽場適性</h3>${table(percent(traits.aptitude),R.Genetics.APTITUDES,0,100)}<p class="muted">適性は0〜100。低クッションは柔らかめ、高クッションは硬め。接地時の推進効率に関わります。</p>`:'<p class="muted">現在能力と羽場適性は公開段階2でわかります。</p>'}${level>=3?`<h3>成熟したときの伸びしろ</h3>${table(b.potential,Object.fromEntries(R.Mapping.ABILITIES.map(a=>[a.key,a.label])))}<p class="muted">成長型：${{early:'早熟',normal:'普通',late:'晩成'}[b.growth]} / 筋・代謝構成 ${mean(b.genome.distance).toFixed(2)} / 出力配分 ${mean(b.genome.release).toFixed(2)}</p><h3>成長と加齢の遺伝</h3>${table(percent(traits.development),R.Genetics.DEVELOPMENT,0,100)}<p class="muted">成熟の目安 ${growth.maturityYears.toFixed(1)}歳 / 衰え始め ${growth.declineStart.toFixed(1)}歳 / 以後の低下 年${(growth.declineRate*100).toFixed(1)}%。低下率は能力の50を超える部分にかかります。</p><h3>羽色因子</h3><p class="muted">${traits.body.map(color=>R.Genetics.COLORS[color]).join('・')} / 額羽：${R.Genetics.CRESTS[traits.crest]}</p><h3>遺伝品質</h3>${table(R.quality(b.genome),{...Object.fromEntries(R.Mapping.ABILITIES.map(a=>[a.key,a.label])),...R.MANAGEMENT})}`:'<p class="muted">遺伝と伸びしろは公開段階3でわかります。</p>'}</details>`;
+  }
+  const mean=a=>a.reduce((n,x)=>n+x,0)/a.length;
+  function detail(b) {
+    return `<div class="detail-cover ${b.color}">${birdArt(b)}<div><span class="eyebrow">${role(b)} ・ ${b.sex==='F'?'牝':'牡'} ・ ${R.age(state,b)===null?kind(b):R.age(state,b)+'歳'}</span><h2 id="dialog-title">${esc(b.name)}</h2><p>${b.races?`${b.races}戦 ${b.wins}勝${b.g1?' / GⅠ '+b.g1+'勝':''}`:'これからはじまる、この子の物語。'}</p><p>${colorText(b)}</p></div></div>${note(R.observe(state,b),b.registered?'moogle':'shiroma')}${b.role==='young'?`<label class="form-field">放牧地<select id="pasture-choice" data-id="${b.id}"><option value="meadow" ${b.pasture==='meadow'?'selected':''}>穏やかな平原 ・ 落ち着きと合図を学ぶ</option><option value="forest" ${b.pasture==='forest'?'selected':''} ${!state.facilities.forest?'disabled':''}>過酷な森 ・ 意欲と刺激への慣れ${!state.facilities.forest?'（未整備）':''}</option></select></label>`:''}${b.role==='racing'?`<div class="wellbeing"><span>今の様子 <b>${b.health?'療養中':b.condition<75||b.strain>25?'ゆっくり休養':'元気に過ごしています'}</b></span><span>ファン <b>${money(b.fans)}人</b></span></div><label class="form-field">モーグリへの方針<select id="policy-choice" data-id="${b.id}">${policyOptions(b.policy)}</select></label>`:''}${research(b)}<details class="pedigree"><summary>父と母、その先の血統</summary><div class="parent-pair">${b.parents.length?b.parents.map((id,i)=>`<div><small>${i?'母':'父'}</small><b>${esc(R.bird(state,id)?.name)}</b></div>`).join(''):'<p class="muted">はじまりの血統です。</p>'}</div></details>${b.records.length?`<details class="pedigree"><summary>これまでのレース</summary>${b.records.slice().reverse().map(r=>`<div class="list-row"><span>${esc(r.name)}<small>${R.when(r.week)}</small></span><b>${r.rank}着 / ${money(r.reward)} G</b></div>`).join('')}</details>`:''}<div class="rename-row"><label for="bird-name">名前<input id="bird-name" value="${esc(b.name)}" maxlength="20"></label>${button('rename','名前を保存',`data-id="${b.id}"`,'button outline')}</div>${b.role==='racing'?button('retire-dialog','競走生活を終え、繁殖へ',`data-id="${b.id}"`,'button quiet'):''}`;
+  }
+  function modalMarkup() {
+    let body='',wide=false;
+    if(modal.type==='reset')body=`<span class="dialog-symbol">↺</span><h2 id="dialog-title">牧場を最初から始めますか？</h2><p>現在のチョコボ・ギル・施設・記録をリセットします。<br>この操作は取り消せません。</p><div class="reset-preview"><span>1年 3月 第1週</span><span>所有 0羽</span><span>20,000 G</span></div><p class="muted">残したい記録があるときは、先に設定から書き出してください。</p><div class="modal-actions">${button('close','キャンセル','data-autofocus','button outline')}${button('reset-confirm','リセットして始める','','button danger')}</div>`;
+    if(modal.type==='buy') {const b=R.bird(state,modal.id);body=`<h2 id="dialog-title">${esc(b.name)}を迎えますか？</h2><div class="purchase-bird">${birdArt(b)}</div><p>繁殖牝羽として羽風牧場に迎えます。</p><div class="price-check"><span>購入料金</span><b>${money(b.price)} G</b><span>購入後のギル</span><b>${money(state.money-b.price)} G</b></div><div class="modal-actions">${button('close','戻る','data-autofocus','button outline')}${button('buy-confirm','この子を迎える',`data-id="${b.id}"`)}</div>`;}
+    if(modal.type==='breed') {const d=R.bird(state,damId),s=R.bird(state,sireId);body=`<h2 id="dialog-title">この組み合わせで配合しますか？</h2><p class="pair-names">${esc(d.name)} × ${esc(s.name)}</p><div class="price-check"><span>配合料金</span><b>${money(R.breedFee(s))} G</b><span>出産予定</span><b>${R.when(state.week+R.GESTATION)}</b></div><p class="muted">年に1回の配合です。出産用の羽房を1枠予約します。</p><div class="modal-actions">${button('close','戻る','data-autofocus','button outline')}${button('breed-confirm','配合をお願いする')}</div>`;}
+    if(modal.type==='build'){const key=modal.key,f=R.FACILITIES[key];body=`<h2 id="dialog-title">${f.name}を${state.facilities[key]?'拡張':'建設'}しますか？</h2><p>${f.description}</p><div class="price-check"><span>費用</span><b>${money(R.facilityCost(state,key))} G</b><span>建設後の段階</span><b>Lv. ${state.facilities[key]+1}</b></div><div class="modal-actions">${button('close','戻る','data-autofocus','button outline')}${button('build-confirm','工事をお願いする',`data-key="${key}"`)}</div>`;}
+    if(modal.type==='detail'){const b=R.bird(state,modal.id);if(!b)return '';wide=true;body=detail(b);}
+    if(modal.type==='retire'){const b=R.bird(state,modal.id);body=`<h2 id="dialog-title">${esc(b.name)}を繁殖へ？</h2><p>競走生活を終え、${b.sex==='M'?'種牡羽':'繁殖牝羽'}になります。競走羽には戻れません。</p><div class="modal-actions">${button('close','戻る','data-autofocus','button outline')}${button('retire-confirm','繁殖入りする',`data-id="${b.id}"`)}</div>`;}
+    if(modal.type==='result'){const b=R.bird(state,modal.id),r=b.records.find(r=>r.week===modal.week);body=`<span class="eyebrow">RACE RESULT</span><h2 id="dialog-title">${esc(r.name)}</h2><p>${R.when(r.week)} / ${r.distance}m / ${groundText(r)}</p><div class="result-summary"><strong>${r.rank}<small>着</small></strong><span>${esc(b.name)}<small>賞金・手当 ${money(r.reward)} G</small></span></div><ol class="finish-order">${r.field.map((x,i)=>`<li class="${x.id===b.id?'mine':''}"><span>${i+1}</span><b>${esc(x.name)}</b><span>${Math.floor(x.time/60)}:${(x.time%60).toFixed(2).padStart(5,'0')}</span></li>`).join('')}</ol>`;}
+    if(modal.type==='import'){body=`<h2 id="dialog-title">この牧場のデータを読み込みますか？</h2><p>現在の牧場を、${R.when(modal.state.week)}・${money(modal.state.money)} Gの記録に置き換えます。</p><div class="modal-actions">${button('close','キャンセル','data-autofocus','button outline')}${button('import-confirm','読み込んで再開')}</div>`;}
+    return `<div class="modal-backdrop"><section class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1"><button class="modal-close" data-action="close" aria-label="閉じる">×</button>${modal.error?`<p class="notice" role="alert">${esc(modal.error)}</p>`:''}${body}</section></div>`;
+  }
+  function render() {
+    const unread=state.reports.length;
+    $('#app').innerHTML=`<div class="app-shell" ${modal?'inert':''}><aside class="sidebar"><button class="brand" data-action="nav" data-page="home"><span class="brand-feather">❧</span><span>羽風牧場<small>WING & WIND</small></span></button><span class="nav-caption">RANCH LIFE</span><nav aria-label="メインメニュー">${['home','birds','breed','facilities','notebook'].map(id=>`<button data-action="nav" data-page="${id}" class="nav-item ${page===id?'active':''}" ${page===id?'aria-current="page"':''}><span>${ICONS[id]}</span>${LABELS[id]}${id==='home'&&unread?'<i class="unread-dot"></i>':''}</button>`).join('')}</nav><div class="sidebar-letter"><span>Dear Rancher,</span><p>ひとつの血統、<br>あなたと育てる物語。</p><small>with Shiroma</small></div><button class="nav-item settings-link ${page==='settings'?'active':''}" data-action="nav" data-page="settings"><span>⚙</span>設定</button><div class="save-status ${saveOK?'':'failed'}"><i></i>${saveOK?'自動保存しています':'保存できていません'}</div></aside><main><header class="topbar"><div class="date"><span class="season-mark">${['冬','春','夏','秋'][Math.floor((R.date(state.week).month%12)/3)]}</span><span>${R.when(state.week)}</span></div><div class="wallet"><span>所持ギル</span><strong>${money(state.money)}</strong><small>G</small></div></header><div class="content">${notice?`<div class="notice" role="status">${esc(notice)} ${button('dismiss','閉じる','','button quiet small')}</div>`:''}${unread&&page!=='home'?`<button class="unread-banner" data-action="nav" data-page="home">シロマから${unread}件の報告が届いています <span>読む →</span></button>`:''}${({home,market,birds:birdsPage,breed:breedPage,facilities:facilitiesPage,notebook,settings}[page]||home)()}<footer>HANEKAZE RANCH <span>小さな羽音から、物語はつづく。</span></footer></div></main></div>${modal?modalMarkup():''}`;
+    document.body.classList.toggle('has-modal',!!modal);
+  }
+  function openModal(value) {returnFocus=document.activeElement;modal=value;render();requestAnimationFrame(()=>($('[data-autofocus]')||$('.modal-close')||$('.modal'))?.focus());}
+  function closeModal() {const action=returnFocus?.dataset?.action,id=returnFocus?.dataset?.id;modal=null;render();const target=[...document.querySelectorAll('[data-action]')].find(el=>el.dataset.action===action&&el.dataset.id===id);target?.focus();}
+  function ack() {
+    const options={names:{},policies:{}};
+    document.querySelectorAll('[data-register-name]').forEach(el=>{options.names[el.dataset.registerName]=el.value;if(!el.value.trim())throw Error('競走羽の名前を入力してください。');});
+    document.querySelectorAll('[data-register-policy]').forEach(el=>options.policies[el.dataset.registerPolicy]=el.value);
+    R.acknowledge(state,options);
+  }
+  async function advance(count=1) {
+    if(busy)return;busy=true;
+    try {
+      for(let i=0;i<count;i++) {
+        R.advance(state);save();
+        if(i===count-1||state.reports.some(r=>r.type!=='weekly'))break;
+        while(state.reports.length)R.acknowledge(state);
+        await new Promise(resolve=>setTimeout(resolve,0));
+      }
+      page='home';render();window.scrollTo({top:0});
+    }catch(e){notice=e.message;render();}finally{busy=false;}
+  }
+  document.addEventListener('click',event=>{
+    const target=event.target.closest('[data-action]');if(!target||target.disabled||busy)return;
+    const {action,id,key}=target.dataset;
+    try {
+      if(action==='nav'){page=target.dataset.page;modal=null;render();window.scrollTo({top:0});return;}
+      if(action==='close'){closeModal();return;}
+      if(action==='dismiss')notice='';
+      if(action==='advance'||action==='advance-month'){advance(action==='advance'?1:4);return;}
+      if(action==='ack')ack();
+      if(action==='buy-dialog'){openModal({type:'buy',id});return;}
+      if(action==='buy-confirm'){R.buy(state,id);page='home';modal=null;}
+      if(action==='select-sire'){
+        const scroll=$('.sire-list')?.scrollTop||0;sireId=id;render();
+        const list=$('.sire-list');if(list)list.scrollTop=scroll;
+        $(`[data-action="select-sire"][data-id="${sireId}"]`)?.focus({preventScroll:true});return;
+      }
+      if(action==='sire-tab'&&SIRE_TABS.some(([tab])=>tab===target.dataset.tab)){sireTab=target.dataset.tab;sireId=sireChoices[sireTab]||'';render();$(`#sire-tab-${sireTab}`)?.focus();return;}
+      if(action==='breed-dialog'){const reason=R.breedingReason(state,R.bird(state,damId),R.bird(state,sireId));if(reason)throw Error(reason);openModal({type:'breed'});return;}
+      if(action==='breed-confirm'){R.breed(state,damId,sireId);page='home';modal=null;}
+      if(action==='build-dialog'){openModal({type:'build',key});return;}
+      if(action==='build-confirm'){R.build(state,key);modal=null;notice=`${R.FACILITIES[key].name}がLv. ${state.facilities[key]}になりました。`;}
+      if(action==='detail'){openModal({type:'detail',id});return;}
+      if(action==='filter')birdFilter=target.dataset.filter;
+      if(action==='notebook-tab')notebookTab=target.dataset.tab;
+      if(action==='rename'){R.rename(state,id,$('#bird-name').value);notice='名前を保存しました。';}
+      if(action==='retire-dialog'){openModal({type:'retire',id});return;}
+      if(action==='retire-confirm'){R.retire(state,id);modal=null;page='home';}
+      if(action==='promote'){R.promote(state,id);if(state.reports[0]?.type==='founder')R.acknowledge(state);page='home';}
+      if(action==='result'){openModal({type:'result',id,week:Number(target.dataset.week)});return;}
+      if(action==='reset-dialog'){openModal({type:'reset'});return;}
+      if(action==='reset-confirm'&&modal?.type==='reset'){state=R.initial();saveBlocked=false;modal=null;page='home';damId='';sireId='';sireTab='root';rootTrait='';Object.keys(sireChoices).forEach(key=>delete sireChoices[key]);notice='新しい牧場をはじめました。';birdFilter='all';notebookTab='calendar';}
+      if(action==='export'){const url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=`hanekaze-${state.week}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;}
+      if(action==='import'){$('#import-file').click();return;}
+      if(action==='import-confirm'&&modal?.type==='import'){state=R.upgradeState(modal.state);saveBlocked=false;modal=null;page='home';damId='';sireId='';sireTab='root';rootTrait='';Object.keys(sireChoices).forEach(key=>delete sireChoices[key]);notice='バックアップから再開しました。';}
+      save();render();
+      if(['ack','buy-confirm','breed-confirm','reset-confirm','import-confirm','retire-confirm','promote'].includes(action))window.scrollTo({top:0});
+    } catch(e){if(modal)modal.error=e.message;else notice=e.message;render();}
+  });
+  document.addEventListener('change',async event=>{
+    const el=event.target;
+    try {
+      if(el.id==='dam-choice')damId=el.value;
+      if(el.id==='root-trait')rootTrait=Object.hasOwn(traitLabels,el.value)?el.value:'';
+      if(el.id==='pasture-choice')R.setPasture(state,el.dataset.id,el.value);
+      if(el.id==='policy-choice')R.setPolicy(state,el.dataset.id,el.value);
+      if(el.id==='difficulty'&&['easy','normal','hard'].includes(el.value))state.difficulty=el.value;
+      if(el.id==='import-file') {
+        const file=el.files[0];if(!file)return;
+        if(file.size>20*1024*1024)throw Error('読み込めるファイルは20MBまでです。');
+        const imported=JSON.parse(await file.text());
+        if(!R.validState(imported))throw Error('このデータは読み込めません。新しい進行のセーブデータを選んでください。');
+        openModal({type:'import',state:imported});return;
+      }
+      if(el.matches?.('[data-register-name], [data-register-policy]'))return;
+      save();render();
+      if(el.id==='root-trait')$('#root-trait')?.focus();
+    }catch(e){if(modal)modal.error=e.message;else notice=e.message;render();}
+  });
+  document.addEventListener('keydown',event=>{
+    const tab=event.target.closest?.('[data-action="sire-tab"]');
+    if(!modal&&tab&&['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
+      event.preventDefault();
+      const index=SIRE_TABS.findIndex(([key])=>key===sireTab);
+      const next=event.key==='Home'?0:event.key==='End'?SIRE_TABS.length-1:(index+(event.key==='ArrowRight'?1:-1)+SIRE_TABS.length)%SIRE_TABS.length;
+      sireTab=SIRE_TABS[next][0];sireId=sireChoices[sireTab]||'';render();$(`#sire-tab-${sireTab}`)?.focus();return;
+    }
+    if(!modal)return;
+    if(event.key==='Escape'){event.preventDefault();closeModal();return;}
+    if(event.key==='Tab') {
+      const focusable=[...document.querySelectorAll('.modal button:not(:disabled), .modal input, .modal select, .modal summary')];
+      const first=focusable[0],last=focusable.at(-1);
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+    }
+  });
+  window.addEventListener('storage',event=>{if(event.key===R.SAVE_KEY){notice='別のタブで牧場が更新されました。再読み込みして続けてください。';saveBlocked=true;saveOK=false;busy=true;render();}});
+  save();render();
+})();
