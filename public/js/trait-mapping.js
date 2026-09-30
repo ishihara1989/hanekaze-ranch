@@ -30,7 +30,7 @@
     const v = bounded(random(), 0, 1, 'random');
     return Math.sqrt(-2 * Math.log(Math.max(Number.EPSILON, u))) * Math.cos(2 * Math.PI * v);
   }
-  function generate({quality = 100, distance = 0, release = 0, deviation = 10, random = Math.random} = {}) {
+  function generate({quality = 100, distance = 0, release = 0, deviation = 10, random = Math.random, birthBounds = null} = {}) {
     bounded(distance, -1, 1, 'distance');
     bounded(release, -1, 1, 'release');
     bounded(deviation, 0, 20, 'deviation');
@@ -45,7 +45,13 @@
         let sample;
         let attempts = 0;
         do {
-          sample = center + deviation * normal(random);
+          const z = normal(random);
+          // Pedigree honours move the lower/upper end of the birth lottery independently.
+          // Unrelated birds retain the original bounded normal distribution.
+          const bounds = birthBounds?.[ability.key];
+          sample = center + (bounds
+            ? (-20 + bounds.lower) + (40 + bounds.upper - bounds.lower) * (.5 + .5 * Math.tanh(z / 2))
+            : deviation * z);
           if (++attempts > 10000) throw new RangeError('Unable to sample bounded normal');
         } while (sample < 50 || sample > 150);
         scores[ability.key] = sample;

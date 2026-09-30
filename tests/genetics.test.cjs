@@ -70,9 +70,9 @@ test('non-hatching pregnancy releases its stall and cannot produce a phantom chi
   mother.genome.traits.gold=['G','g'];mother.color='golden';
   R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
   for(let i=0;i<3;i++){read(s);R.advance(s);}read(s);
-  const restored=copy(s),count=s.birds.length;
+  const restored=copy(s),count=R.own(s).length;
   R.advance(s);R.advance(restored);assert.deepEqual(s,restored);
-  assert.equal(s.birds.length,count);assert.equal(mother.pregnancy,null);assert.equal(R.racingCount(s),0);
+  assert.equal(R.own(s).length,count);assert.equal(mother.pregnancy,null);assert.equal(R.racingCount(s),1);
   assert.equal(R.own(s).filter(b=>b.role==='young').length,0);assert.equal(s.milestones.birth,undefined);
   assert.equal(s.reports.filter(r=>r.title==='卵は、かえりませんでした').length,1);
   assert.match(R.breedingReason(s,mother,father),/今年/);assert.ok(R.validState(s));

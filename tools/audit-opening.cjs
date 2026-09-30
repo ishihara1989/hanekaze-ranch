@@ -11,7 +11,7 @@ for(let mare=0;mare<3;mare++)for(let sire=0;sire<R.ROOTS.length;sire++){
     R.advance(s);lowest=Math.min(lowest,s.money);
     if(!R.validState(s))throw Error(`Invalid state: ${mare}/${sire}, week ${s.week}`);
   }
-  const child=R.own(s).find(b=>b.role==='racing');
+  const child=R.own(s).find(b=>b.role==='racing'&&b.parents.length);
   if(!child?.races||s.debt)throw Error(`Opening failed: ${mare}/${sire}`);
   rows.push({mother:mother.name,sire:father.name,firstRace:R.when(child.records[0].week),firstWin:child.records.find(r=>r.rank===1)?R.when(child.records.find(r=>r.rank===1).week):'未勝利',races:child.races,wins:child.wins,lowest,closing:s.money});
 }

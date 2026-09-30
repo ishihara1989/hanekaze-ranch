@@ -13,6 +13,18 @@ function boot(saved,failSave=false){
 }
 const html=g=>g.node('#app').innerHTML;
 function purchase(g){g.click('buy-dialog',{id:g.h.state.sale[0]});g.click('buy-confirm',{id:g.h.state.sale[0]});g.click('ack');}
+
+test('race results explain observed pack behavior, retain old records and distinguish nonfinishers',()=>{
+  const g=boot();purchase(g);const b=R.own(g.h.state)[0];
+  const r={week:9,name:'試走',distance:1600,surface:'turf',rank:1,reward:100,
+    field:[{id:b.id,name:b.name,time:100,finished:true},{id:'rival',name:'相手',time:900,finished:false}],
+    interactions:{crowdedSeconds:5,duelSeconds:12,savingSeconds:3,extraEnergy:30}};
+  b.records.push(r);g.click('result',{id:b.id,week:'9'});
+  assert.match(html(g),/羽混みの中を走る場面/);assert.match(html(g),/近くの相手と競り合い/);
+  assert.match(html(g),/余力を温存しました/);assert.match(html(g),/未完走/);assert.match(html(g),/1:40.00/);
+  delete r.interactions;g.h.render();
+  assert.doesNotMatch(html(g),/羽混みの中を走る場面|余力を温存しました/);assert.match(html(g),/1:40.00/);
+});
 test('new UI exposes one tutorial action, hides numeric traits and renders every deliberate destination',()=>{
   const g=boot();assert.match(html(g),/牧場の、はじめの日/);assert.match(html(g),/繁殖牝羽セールへ/);assert.doesNotMatch(html(g),/最高速|遺伝品質/);
   for(const page of ['birds','market','breed','facilities','notebook','settings']){g.click('nav',{page});assert.equal(g.h.page,page);assert.match(html(g),/<h1>/);assert.doesNotMatch(html(g),/class="notice"/);}
@@ -20,14 +32,14 @@ test('new UI exposes one tutorial action, hides numeric traits and renders every
 test('purchase and breeding are reviewable before payment, with a clear route back to the weekly loop',async()=>{
   const g=boot(),before=g.h.state.money;g.click('nav',{page:'market'});g.click('buy-dialog',{id:g.h.state.sale[0]});assert.equal(g.h.state.money,before);assert.match(html(g),/17,200 G/);g.click('close');assert.equal(g.h.state.money,before);
   purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');assert.match(html(g),/600 G/);g.click('breed-confirm');assert.equal(g.h.state.stage,'grow');g.click('ack');
-  await g.h.advance(4);assert.equal(g.h.state.week,13);assert.ok(g.h.state.reports.some(r=>r.type==='birth'));assert.ok(R.own(g.h.state).some(b=>b.role==='young'));
+  await g.h.advance(4);assert.equal(g.h.state.week,10,'first win stops multi-week advance');while(g.h.state.reports.length)g.click('ack');await g.h.advance(3);assert.equal(g.h.state.week,13);assert.ok(g.h.state.reports.some(r=>r.type==='birth'));assert.ok(R.own(g.h.state).some(b=>b.role==='young'));
   const restored=boot(g.storage.get(R.SAVE_KEY));assert.equal(restored.h.state.week,13);assert.deepEqual(JSON.parse(JSON.stringify(restored.h.state)),JSON.parse(JSON.stringify(g.h.state)));
 });
-test('reset cancellation preserves everything; confirmation returns to March with zero owned birds',()=>{
+test('reset cancellation preserves everything; confirmation returns to March with the automated racing filly',()=>{
   const g=boot();purchase(g);const original=JSON.stringify(g.h.state);g.click('nav',{page:'settings'});g.click('reset-dialog');assert.equal(g.h.modal.type,'reset');assert.match(html(g),/取り消せません/);assert.match(html(g),/data-autofocus/);assert.equal(JSON.stringify(g.h.state),original);
   g.click('close');assert.equal(JSON.stringify(g.h.state),original);g.click('reset-confirm');assert.equal(JSON.stringify(g.h.state),original,'cannot reset without the confirmation dialog');
-  g.click('reset-dialog');g.click('reset-confirm');assert.equal(g.h.state.week,9);assert.equal(g.h.state.money,20000);assert.equal(R.own(g.h.state).length,0);assert.equal(g.h.state.reports.length,0);assert.equal(g.h.state.stage,'buy');
-  const reloaded=boot(g.storage.get(R.SAVE_KEY));assert.equal(R.own(reloaded.h.state).length,0);assert.equal(reloaded.h.state.week,9);
+  g.click('reset-dialog');g.click('reset-confirm');assert.equal(g.h.state.week,9);assert.equal(g.h.state.money,20000);assert.equal(R.own(g.h.state).length,1);assert.equal(g.h.state.reports.length,0);assert.equal(g.h.state.stage,'buy');
+  const reloaded=boot(g.storage.get(R.SAVE_KEY));assert.equal(R.own(reloaded.h.state).length,1);assert.equal(reloaded.h.state.week,9);
 });
 test('details reveal personality, current abilities and inherited quality only at the research gates',()=>{
   const g=boot();purchase(g);const id=R.own(g.h.state)[0].id;g.click('detail',{id});assert.doesNotMatch(html(g),/走る意欲|最高速|遺伝品質/);
@@ -47,6 +59,18 @@ test('bird names are escaped in dialogue and rendered detail content',()=>{
 const listedSires=g=>[...html(g).matchAll(/data-action="select-sire" data-id="([^"]+)"/g)].map(m=>R.bird(g.h.state,m[1]));
 const selectedSire=g=>html(g).match(/data-action="select-sire" data-id="([^"]+)" aria-pressed="true"/)?.[1];
 
+test('public sire search combines text, winning route and ability order with visible parent hints',async()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('sire-tab',{tab:'public'});
+  g.node('#sire-query').value='メテオ';g.click('search-sires');
+  await g.change('sire-route','dirt');await g.change('sire-sort','power');
+  const candidates=listedSires(g);assert.ok(candidates.length);
+  assert.ok(candidates.every(b=>b.farm==='メテオ牧場'));
+  assert.ok(candidates.every((b,i)=>!i||candidates[i-1].potential.power>=b.potential.power));
+  assert.match(html(g),/長所/);assert.match(html(g),/短所/);assert.match(html(g),/競走成績/);assert.match(html(g),/乱数の下限/);
+  g.node('#sire-query').value='見つからない名前';g.click('search-sires');
+  assert.equal(listedSires(g).length,0);assert.match(html(g),/data-action="breed-dialog" disabled/);
+});
+
 test('sire tabs separate source, other ranch, founder and home candidates and remember selection',()=>{
   const g=boot();purchase(g);
   const base=R.sires(g.h.state)[0];
@@ -54,8 +78,8 @@ test('sire tabs separate source, other ranch, founder and home candidates and re
   g.click('nav',{page:'breed'});
   assert.equal(listedSires(g).length,32);assert.ok(listedSires(g).every(b=>b.kind==='root'));
   const selected=listedSires(g)[7];g.click('select-sire',{id:selected.id});
-  g.click('sire-tab',{tab:'public'});assert.equal(listedSires(g).length,2);assert.ok(listedSires(g).every(b=>b.owner==='public'));
-  const publicSire=selectedSire(g);g.click('breed-dialog');assert.match(html(g),new RegExp(R.bird(g.h.state,publicSire).name));g.click('close');
+  g.click('sire-tab',{tab:'public'});assert.equal(listedSires(g).length,50);assert.ok(listedSires(g).every(b=>b.owner==='public'));
+  g.h.state.money=100000000;const publicSire=selectedSire(g);g.click('breed-dialog');assert.match(html(g),new RegExp(R.bird(g.h.state,publicSire).name));g.click('close');
   g.click('sire-tab',{tab:'founder'});assert.deepEqual(listedSires(g).map(b=>b.name),['私の始祖']);assert.match(html(g),/無料/);
   g.click('sire-tab',{tab:'home'});assert.deepEqual(listedSires(g).map(b=>b.name),['私の種牡羽']);
   g.click('sire-tab',{tab:'root'});assert.equal(selectedSire(g),selected.id);
@@ -81,7 +105,7 @@ test('strength filter exposes four donors per inherited trait and tabs support a
     assert.ok(listedSires(g).every(b=>{const p=R.ROOTS.find(p=>p.lineage===b.lineage);return p.primary===trait||p.secondary===trait;}));
     assert.match(html(g),/4 \/ 32羽/);assert.doesNotMatch(html(g),/遺伝品質/);
   }
-  g.key('ArrowRight');assert.ok(listedSires(g).every(b=>b.owner==='public'));assert.equal(listedSires(g).length,2);
+  g.key('ArrowRight');assert.ok(listedSires(g).every(b=>b.owner==='public'));assert.equal(listedSires(g).length,50);
   g.key('End');assert.match(html(g),/id="sire-tab-home"[^>]*aria-selected="true"/);
   g.key('ArrowRight');assert.match(html(g),/id="sire-tab-root"[^>]*aria-selected="true"/);assert.equal(listedSires(g).length,4);
   g.key('ArrowLeft');assert.match(html(g),/id="sire-tab-home"[^>]*aria-selected="true"/);
@@ -116,6 +140,6 @@ test('body and crest render separately; research reveals ground and growth at th
   b.genome.traits.body=['black','white'];b.color='black';b.genome.traits.crest='rainbow';b.crest='rainbow';
   g.click('detail',{id:b.id});assert.match(html(g),/羽色：黒 \/ 額羽：虹/);assert.match(html(g),/<linearGradient id="crest-/);
   assert.match(html(g),/fill="#454653"/);assert.doesNotMatch(html(g),/成長と加齢の遺伝|<h3>羽場適性/);
-  g.h.state.facilities.lab=2;g.h.render();assert.match(html(g),/<h3>羽場適性/);assert.match(html(g),/min="0" max="100"/);assert.doesNotMatch(html(g),/成熟の目安/);
+  g.h.state.facilities.lab=2;g.h.render();assert.match(html(g),/<h3>羽場適性/);assert.match(html(g),/min="50" max="150"/);assert.doesNotMatch(html(g),/成熟の目安/);
   g.h.state.facilities.lab=3;g.h.render();assert.match(html(g),/成熟の目安/);assert.match(html(g),/衰え始め/);assert.match(html(g),/羽色因子/);assert.doesNotMatch(html(g),/金因子/);
 });

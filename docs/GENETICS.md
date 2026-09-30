@@ -1,5 +1,7 @@
 # 羽場・羽色・成長の遺伝
 
+> 2026-09-30更新：初期競走羽、賞金・施設価格、研究解放、他牧場、GⅠ実績の出生補正の現行仕様は [ECONOMY_PROGRESSION.md](ECONOMY_PROGRESSION.md) を参照。以下の旧数値・旧解放条件は初期設計の記録です。
+
 2026-09-30、v4拡張。遺伝は `public/js/ranch-genetics.js`、羽場条件は `public/js/ranch-ground.js`、育成・出生・出走への接続は `public/js/ranch-engine.js`。32源流の配分は [ROOT_STALLIONS.md](ROOT_STALLIONS.md)。
 
 ## 1. 芝・ダートとクッション

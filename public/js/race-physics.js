@@ -71,9 +71,10 @@
     throw new RangeError('Course must have ordered, non-overlapping segments and slopes within ±0.2');
   }
   // A target speed is a rider request, not a direct velocity assignment.
-  function step(state, p, dt, targetSpeed, slope = 0, traction = 1) {
+  function step(state, p, dt, targetSpeed, slope = 0, traction = 1, effortCost = 1) {
     if (!Number.isFinite(dt) || dt <= 0 || dt > .5 || !Number.isFinite(targetSpeed) ||
-        !Number.isFinite(slope) || Math.abs(slope) > .2 || !Number.isFinite(traction) || traction < .7 || traction > 1) throw new RangeError('Invalid step');
+        !Number.isFinite(slope) || Math.abs(slope) > .2 || !Number.isFinite(traction) || traction < .7 || traction > 1 ||
+        !Number.isFinite(effortCost) || effortCost < 1 || effortCost > 1.5) throw new RangeError('Invalid step');
     const v = state.speed;
     const demandAcceleration = clamp((clamp(targetSpeed, 0, p.maxSpeed) - v) / 1.5, -4, 6);
     const load = resistance(v, p) + 9.81 * slope;
@@ -85,7 +86,8 @@
     const workSpeed = Math.max(.5, v + .5 * Math.max(0, wantedForce - load) * dt);
     // Tired legs may also lose efficiency, so early fatigue has a continuing cost.
     // Force is effective ground thrust; muscle work pays for energy lost at contact.
-    const workCost = workSpeed * (1 + p.fatigueCost * state.fatigue ** 2) / traction;
+    // Tension and unnecessary movements cost work, never grant extra aerobic supply.
+    const workCost = workSpeed * (1 + p.fatigueCost * state.fatigue ** 2) / traction * effortCost;
     const requestedPower = wantedForce * workCost;
     const maxAerobic = criticalPower(p);
     const aerobicTarget = Math.min(maxAerobic, requestedPower);
