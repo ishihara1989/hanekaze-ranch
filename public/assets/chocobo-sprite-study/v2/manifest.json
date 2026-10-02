@@ -1,0 +1,98 @@
+{
+  "revision": 2,
+  "columns": 4,
+  "rows": 2,
+  "cellWidth": 448,
+  "cellHeight": 448,
+  "width": 1792,
+  "height": 896,
+  "frameCount": 8,
+  "recommendedFps": 10,
+  "source": "../run-yellow-v2.png",
+  "semanticMask": "../regions-v2.png",
+  "body": {
+    "yellow": {
+      "label": "黄",
+      "file": "body-yellow.png"
+    },
+    "red": {
+      "label": "赤",
+      "file": "body-red.png"
+    },
+    "blue": {
+      "label": "青",
+      "file": "body-blue.png"
+    },
+    "green": {
+      "label": "緑",
+      "file": "body-green.png"
+    },
+    "rose": {
+      "label": "ピンク",
+      "file": "body-rose.png"
+    },
+    "white": {
+      "label": "白",
+      "file": "body-white.png"
+    },
+    "black": {
+      "label": "黒",
+      "file": "body-black.png"
+    },
+    "purple": {
+      "label": "紫",
+      "file": "body-purple.png"
+    },
+    "gray": {
+      "label": "灰",
+      "file": "body-gray.png"
+    },
+    "golden": {
+      "label": "金",
+      "file": "body-golden.png"
+    }
+  },
+  "crest": {
+    "yellow": {
+      "label": "黄",
+      "file": "crest-yellow.png"
+    },
+    "red": {
+      "label": "赤",
+      "file": "crest-red.png"
+    },
+    "blue": {
+      "label": "青",
+      "file": "crest-blue.png"
+    },
+    "white": {
+      "label": "白",
+      "file": "crest-white.png"
+    },
+    "black": {
+      "label": "黒",
+      "file": "crest-black.png"
+    },
+    "rainbow": {
+      "label": "虹",
+      "file": "crest-rainbow.png"
+    }
+  },
+  "masks": {
+    "body": "body-mask.png",
+    "crest": "crest-mask.png"
+  },
+  "phases": [
+    "右脚が前で着地",
+    "右脚が体の下で荷重",
+    "右脚で後方へ蹴る",
+    "浮遊・左脚を前へ",
+    "左脚が前で着地",
+    "左脚が体の下で荷重",
+    "左脚で後方へ蹴る",
+    "浮遊・右脚を前へ"
+  ],
+  "visibleNearLeg": "left",
+  "visibleFarLeg": "right",
+  "compositing": "Draw body then crest at identical coordinates. Layers have disjoint nonzero-alpha pixels."
+}

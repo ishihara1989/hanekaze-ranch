@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "status": "complete",
+  "requestedGenerator": "Google Imagen",
+  "common": "Use case: stylized-concept. Asset type: production background panorama for a full 2D side-view fantasy bird racing game. Create one wide landscape image, approximately 2048 x 1024, with detailed hand-painted Japanese fantasy game environment art, delicate brush texture, layered atmospheric depth, readable silhouettes, harmonious muted colors. Camera: level side-on from outside the course looking across the distant landscape; no overhead view, no strong vanishing-point track. The upper 55 percent contains sky and the venue landmarks, the bottom 45 percent is quiet open terrain with very little contrast so racing sprites and the independently drawn track can overlay it. Horizontally repeatable composition: left and right edges have matching horizon heights, sky and ground colors; keep landmarks away from the edges, no framing or vignette. Soft diffuse daylight. Background only: no birds, riders, people, race lanes, fences, posts, gates, goal lines, track markings, HUD, letters, logos, watermarks or readable text.",
+  "venues": [
+    {
+      "id": "tenku",
+      "name": "天空神殿",
+      "surface": "turf",
+      "file": "tenku-v1.png",
+      "prompt": "Use case: stylized-concept. Asset type: production background panorama for a full 2D side-view fantasy bird racing game. Create one wide landscape image, approximately 2048 x 1024, with detailed hand-painted Japanese fantasy game environment art, delicate brush texture, layered atmospheric depth, readable silhouettes, harmonious muted colors. Camera: level side-on from outside the course looking across the distant landscape; no overhead view, no strong vanishing-point track. The upper 55 percent contains sky and the venue landmarks, the bottom 45 percent is quiet open terrain with very little contrast so racing sprites and the independently drawn track can overlay it. Horizontally repeatable composition: left and right edges have matching horizon heights, sky and ground colors; keep landmarks away from the edges, no framing or vignette. Soft diffuse daylight. Background only: no birds, riders, people, race lanes, fences, posts, gates, goal lines, track markings, HUD, letters, logos, watermarks or readable text.\nScene: Sky Temple. Ivory and pale sandstone classical shrines with slender columns, teal roofs and golden finials stand on floating rock islands among luminous blue-white cloud seas. Clear calm azure sky, gentle warm light, airy pale greens and gold. A few distant floating sanctuary silhouettes create depth. Keep the lower terrain muted pale grass and cloud mist."
+    },
+    {
+      "id": "oukyu",
+      "name": "王宮都市",
+      "surface": "dirt",
+      "file": "oukyu-v1.png",
+      "prompt": "Use case: stylized-concept. Asset type: production background panorama for a full 2D side-view fantasy bird racing game. Create one wide landscape image, approximately 2048 x 1024, with detailed hand-painted Japanese fantasy game environment art, delicate brush texture, layered atmospheric depth, readable silhouettes, harmonious muted colors. Camera: level side-on from outside the course looking across the distant landscape; no overhead view, no strong vanishing-point track. The upper 55 percent contains sky and the venue landmarks, the bottom 45 percent is quiet open terrain with very little contrast so racing sprites and the independently drawn track can overlay it. Horizontally repeatable composition: left and right edges have matching horizon heights, sky and ground colors; keep landmarks away from the edges, no framing or vignette. Soft diffuse daylight. Background only: no birds, riders, people, race lanes, fences, posts, gates, goal lines, track markings, HUD, letters, logos, watermarks or readable text.\nScene: Royal Palace City. An elegant fantasy palace with pale limestone walls, slate teal roofs, slender towers and gilded details stands beyond a bustling but unpopulated medieval castle town. Burgundy roof accents, warm ochre and cream stone, distant rolling hills, soft blue sky. Quiet sandy beige foreground terrain."
+    },
+    {
+      "id": "mitsurin",
+      "name": "熱帯密林",
+      "surface": "turf",
+      "file": "mitsurin-v1.png",
+      "prompt": "Use case: stylized-concept. Asset type: production background panorama for a full 2D side-view fantasy bird racing game. Create one wide landscape image, approximately 2048 x 1024, with detailed hand-painted Japanese fantasy game environment art, delicate brush texture, layered atmospheric depth, readable silhouettes, harmonious muted colors. Camera: level side-on from outside the course looking across the distant landscape; no overhead view, no strong vanishing-point track. The upper 55 percent contains sky and the venue landmarks, the bottom 45 percent is quiet open terrain with very little contrast so racing sprites and the independently drawn track can overlay it. Horizontally repeatable composition: left and right edges have matching horizon heights, sky and ground colors; keep landmarks away from the edges, no framing or vignette. Soft diffuse daylight. Background only: no birds, riders, people, race lanes, fences, posts, gates, goal lines, track markings, HUD, letters, logos, watermarks or readable text.\nScene: Tropical Jungle. A dense lush rainforest with giant broadleaf plants, emerald canopy, tree ferns, mossy roots, hanging vines and a mist-softened distant waterfall. Humid cloudy daylight, warm green and turquoise tones, rich natural leaf detail. A quiet low-contrast olive-green clearing at the bottom; no plants obstructing the sprite area."
+    },
+    {
+      "id": "sunahama",
+      "name": "砂浜公園",
+      "surface": "dirt",
+      "file": "sunahama-v1.png",
+      "prompt": "Use case: stylized-concept. Asset type: production background panorama for a full 2D side-view fantasy bird racing game. Create one wide landscape image, approximately 2048 x 1024, with detailed hand-painted Japanese fantasy game environment art, delicate brush texture, layered atmospheric depth, readable silhouettes, harmonious muted colors. Camera: level side-on from outside the course looking across the distant landscape; no overhead view, no strong vanishing-point track. The upper 55 percent contains sky and the venue landmarks, the bottom 45 percent is quiet open terrain with very little contrast so racing sprites and the independently drawn track can overlay it. Horizontally repeatable composition: left and right edges have matching horizon heights, sky and ground colors; keep landmarks away from the edges, no framing or vignette. Soft diffuse daylight. Background only: no birds, riders, people, race lanes, fences, posts, gates, goal lines, track markings, HUD, letters, logos, watermarks or readable text.\nScene: Seaside Park. A tranquil tropical shoreline park with a turquoise ocean, gentle white surf, elegant palm trees, distant hazy islands and a pale sandy coastal headland. Clear sea breeze mood, warm ivory sand and blue-green water, spacious bright sky. Quiet low-contrast beige terrain at the bottom."
+    },
+    {
+      "id": "iseki",
+      "name": "秘境遺跡",
+      "surface": "turf",
+      "file": "iseki-v1.png",
+      "prompt": "Use case: stylized-concept. Asset type: production background panorama for a full 2D side-view fantasy bird racing game. Create one wide landscape image, approximately 2048 x 1024, with detailed hand-painted Japanese fantasy game environment art, delicate brush texture, layered atmospheric depth, readable silhouettes, harmonious muted colors. Camera: level side-on from outside the course looking across the distant landscape; no overhead view, no strong vanishing-point track. The upper 55 percent contains sky and the venue landmarks, the bottom 45 percent is quiet open terrain with very little contrast so racing sprites and the independently drawn track can overlay it. Horizontally repeatable composition: left and right edges have matching horizon heights, sky and ground colors; keep landmarks away from the edges, no framing or vignette. Soft diffuse daylight. Background only: no birds, riders, people, race lanes, fences, posts, gates, goal lines, track markings, HUD, letters, logos, watermarks or readable text.\nScene: Remote Ancient Ruins. Weathered pale stone archways, broken columns and moss-covered carved walls nestled in a remote highland forest, blue-gray mountain peaks beyond. Sparse traces of snow cling to distant stones and peaks, cool clear daylight, sage green and silver-blue tones. Quiet muted green terrain at the bottom, no foreground architecture blocking sprites."
+    },
+    {
+      "id": "haikou",
+      "name": "山岳廃坑",
+      "surface": "dirt",
+      "file": "haikou-v1.png",
+      "prompt": "Use case: stylized-concept. Asset type: production background panorama for a full 2D side-view fantasy bird racing game. Create one wide landscape image, approximately 2048 x 1024, with detailed hand-painted Japanese fantasy game environment art, delicate brush texture, layered atmospheric depth, readable silhouettes, harmonious muted colors. Camera: level side-on from outside the course looking across the distant landscape; no overhead view, no strong vanishing-point track. The upper 55 percent contains sky and the venue landmarks, the bottom 45 percent is quiet open terrain with very little contrast so racing sprites and the independently drawn track can overlay it. Horizontally repeatable composition: left and right edges have matching horizon heights, sky and ground colors; keep landmarks away from the edges, no framing or vignette. Soft diffuse daylight. Background only: no birds, riders, people, race lanes, fences, posts, gates, goal lines, track markings, HUD, letters, logos, watermarks or readable text.\nScene: Mountain Abandoned Mine. Rugged layered rocky mountain ridges, an abandoned timber mine entrance and old wooden supports, scattered derelict mine sheds integrated into a steep alpine valley. Empty quiet setting, cool mountain breeze, dusty ochre rocks, muted pine green and blue-gray peaks. Quiet low-contrast dusty brown terrain at the bottom."
+    }
+  ],
+  "generator": "Built-in image_gen",
+  "approvedAlternativeTo": "Google Imagen"
+}

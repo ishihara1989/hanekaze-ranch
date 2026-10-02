@@ -3,9 +3,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const files = {'/':'index.html','/index.html':'index.html','/css/style.css':'css/style.css','/js/game.js':'js/game.js','/js/model.js':'js/model.js','/js/world.js':'js/world.js','/js/world-views.js':'js/world-views.js'};
 for (const file of ['chocobo-preview.html','js/chocobo-preview.js','js/chocobo-animation.js',
+  'chocobo-sprite-preview.html',...['run-yellow.png','run-blue.png','run-rainbow-crest.png'].map(file=>`assets/chocobo-sprite-study/${file}`),
+  'js/chocobo-sprite-preview.js',...['run-yellow-v2.png','regions-v2.png','run-yellow-v3.png','regions-v3.png','run-yellow-v4.png','regions-v4.png','run-golden-metallic-v1.png'].map(file=>`assets/chocobo-sprite-study/${file}`),
+  ...['v2','v3','v4','v5'].flatMap(revision=>['manifest.json','body-mask.png','crest-mask.png',
+    ...['yellow','red','blue','green','rose','white','black','purple','gray','golden'].map(color=>`body-${color}.png`),
+    ...['yellow','red','blue','white','black','rainbow'].map(color=>`crest-${color}.png`)].map(file=>`assets/chocobo-sprite-study/${revision}/${file}`)),
   'genetics-preview.html','js/genetics-preview.js','css/genetics-preview.css','js/ranch-observation.js',
   'css/ranch.css','js/ranch-engine.js','js/ranch-ui.js','js/trait-mapping.js','js/ranch-genetics.js','js/ranch-ground.js','js/race-course.js','js/ranch-race.js','js/ranch-breeding.js',
-  'css/race-viewer.css','js/race-replay.js','js/race-viewer.js','assets/commentators/lamia.png','assets/commentators/sahagin.png',
+  'css/race-viewer.css','js/race-replay.js','js/race-viewer.js','js/race-playback.js',
+  'race-2d-preview.html','race-2d-backgrounds.html',...['manifest-v1.json','prompts-v1.json',...['tenku','oukyu','mitsurin','sunahama','iseki','haikou'].map(id=>id+'-v1.png')].map(file=>'assets/race-2d-backgrounds/'+file),'js/race-2d-course.js','js/race-2d-graphics.js','js/race-viewer-2d.js','js/race-2d-preview.js','css/race-2d-preview.css',
+  'assets/commentators/lamia.png','assets/commentators/sahagin.png',
   'assets/moogle/trainer.png',
   ...['neutral','talk','happy','motivated','sad','disappointed','overjoyed','ambiguous-smile'].map(expression=>`assets/shiroma/shiroma-${expression}.png`),
   'balance-lab.html','css/balance-lab.css','js/race-physics.js','js/balance-presets.js','js/balance-runner.js','js/balance-worker.js','js/balance-lab.js',

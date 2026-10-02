@@ -2,12 +2,12 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../public/js/ranch-engine.js'),W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
 function boot(saved,failSave=false){
   const elements=new Map(),handlers={},storage=new Map(saved?[[R.SAVE_KEY,saved]]:[]);
   const node=key=>{if(!elements.has(key))elements.set(key,{innerHTML:'',textContent:'',value:'',focus(){},dataset:{},classList:{toggle(){}},matches(){return false;}});return elements.get(key);};
-  const ctx=vm.createContext({Ranch:R,RanchObservation,console,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>{if(failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener(){}}});
+  const ctx=vm.createContext({Ranch:R,RanchObservation,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>{if(failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener(){}}});
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
   vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},advance,render};})();`),ctx);
   return {h:ctx.hooks,node,storage,click(action,data={}){handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key){handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})}});}};
@@ -39,13 +39,13 @@ test('weekly reports, career results and old letters open a replay without chang
   const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');g.click('breed-confirm');g.click('ack');await g.h.advance(1);
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);
   while(g.h.state.reports[0]?.type!=='weekly')g.click('ack');
-  assert.match(html(g),/3Dでレースを見る/);const before=JSON.stringify(g.h.state);
+  assert.match(html(g),/[23]Dでレースを見る/);const before=JSON.stringify(g.h.state);
   g.click('watch-race',{id:b.id,week:String(r.week)});
   assert.equal(g.h.modal.type,'replay');assert.match(html(g),/パドック/);assert.match(html(g),/実況のラミア/);assert.match(html(g),/解説のサハギン/);assert.match(html(g),/1× リアルタイム/);
   assert.match(html(g),/data-phase="award"/);assert.equal(JSON.stringify(g.h.state),before);
   g.click('close');assert.equal(g.h.modal,null);assert.equal(JSON.stringify(g.h.state),before);
-  g.click('detail',{id:b.id});assert.match(html(g),/結果・観戦/);g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/3Dでレースを見る/);
-  g.click('close');g.click('ack');g.click('nav',{page:'notebook'});g.click('notebook-tab',{tab:'letters'});assert.match(html(g),/3Dでレースを見る/);
+  g.click('detail',{id:b.id});assert.match(html(g),/結果・観戦/);g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/[23]Dでレースを見る/);
+  g.click('close');g.click('ack');g.click('nav',{page:'notebook'});g.click('notebook-tab',{tab:'letters'});assert.match(html(g),/[23]Dでレースを見る/);
   const restored=boot(g.storage.get(R.SAVE_KEY));restored.click('watch-race',{id:b.id,week:String(r.week)});assert.equal(restored.h.modal.type,'replay');
 });
 
@@ -54,6 +54,24 @@ test('losing races omit the podium chapter and pre-feature records explain unava
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);r.rank=2;
   g.click('watch-race',{id:b.id,week:String(r.week)});assert.doesNotMatch(html(g),/data-phase="award"/);
   g.click('close');delete r.replay;g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/走行データがありません/);assert.doesNotMatch(html(g),/data-action="watch-race"/);
+});
+
+test('all venue records open 2D and can switch renderer without changing a saved race',async()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');g.click('breed-confirm');g.click('ack');await g.h.advance(1);
+  const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);r.trackId='tenku';
+  g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/2Dでレースを見る/);
+  const before=JSON.stringify(g.h.state);g.click('watch-race',{id:b.id,week:String(r.week)});
+  assert.match(html(g),/data-section="entry"/);assert.match(html(g),/data-renderer="2d" aria-pressed="true"/);
+  assert.match(html(g),/data-viewer-pitch/);assert.match(html(g),/value="2" selected/);
+  g.click('watch-mode',{renderer:'3d'});assert.doesNotMatch(html(g),/data-section="entry"|data-viewer-pitch/);
+  assert.match(html(g),/data-renderer="3d" aria-pressed="true"/);assert.equal(JSON.stringify(g.h.state),before);
+  g.click('watch-mode',{renderer:'2d'});assert.match(html(g),/data-section="exit"/);assert.equal(JSON.stringify(g.h.state),before);
+  for(const trackId of ['oukyu','sunahama','haikou','mitsurin','iseki']){
+    g.click('close');r.trackId=trackId;r.surface=['mitsurin','iseki'].includes(trackId)?'turf':'dirt';const saved=JSON.stringify(g.h.state);
+    g.click('watch-race',{id:b.id,week:String(r.week)});
+    assert.match(html(g),/data-renderer="2d" aria-pressed="true"/);assert.match(html(g),/data-viewer-pitch/);
+    assert.equal(JSON.stringify(g.h.state),saved);
+  }
 });
 test('new UI exposes one tutorial action, hides numeric traits and renders every deliberate destination',()=>{
   const g=boot();assert.match(html(g),/牧場の、はじめの日/);assert.match(html(g),/繁殖牝羽セールへ/);assert.doesNotMatch(html(g),/最高速|遺伝品質/);

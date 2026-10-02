@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "generator": "Built-in image_gen",
+  "layout": "side-view opaque panoramas; mirrored alternating horizontal tiles",
+  "venues": [
+    {
+      "id": "tenku",
+      "name": "天空神殿",
+      "surface": "turf",
+      "file": "tenku-v1.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 2453280
+    },
+    {
+      "id": "oukyu",
+      "name": "王宮都市",
+      "surface": "dirt",
+      "file": "oukyu-v1.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 2417345
+    },
+    {
+      "id": "mitsurin",
+      "name": "熱帯密林",
+      "surface": "turf",
+      "file": "mitsurin-v1.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 2786000
+    },
+    {
+      "id": "sunahama",
+      "name": "砂浜公園",
+      "surface": "dirt",
+      "file": "sunahama-v1.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 2269739
+    },
+    {
+      "id": "iseki",
+      "name": "秘境遺跡",
+      "surface": "turf",
+      "file": "iseki-v1.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 2652907
+    },
+    {
+      "id": "haikou",
+      "name": "山岳廃坑",
+      "surface": "dirt",
+      "file": "haikou-v1.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 2614233
+    }
+  ]
+}

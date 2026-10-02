@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天空神殿 — 2Dレース試走</title>
+  <link rel="stylesheet" href="css/ranch.css">
+  <link rel="stylesheet" href="css/race-viewer.css">
+  <link rel="stylesheet" href="css/race-2d-preview.css">
+  <script type="importmap">{"imports":{"three":"/vendor/three/three.module.js"}}</script>
+</head>
+<body>
+  <main class="preview-shell">
+    <header class="preview-heading"><div><span class="eyebrow">WING & WIND / 2D RACE STUDY</span><h1 data-preview-title>雲の上を、駆ける。</h1><p data-preview-description>天空神殿 · 芝 2,400m · 外側からのレース観戦</p></div><a href="/" class="button outline">牧場へ</a></header>
+    <section class="race-viewer" aria-label="天空神殿の試走">
+      <div class="preview-toolbar"><div class="race-renderer-controls" aria-label="観戦の表示方式"><button class="button quiet" data-preview-renderer="2d" aria-pressed="true">2D 試作</button><button class="button quiet" data-preview-renderer="3d" aria-pressed="false">同じレースを3Dで</button></div><div class="preview-course-controls"><label>競走場<select data-preview-course aria-label="競走場"><option value="tenku">天空神殿 · 芝</option><option value="oukyu">王宮都市 · ダート</option><option value="mitsurin">熱帯密林 · 芝</option><option value="iseki">秘境遺跡 · 芝</option><option value="sunahama">砂浜公園 · ダート</option><option value="haikou">山岳廃坑 · ダート</option></select></label><label>回る向き<select data-preview-direction aria-label="回る向き"><option value="auto">コース標準</option><option value="left">左回り →（確認用）</option><option value="right">右回り ←（確認用）</option></select></label></div></div>
+      <div class="race-stage"><div class="race-loading" role="status">天空神殿とチョコボを準備しています…</div><div class="race-hud"><div><span data-race-phase>レース</span><b data-race-clock></b><small data-race-remaining></small><small data-race-camera></small></div><div><ol class="race-live-order" data-live-order aria-label="現在の上位5羽"></ol></div></div></div>
+      <div class="race-sections" aria-label="コースの場面へ移動"><button class="button quiet" data-viewer="section" data-section="straight" data-needs-viewer disabled>直線</button><button class="button quiet" data-viewer="section" data-section="entry" data-needs-viewer disabled>直線 → カーブ</button><button class="button quiet" data-viewer="section" data-section="curve" data-needs-viewer disabled>カーブ</button><button class="button quiet" data-viewer="section" data-section="exit" data-needs-viewer disabled>カーブ → 直線</button></div>
+      <div class="race-controls"><button class="button primary" data-viewer="pause" data-needs-viewer disabled aria-pressed="false">Ⅱ 一時停止</button><button class="button outline" data-viewer="restart" data-needs-viewer disabled>↺ 最初から</button><label>再生速度<select data-viewer-speed data-needs-viewer disabled><option value=".5">0.5×</option><option value="1" selected>1× リアルタイム</option><option value="2">2×</option><option value="4">4×</option></select></label><label>注目羽<select data-viewer-focus data-needs-viewer disabled></select></label><div class="race-camera-controls" aria-label="カメラ切替"><button class="button quiet" data-viewer="camera" data-camera="broadcast" data-needs-viewer disabled aria-pressed="true">中継</button><button class="button quiet" data-viewer="camera" data-camera="follow" data-needs-viewer disabled aria-pressed="false">追走</button><button class="button quiet" data-viewer="camera" data-camera="overview" data-needs-viewer disabled aria-pressed="false">全羽</button><button class="button quiet" data-viewer="camera" data-camera="finish" data-needs-viewer disabled aria-pressed="false">ゴール</button></div></div>
+      <div class="race-seek"><input type="range" min="0" max="1" value="0" step=".1" data-viewer-seek data-needs-viewer disabled aria-label="観戦の再生位置"><span data-viewer-time>0:00.00</span></div>
+      <div class="race-chapters" aria-label="場面へ移動"><button class="button quiet" data-viewer="phase" data-phase="paddock" data-needs-viewer disabled>パドック</button><button class="button quiet" data-viewer="phase" data-phase="gate" data-needs-viewer disabled>出走</button><button class="button quiet" data-viewer="phase" data-phase="race" data-needs-viewer disabled>レース</button><button class="button quiet" data-viewer="phase" data-phase="result" data-needs-viewer disabled>決着</button></div>
+      <div class="preview-commentary"><span data-commentary-speaker>ラミア / 実況</span><p data-commentary-text></p><button class="button outline" data-viewer="voice" aria-pressed="false">実況音声</button><small data-voice-status>実況字幕 ON / 音声 OFF</small></div>
+    </section>
+    <footer class="preview-notes"><p><b>8コマで、左右の2歩。</b> ピッチ1×では8コマで20m（20m/sで1秒2歩）。描画ピッチで足・路面・遠景の動きを速められます。</p><p>前後の距離・内外の進路・入線時刻は、牧場のレースシミュレーションと共通。上の切替で同じ走行記録を3Dと比較できます。</p><a href="/chocobo-sprite-preview.html">横向きスプライトの色と動きを見る →</a><a href="/race-2d-backgrounds.html">全6競走場の背景素材を見る →</a></footer>
+  </main>
+  <script src="js/model.js"></script><script src="js/world.js"></script><script src="js/race-physics.js"></script><script src="js/race-course.js"></script><script src="js/ranch-race.js"></script><script src="js/trait-mapping.js"></script><script src="js/ranch-genetics.js"></script><script src="js/ranch-ground.js"></script><script src="js/ranch-breeding.js"></script><script src="js/race-replay.js"></script><script src="js/race-2d-course.js"></script><script src="js/ranch-engine.js"></script>
+  <script type="module" src="js/race-2d-preview.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>チョコボ・2D走行スプライト試作</title>
+<style>
+
+    :root { color-scheme: dark; font-family: 'Yu Gothic UI', 'Meiryo', sans-serif; color: #f2efe4; background: #141c1c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1360px; margin: auto; padding: 40px 32px 56px; }
+    .eyebrow { color: #c1d784; font-size: 12px; letter-spacing: .2em; }
+    h1 { font-size: clamp(24px, 3vw, 38px); font-weight: 600; margin: 12px 0; }
+    .intro { color: #afbdb5; line-height: 1.8; max-width: 860px; }
+    .controls { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; padding: 20px 0 28px; }
+    button, select { font: inherit; color: #f4f2e8; background: #2b3835; border: 1px solid #485a50; border-radius: 8px; padding: 9px 14px; cursor: pointer; }
+    button:hover { background: #3a4a43; }
+    button.primary { background: #c1d784; color: #18231d; border-color: #c1d784; min-width: 92px; }
+    label { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: #c6cfc7; }
+    input { accent-color: #c1d784; }
+    output { font-variant-numeric: tabular-nums; }
+    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    article { overflow: hidden; border: 1px solid #37483f; border-radius: 14px; background: #1c2824; }
+    article header { padding: 20px 20px 12px; min-height: 140px; }
+    article h2 { margin: 8px 0; font-size: 20px; font-weight: 600; }
+    article p { margin: 0; font-size: 13px; color: #afbeb3; line-height: 1.7; }
+    .tag { display: inline-block; font-size: 10px; letter-spacing: .14em; color: #c1d784; }
+    .stage { position: relative; height: 286px; overflow: hidden; background: radial-gradient(ellipse at 50% 90%, #567049 0%, #3c5438 45%, #263b2e 100%); }
+    .stage::after { content: ''; position: absolute; bottom: 28px; width: 100%; border-bottom: 1px dashed #d3de9877; pointer-events: none; }
+    .stage[data-background="checker"] { background-color: #ced2ce; background-image: conic-gradient(#e4e8e2 25%, transparent 0 50%, #e4e8e2 0 75%, transparent 0); background-size: 20px 20px; }
+    .stage[data-background="dark"] { background: #111716; }
+    .stage canvas { width: 100%; height: 100%; display: block; }
+    .framebar { padding: 13px 20px; display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid #37483f; font-size: 12px; color: #bbc9bc; }
+    a { color: #c1d784; text-underline-offset: 4px; }
+    .timeline { display: flex; gap: 14px; align-items: center; margin: 26px 0 20px; }
+    .timeline input { flex: 1; }
+    .notes { margin: 20px 0 30px; color: #b0bdb4; font-size: 14px; line-height: 1.8; border-left: 2px solid #849766; padding-left: 16px; }
+    details { border-top: 1px solid #37483f; padding-top: 20px; }
+    summary { cursor: pointer; color: #d5dfcb; }
+    .atlases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 20px; }
+    .atlases img { width: 100%; display: block; background: #354438; border-radius: 8px; }
+    .atlases figcaption { color: #afbeb3; font-size: 13px; margin-top: 10px; }
+    figure { margin: 0; }
+    #status { color: #c1d784; font-size: 13px; margin-top: 20px; }
+    @media (max-width: 1000px) { article header { padding: 18px 14px 12px; } article h2 { font-size: 17px; } .framebar { padding: 13px 12px; } }
+    @media (max-width: 860px) { main { padding: 24px 18px; } .stage { height: 248px; } }
+    @media (max-width: 680px) { .cards, .atlases { grid-template-columns: 1fr; } article header { min-height: auto; } .stage { height: 286px; } }
+  
+.intro{font-size:14px}.controls{gap:14px;padding:14px 0}.colors{border-bottom:1px solid #37483f;margin-bottom:2px}#combination{color:#c1d784;font-size:14px;margin-left:auto}article header{min-height:122px}article p{font-size:12px}.stage{height:254px}.stage::after{bottom:26px}.framebar{font-size:11px;padding:12px 10px}#phase{color:#d6e3af;font-size:14px;margin:0 0 22px}.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:24px 0 14px}.section-head h2{margin:0;font-size:20px;font-weight:600}.section-head p{margin:0;color:#aebdaf;font-size:12px}.gallery{display:grid;gap:10px}#body-gallery{grid-template-columns:repeat(5,minmax(0,1fr))}#crest-gallery{grid-template-columns:repeat(6,minmax(0,1fr))}.swatch{padding:0;overflow:hidden;background:#22332a;border-color:#3d5143}.swatch[aria-pressed="true"]{border-color:#c1d784;box-shadow:0 0 0 1px #c1d784}.swatch canvas{display:block;width:100%;height:152px}#crest-gallery canvas{height:92px}.swatch span{display:block;padding:8px;font-size:13px;border-top:1px solid #37483f}.notes{font-size:13px}#status{font-size:12px}
+@media(max-width:900px){#combination{margin-left:0}.stage{height:232px}article header{padding:16px 12px 10px}article h2{font-size:17px}}
+@media(max-width:680px){article header{min-height:auto}.stage{height:286px}#body-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}#crest-gallery{grid-template-columns:repeat(3,minmax(0,1fr))}.section-head{flex-wrap:wrap}}
+.pose-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.pose-cards header{min-height:94px}.pose-cards .stage{height:296px}.pose-cards h2{font-size:18px}@media(max-width:680px){.pose-cards{grid-template-columns:1fr}}</style></head><body><main>
+<div class="eyebrow">CHOCOBO DERBY / SPRITE STUDY 05</div><h1>8コマの走行と羽色の比較</h1>
+<p class="intro">手前の明るい脚・奥の暗い脚それぞれに、太ももの羽毛が連動する走り。1〜4コマは奥の脚、5〜8コマは手前の脚で着地・蹴り出します。</p>
+<div class="controls colors"><label for="body">羽色</label><select id="body" aria-label="羽色"></select><label for="crest">額羽</label><select id="crest" aria-label="額羽"></select><output id="combination">画像を読み込んでいます…</output></div>
+<div class="controls"><button id="play" class="primary" type="button">一時停止</button><label for="fps">速度</label><input id="fps" type="range" min="4" max="20" value="10"><output id="fps-value">10 fps</output><label for="size">表示サイズ</label><select id="size"><option value="96">小 / 約96px</option><option value="144">中 / 約144px</option><option value="216" selected>大 / 約216px</option></select><label for="background">背景</label><select id="background"><option value="grass">芝</option><option value="checker">透明チェック</option><option value="dark">暗色</option></select></div>
+<section class="cards" aria-label="本体と額羽の重ね合わせ">
+<article><header><span class="tag">01 / COMPOSITE</span><h2>重ねた姿</h2><p>選んだ羽色と額羽を組み合わせた走り。</p></header><div class="stage" data-background="grass"><canvas data-layer="composite" aria-label="本体と額羽を合成した走行ループ"></canvas></div><div class="framebar"><span class="frame-label">FRAME 01 / 08</span><span>本体 ＋ 額羽</span></div></article>
+<article><header><span class="tag">02 / BODY</span><h2>本体の差分</h2><p>額羽を外した本体。羽色は10色。</p></header><div class="stage" data-background="grass"><canvas data-layer="body" aria-label="額羽を分離した本体の走行ループ"></canvas></div><div class="framebar"><span class="frame-label">FRAME 01 / 08</span><a id="body-link" href="#" target="_blank" rel="noopener">本体PNG</a></div></article>
+<article><header><span class="tag">03 / FOREHEAD</span><h2>額羽の差分</h2><p>同じ位置に重ねる額羽。独立して6色。</p></header><div class="stage" data-background="grass"><canvas data-layer="crest" aria-label="額羽だけの走行レイヤー"></canvas></div><div class="framebar"><span class="frame-label">FRAME 01 / 08</span><a id="crest-link" href="#" target="_blank" rel="noopener">額羽PNG</a></div></article>
+</section>
+<div class="timeline"><label for="frame">コマ確認</label><input id="frame" type="range" min="0" max="7" value="0"><output id="frame-value">01 / 08</output><button id="step" type="button">次のコマ →</button></div><p id="phase">奥の暗い脚が前で着地</p>
+<section aria-label="黄色と金属光沢の金色を比較"><div class="section-head"><h2>黄色と金色を比較</h2><p>同じコマ・額羽で比較</p></div><div class="pose-cards">
+<article><header><span class="tag">YELLOW / SOFT FEATHERS</span><h2>黄色の羽</h2><p>やわらかな陰影の、通常の黄色。</p></header><div class="stage" data-background="grass"><canvas data-layer="composite" data-body="yellow" aria-label="黄色の羽の走行ループ"></canvas></div></article>
+<article><header><span class="tag">GOLD / METALLIC LUSTRE</span><h2>金属光沢の金色</h2><p>白金色の反射と深い琥珀色の影が、翼と尾に輝きを作ります。</p></header><div class="stage" data-background="grass"><canvas data-layer="composite" data-body="golden" aria-label="金属光沢の金色の走行ループ"></canvas></div></article>
+</div></section><section aria-label="全羽色の一覧"><div class="section-head"><h2>羽色 10色</h2><p>クリックで選択 · 額羽は選択中の色</p></div><div class="gallery" id="body-gallery"></div></section>
+<section aria-label="額羽の差分一覧"><div class="section-head"><h2>額羽 6色</h2><p>クリックで選択 · 額羽だけを拡大表示</p></div><div class="gallery" id="crest-gallery"></div></section>
+<p class="notes">額羽は本体から独立した透過画像です。本体10枚と額羽6枚で、60通りの組み合わせを作れます。コマごとの形の揺れや色境界の細部は、本採用前の調整対象です。</p><p id="status" role="status">画像を読み込んでいます…</p>
+</main><script src="js/chocobo-sprite-preview.js"></script></body></html>
+

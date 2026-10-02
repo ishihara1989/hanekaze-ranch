@@ -49,3 +49,5 @@ node tools/audit-opening.cjs --write
 新UIは `public/js/ranch-ui.js`、進行は `public/js/ranch-engine.js`、スタイルは `public/css/ranch.css`。旧 `game.js` / `world-views.js` は回帰検証用に残し、起動ページでは読み込みません。
 
 距離適性ラボは **http://127.0.0.1:4173/balance-lab.html**、3Dモデル試作は **http://127.0.0.1:4173/chocobo-preview.html**（第3版が既定、羽色10色・額羽6色を切り替え可。詳細は `public/assets/chocobo-v3/README.md`）。独立した実験として引き続き利用できます。
+
+2Dレース試作は **http://127.0.0.1:4173/race-2d-preview.html**。内蔵 image_gen で生成した全6競走場の背景を切り替えられます。素材一覧は **http://127.0.0.1:4173/race-2d-backgrounds.html**。横向き8コマのスプライトで、直線・カーブへの入り・カーブ・直線への戻りを確認できます。描画ピッチは標準2×、1×・1.5×も選択でき、地面と5m間隔の柵を同期して8コマ1周期で4区間分が流れます。時計・着順・羽同士の位置関係は共通の走行記録を維持します。ゲーム内でも全6場の記録は2Dで開き、観戦画面の「2D 試作 / 3D」で切り替えられます。
