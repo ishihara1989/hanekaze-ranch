@@ -133,7 +133,7 @@ test('reset cancellation preserves everything; confirmation returns to March wit
 test('details disclose ratings, racing traits, all genetic loci and current numbers at four facility stages',()=>{
   const g=boot(),b=R.own(g.h.state)[0];g.click('detail',{id:b.id});
   const status=()=>html(g).match(/<section class="research status-record">([\s\S]*?)<\/section>/)[1];
-  assert.match(status(),/現在の身体能力|走る意欲|最高速/);assert.match(html(g),/ステータスへの遺伝効果（合算）/);
+  assert.match(status(),/現在の身体能力|走る意欲|最高速/);assert.match(html(g),/ステータスへの遺伝効果/);
   assert.doesNotMatch(status(),/data-score|<meter/);assert.doesNotMatch(html(g),/得意羽場：|遺伝の座位情報|金因子/);
   g.h.state.facilities.lab=1;g.h.render();
   assert.match(html(g),/得意羽場：|成長と加齢の遺伝/);assert.doesNotMatch(html(g),/data-score|<meter|<summary>遺伝の座位情報|金因子/);
@@ -144,7 +144,7 @@ test('details disclose ratings, racing traits, all genetic loci and current numb
     g.h.state.facilities[monument]=0;
   }
   g.h.state.facilities.museum=1;g.h.state.facilities.statue=1;g.h.render();
-  assert.match(status(),/data-score="power"|成熟したときの伸びしろ|脚の負担/);assert.match(html(g),/全情報が公開されています/);
+  assert.match(status(),/data-score="power"|成熟したときの伸びしろ|脚の負担/);assert.doesNotMatch(html(g),/公開段階|研究所を建てると|遺伝評価：|評価：X|（合算）/);
 });
 test('zero and one year olds show development speed ratings; two year olds show current abilities',()=>{
   const g=boot(),s=g.h.state,b=R.createBird(s,{name:'コワカバ'});
@@ -160,14 +160,14 @@ test('zero and one year olds show development speed ratings; two year olds show 
 test('both breeding parents show aggregate genetic ratings before building research',()=>{
   const g=boot();purchase(g);g.click('nav',{page:'breed'});
   assert.equal((html(g).match(/<summary>繁殖担当の遺伝情報/g)||[]).length,2);
-  assert.match(html(g),/ステータスへの遺伝効果（合算）/);assert.doesNotMatch(html(g),/data-score|<meter|遺伝の座位情報/);
+  assert.match(html(g),/ステータスへの遺伝効果/);assert.doesNotMatch(html(g),/data-score|<meter|遺伝の座位情報/);
   g.h.state.facilities.lab=1;g.h.state.facilities.museum=1;g.h.render();
   assert.equal((html(g).match(/遺伝の座位情報（全因子）/g)||[]).length,2);
 });
 test('details, sale and parents show only aggregate genetics and retain the numeric gate',()=>{
   const g=boot(),b=R.own(g.h.state)[0];
   const check=()=>{
-    assert.match(html(g),/ステータスへの遺伝効果（合算）/);
+    assert.match(html(g),/ステータスへの遺伝効果/);
     assert.doesNotMatch(html(g),/基礎遺伝|遺伝補正|data-genetic-part|data-genetic-value/);
     assert.doesNotMatch(html(g),/data-score/);
   };
@@ -197,6 +197,46 @@ test('bird names are escaped in dialogue and rendered detail content',()=>{
 const listedSires=g=>[...html(g).matchAll(/data-action="select-sire" data-id="([^"]+)"/g)].map(m=>R.bird(g.h.state,m[1]));
 const selectedSire=g=>html(g).match(/data-action="select-sire" data-id="([^"]+)" aria-pressed="true"/)?.[1];
 
+test('breeding prioritizes the action and parent genetics while omitting inactive crosses and rating explanations',()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});
+  const s=g.h.state,dam=R.own(s).find(b=>b.role==='mare');
+  const sire=R.sires(s).find(b=>b.kind==='root'&&!R.breedingCrosses(s,b,dam).length);
+  g.click('select-sire',{id:sire.id});
+  assert.doesNotMatch(html(g),/cross-preview|対象となるクロス|公開段階|研究所を建てると|記念館か銅像を建てると|遺伝評価：|評価：X|（合算）/);
+  assert.ok(html(g).indexOf('data-action="breed-dialog"')<html(g).indexOf('class="breeding-layout"'));
+  for(const parent of html(g).split('<section class="paper breeding-parent">').slice(1)){
+    assert.ok(parent.indexOf('ステータスへの遺伝効果')<parent.indexOf('class="parent-pair"'));
+    assert.ok(parent.indexOf('class="parent-pair"')<parent.indexOf('重賞成績'));
+    assert.ok(parent.indexOf('重賞成績')<parent.indexOf('持ち味・競走情報'));
+  }
+  g.click('breed-dialog');assert.equal(g.h.modal.type,'breed');
+  assert.doesNotMatch(html(g),/cross-preview/);
+});
+
+test('the sire picker stays open while browsing and closes on selection',()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});
+  g.click('open-sire-picker');assert.equal(g.node('#sire-picker').open,true);
+  g.click('sire-tab',{tab:'public'});assert.equal(g.node('#sire-picker').open,true);
+  g.click('select-sire',{id:listedSires(g)[1].id});assert.equal(g.node('#sire-picker').open,false);
+});
+
+test('mares show the current or latest mate and all offspring with their actual fathers',()=>{
+  const g=boot();purchase(g);const s=g.h.state,dam=R.own(s).find(b=>b.role==='mare'),[first,last,current]=R.sires(s);
+  const oldest=R.createBird(s,{name:'コハネ',bornWeek:1,owner:'public'},[first,dam]);
+  const youngest=R.createBird(s,{name:'ワカバ',bornWeek:5},[last,dam]);
+  const family=()=>html(g).match(/<section class="breeding-family">([\s\S]*?)<\/section>/)[1];
+  g.click('nav',{page:'breed'});
+  assert.match(family(),/最新の産駒の父/);assert.match(family(),/産駒 2羽/);
+  assert.ok(family().indexOf(`data-id="${last.id}"`)<family().indexOf('産駒 2羽'));
+  assert.ok(family().indexOf(`data-id="${youngest.id}"`)<family().indexOf(`data-id="${oldest.id}"`));
+  assert.match(family(),new RegExp(`data-id="${first.id}"`));
+  dam.pregnancy={sireId:current.id,due:s.week+R.GESTATION};g.h.render();
+  assert.ok(family().indexOf(`data-id="${current.id}"`)<family().indexOf('産駒 2羽'));
+  assert.match(family(),/出産予定/);assert.doesNotMatch(family(),/最新の産駒の父/);
+  g.click('detail',{id:dam.id});assert.match(html(g),/配合相手・産駒/);
+  g.click('detail',{id:youngest.id});assert.equal(g.h.modal.id,youngest.id);
+});
+
 test('public sire search combines text, winning route and ability order with visible parent hints',async()=>{
   const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('sire-tab',{tab:'public'});
   const farm=R.searchSires(g.h.state,{route:'dirt'})[0].farm;
@@ -205,7 +245,7 @@ test('public sire search combines text, winning route and ability order with vis
   const candidates=listedSires(g);assert.ok(candidates.length);
   assert.ok(candidates.every(b=>b.farm===farm));
   assert.ok(candidates.every((b,i)=>!i||candidates[i-1].potential.power>=b.potential.power));
-  assert.match(html(g),/長所/);assert.match(html(g),/短所/);assert.match(html(g),/競走成績/);assert.match(html(g),/乱数の下限/);
+  assert.match(html(g),/長所/);assert.match(html(g),/短所/);assert.match(html(g),/重賞成績/);assert.match(html(g),/乱数の下限/);
   g.node('#sire-query').value='見つからない名前';g.click('search-sires');
   assert.equal(listedSires(g).length,0);assert.match(html(g),/data-action="breed-dialog" disabled/);
 });

@@ -51,3 +51,42 @@
 .sale-grid .genetics p { min-height:0; }
 @media (max-width:650px) { .gene-loci { grid-template-columns:repeat(2,minmax(0,1fr)); } .research summary span { float:none; display:block; margin-top:6px; } }
 @media (max-width:700px) { .sire-search { grid-template-columns:1fr; } }
+.breeding-confirm { position:sticky; top:12px; z-index:5; margin:0 0 18px; padding:16px 22px; box-shadow:0 5px 20px #34463b12; }
+.breeding-confirm .button { flex-shrink:0; }
+.breeding-confirm h3 { overflow-wrap:anywhere; }
+.sire-picker { margin-bottom:20px; padding:16px 22px; scroll-margin-top:145px; }
+.sire-picker>summary { font-size:13px; color:var(--green); }
+.sire-picker>summary>span { margin-left:16px; font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
+.sire-picker .sire-list { max-height:400px; }
+.breeding-layout { grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.breeding-parent { min-width:0; padding:22px; }
+.breeding-parent-head { display:flex; gap:14px; align-items:center; min-height:120px; }
+.breeding-parent-head>.chocobo-art { width:95px; height:100px; margin:0; }
+.breeding-parent-head>div { min-width:0; flex:1; }
+.breeding-parent-head h2 { font:600 18px/1.6 var(--serif); overflow-wrap:anywhere; margin:5px 0 10px; }
+.breeding-parent-head label { display:block; font-size:10px; color:var(--muted); }
+.breeding-parent-head select { display:block; width:100%; margin-top:4px; font-size:12px; }
+.breeding-parent .genetics { padding-top:18px; }
+.breeding-parent .genetics h3 { margin:16px 0 10px; }
+.breeding-parent .ability-grid { gap:0 18px; }
+.breeding-parent .ratings-only>div { padding:7px 0; }
+.breeding-parent .parent-pair { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.breeding-parent .parent-pair .button { justify-content:flex-start; text-align:left; white-space:normal; padding-left:0; overflow-wrap:anywhere; }
+.graded-career,.breeding-family { padding:16px 0; border-bottom:1px solid var(--line); font-size:12px; }
+.graded-career h3,.breeding-family h3 { font-size:12px; margin-bottom:8px; }
+.graded-career details { margin-top:8px; }
+.graded-career small { color:var(--muted); }
+.family-pair { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.family-pair>span:first-child { color:var(--muted); font-size:11px; }
+.family-due { color:var(--green); font-size:12px; margin:6px 0 10px; }
+.breeding-family>details { margin-top:10px; }
+.offspring-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+.offspring-row:last-child { border-bottom:0; }
+.offspring-row small { display:block; color:var(--muted); font-size:10px; }
+.offspring-row .button { padding-left:0; justify-content:flex-start; text-align:left; overflow-wrap:anywhere; }
+.breeding-family>details[open] { max-height:320px; overflow:auto; }
+.parent-notes { padding-top:16px; color:var(--muted); font-size:12px; }
+.parent-notes>p { margin-top:10px; }
+.genetic-notes { padding-top:14px; }
+@media(max-width:900px) { .breeding-parent { padding:18px; } .breeding-parent-head { gap:8px; } .breeding-parent-head>.chocobo-art { width:70px; height:85px; } .breeding-confirm { flex-direction:row; align-items:center; gap:12px; } }
+@media(max-width:700px) { .breeding-layout { grid-template-columns:1fr; } .breeding-parent-head>.chocobo-art { width:90px; height:95px; } .breeding-confirm { top:6px; padding:12px 15px; flex-wrap:wrap; gap:10px; } .breeding-confirm h3 { font-size:14px; margin-top:4px; } .breeding-confirm p { margin-top:4px; } .breeding-confirm .button { width:100%; min-height:40px; padding-block:8px; } .sire-picker { padding:14px 16px; scroll-margin-top:185px; } .sire-picker>summary>span { display:block; margin:5px 0 0; } }
