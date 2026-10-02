@@ -6,7 +6,7 @@ const colors=['golden','blue','red','white','green','black','rose','purple','yel
 birds.forEach((b,i)=>{b.color=colors[i%colors.length];b.crest=['yellow','blue','red','white','black','rainbow'][i%6];});
 const records=new Map(),select=root.querySelector('[data-viewer-focus]'),courseSelect=root.querySelector('[data-preview-course]');
 birds.forEach((r,i)=>{const option=document.createElement('option');option.value=r.id;option.textContent=`${i+1}番 ${r.name}`;option.selected=i===0;select.append(option);});
-const requested=new URLSearchParams(location.search).get('track');
+const query=new URLSearchParams(location.search),requested=query.get('track');
 if(Object.hasOwn(tracks,requested))courseSelect.value=requested;
 const pitchLabel=document.createElement('label');pitchLabel.className='preview-pitch';pitchLabel.append('描画ピッチ');
 const pitchSelect=document.createElement('select');pitchSelect.dataset.viewerPitch='';pitchSelect.dataset.needsViewer='';pitchSelect.disabled=true;pitchSelect.setAttribute('aria-label','描画ピッチ');
@@ -23,7 +23,7 @@ function recording(track){
 let viewer,renderer='2d',generation=0;
 async function show(){
   const token=++generation,source=tracks[courseSelect.value],record=recording(source),
-    options={...viewer?.snapshot(),time:Math.min(viewer?.time??26,Replay.timeline(record).end),pitch:Number(pitchSelect.value)};
+    options={...viewer?.snapshot(),time:Math.min(viewer?.time??(query.get('phase')==='race'?Replay.timeline(record).race+10:0),Replay.timeline(record).end),pitch:Number(pitchSelect.value)};
   viewer?.dispose();viewer=null;
   document.title=`${source.name} — 2Dレース試走`;
   document.querySelector('[data-preview-title]').textContent={tenku:'雲の上を、駆ける。',oukyu:'城下を、駆ける。',sunahama:'潮風の中を、駆ける。',haikou:'山あいを、駆ける。',mitsurin:'緑の深みを、駆ける。',iseki:'古の景色を、駆ける。'}[source.id];

@@ -189,3 +189,47 @@ test('section seeking interpolates recorded times and does not invent missing ra
   assert.equal(C.timeAtDistance(r,75),5);assert.equal(C.timeAtDistance(r,300),20);assert.equal(C.timeAtDistance(r,400),null);
   const short={distance:100};assert.equal(C.sectionDistance('curve',short,track),null);
 });
+
+test('last-spurt motion follows replay effort, including final traffic, rewinds and the finish',async()=>{
+  globalThis.RaceReplay=R;globalThis.Race2DCourse=C;
+  const {spriteMotion}=await import('../public/js/race-viewer-2d.js');
+  const sprint={distance:2050,speed:20,mode:'スパート',stopped:false,finished:false};
+  assert.equal(spriteMotion(sprint,'race',2400),'spurt');
+  for(const mode of ['競り合い','羽混み','内へ進路変更','進路確保','前詰まり']){
+    assert.equal(spriteMotion({...sprint,mode},'race',2400),'spurt');
+    assert.equal(spriteMotion({...sprint,mode,distance:1800},'race',2400),'run');
+  }
+  for(const mode of ['発走','巡航','余力温存','粘り'])assert.equal(spriteMotion({...sprint,mode},'race',2400),'run');
+  assert.equal(spriteMotion(sprint,'paddock',2400),'walk');
+  for(const phase of ['gate','result','award'])assert.equal(spriteMotion(sprint,phase,2400),'run');
+  assert.equal(spriteMotion({...sprint,stopped:true},'race',2400),'run');
+  assert.equal(spriteMotion({...sprint,finished:true},'race',2400),'run');
+  const runner={lane:0,time:120,finished:true,samples:[[0,0,20,1],[100,2000,20,2],[120,2400,20,2]]},before=JSON.stringify(runner);
+  const motion=time=>spriteMotion(R.visualSample(runner,time),'race',2400);
+  assert.equal(motion(110),'spurt');assert.equal(motion(50),'run');assert.equal(motion(110),'spurt');
+  assert.equal(motion(121),'run');assert.equal(JSON.stringify(runner),before);
+});
+
+test('all three sprite motions provide all color layers and draw matching frames in either direction',async()=>{
+  globalThis.RaceReplay=R;globalThis.Race2DCourse=C;
+  const {RaceViewer2D}=await import('../public/js/race-viewer-2d.js');
+  const fs=require('node:fs'),path=require('node:path'),m=require('../public/assets/chocobo-sprite-study/v5/manifest.json'),spurt=m.motions.spurt;
+  assert.equal(spurt.frameCount,8);assert.equal(spurt.cellWidth,m.cellWidth);assert.equal(spurt.cellHeight,m.cellHeight);
+  assert.deepEqual(Object.keys(spurt.body),Object.keys(m.body));assert.deepEqual(Object.keys(spurt.crest),Object.keys(m.crest));
+  const images=new Map();
+  for(const [prefix,manifest] of [['',m],...Object.entries(m.motions).map(([key,value])=>[key+':',value])])for(const kind of ['body','crest'])for(const [key,entry] of Object.entries(manifest[kind])){
+    const bytes=fs.readFileSync(path.join(__dirname,'../public/assets/chocobo-sprite-study/v5',entry.file));
+    assert.equal(bytes.subarray(1,4).toString(),'PNG');assert.equal(bytes.readUInt32BE(16),manifest.width);assert.equal(bytes.readUInt32BE(20),manifest.height);
+    images.set(prefix+kind+':'+key,entry.file);
+  }
+  const draws=[],scales=[],ctx=new Proxy({drawImage:(...args)=>draws.push(args),scale:(...args)=>scales.push(args)},{get:(target,key)=>target[key]??(()=>{})}),
+    viewer=Object.assign(Object.create(RaceViewer2D.prototype),{manifest:m,images,ctx,plaque(){}});
+  for(const color of Object.keys(m.body))for(const crest of Object.keys(m.crest))for(const motion of ['run','spurt','walk'])for(const dir of [-1,1])for(let frame=0;frame<8;frame++){
+    draws.length=0;const entry={id:'bird',lane:0,color,crest},active=m.motions[motion]||m;
+    viewer.bird(entry,{x:60,y:100},{dir,scale:5},frame,null,false,motion);
+    assert.equal(draws.length,2);assert.equal(draws[0][0],active.body[color].file);assert.equal(draws[1][0],active.crest[crest].file);
+    assert.deepEqual(draws[0].slice(1),draws[1].slice(1));
+    assert.equal(draws[0][1],frame%4*448);assert.equal(draws[0][2],Math.floor(frame/4)*448);
+    assert.deepEqual(scales.at(-1),[dir,1]);
+  }
+});

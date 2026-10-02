@@ -1,0 +1,108 @@
+{
+  "revision": 5,
+  "motion": "walk",
+  "label": "歩行",
+  "columns": 4,
+  "rows": 2,
+  "cellWidth": 448,
+  "cellHeight": 448,
+  "width": 1792,
+  "height": 896,
+  "frameCount": 8,
+  "recommendedFps": 6,
+  "source": "../../walk-yellow-v2.png",
+  "semanticMask": "../../regions-walk-v2.png",
+  "metallicSource": "../../walk-golden-metallic-v2.png",
+  "body": {
+    "yellow": {
+      "label": "黄",
+      "file": "body-yellow.png"
+    },
+    "red": {
+      "label": "赤",
+      "file": "body-red.png"
+    },
+    "blue": {
+      "label": "青",
+      "file": "body-blue.png"
+    },
+    "green": {
+      "label": "緑",
+      "file": "body-green.png"
+    },
+    "rose": {
+      "label": "ピンク",
+      "file": "body-rose.png"
+    },
+    "white": {
+      "label": "白",
+      "file": "body-white.png"
+    },
+    "black": {
+      "label": "黒",
+      "file": "body-black.png"
+    },
+    "purple": {
+      "label": "紫",
+      "file": "body-purple.png"
+    },
+    "gray": {
+      "label": "灰",
+      "file": "body-gray.png"
+    },
+    "golden": {
+      "label": "金",
+      "file": "body-golden.png"
+    }
+  },
+  "crest": {
+    "yellow": {
+      "label": "黄",
+      "file": "crest-yellow.png"
+    },
+    "red": {
+      "label": "赤",
+      "file": "crest-red.png"
+    },
+    "blue": {
+      "label": "青",
+      "file": "crest-blue.png"
+    },
+    "white": {
+      "label": "白",
+      "file": "crest-white.png"
+    },
+    "black": {
+      "label": "黒",
+      "file": "crest-black.png"
+    },
+    "rainbow": {
+      "label": "虹",
+      "file": "crest-rainbow.png"
+    }
+  },
+  "masks": {
+    "body": "body-mask.png",
+    "crest": "crest-mask.png"
+  },
+  "phases": [
+    "手前の明るい脚が前で接地",
+    "手前の脚で荷重・奥の脚を持ち上げる",
+    "奥の暗い脚を低く前へ運ぶ",
+    "奥の脚を下ろして接地へ",
+    "奥の暗い脚が前で接地",
+    "奥の脚で荷重・手前の脚を持ち上げる",
+    "手前の明るい脚を低く前へ運ぶ",
+    "手前の脚を下ろしてループへ"
+  ],
+  "visibleNearLeg": "right",
+  "visibleFarLeg": "left",
+  "thighCoupling": "Each bright near / shaded far feathered thigh connects to and follows its own orange / brown lower leg.",
+  "compositing": "Draw body then crest at identical coordinates. Layers have disjoint nonzero-alpha pixels.",
+  "crestCrop": {
+    "x": 264,
+    "y": 0,
+    "width": 178,
+    "height": 145
+  }
+}

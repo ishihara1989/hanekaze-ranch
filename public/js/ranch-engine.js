@@ -578,7 +578,7 @@
     return candidates.sort((a,b)=>a.score-b.score)[0]?.event||null;
   }
   function raceEntry(s,b,e) {
-    const p=Mapping.toPhysics(currentAbilities(s,b));
+    const abilities=currentAbilities(s,b),p=Mapping.toPhysics(abilities);
     // Management state affects the physical initial state, never a distance bonus.
     const effective={...p,criticalSpeed:p.criticalSpeed*(.97+.03*b.condition/100)};
     const ground=Ground.efficiency(b.genome.traits,e);
@@ -588,7 +588,9 @@
     const groundCruise=(lo+hi)/2;
     const runner=Physics.createState(effective);
     runner.reserve*=.75+.25*b.condition/100;runner.fatigue=.25*b.strain/100;
-    return {id:b.id,name:b.name,p:effective,parameters:p,traits:b.personality,cruise:groundCruise,state:runner,ground};
+    const paddock={abilities:{...abilities},traits:{...b.personality},condition:b.condition,strain:b.strain,
+      traction:ground.traction,age:age(s,b),sex:b.sex,races:b.races,wins:b.wins};
+    return {id:b.id,name:b.name,p:effective,parameters:p,traits:b.personality,cruise:groundCruise,state:runner,ground,paddock};
   }
   function simulateField(s,birds,e,trace=false) {
     return Race.simulate(birds.map((b,lane)=>({...raceEntry(s,b,e),lane})),e,{trace,track:Calendar.TRACKS[e.trackId]||{}}).map((run,lane)=>

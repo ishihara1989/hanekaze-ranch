@@ -48,3 +48,29 @@ test('shared playback restores controls, updates standings after a rewind, and r
     assert.equal(JSON.stringify(record),before);
   }finally{for(const [key,value] of Object.entries(original)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });
+
+test('paddock controls, manual focus and renderer snapshots keep camera introductions and subtitles aligned',async()=>{
+  const originals={RaceReplay:globalThis.RaceReplay,document:globalThis.document,window:globalThis.window,matchMedia:globalThis.matchMedia};
+  const h=harness();Object.assign(globalThis,{RaceReplay:Replay,document:h.document,window:{},matchMedia:()=>({matches:false})});
+  try{
+    const {RacePlayback}=await import('../public/js/race-playback.js');
+    const viewer=new RacePlayback(h.root,record,{}, {paused:true,focusId:'own'});viewer.ready=true;
+    viewer.draw=()=>{const frame=viewer.readFrame();viewer.updateOverlay(frame.phase,frame.order,frame.raceTime);};viewer.draw();
+    assert.equal(h.element('[data-viewer-focus]').value,'own');assert.equal(h.element('[data-paddock-controls]').hidden,false);
+    viewer.control({dataset:{viewer:'paddock-next'}});
+    assert.equal(viewer.time,22);assert.equal(h.element('[data-viewer-focus]').value,'rival');
+    assert.equal(h.element('[data-paddock-progress]').textContent,'2 / 2羽');
+    assert.match(h.element('[data-commentary-text]').textContent,/2番 ライバル/);
+    const snapshot=viewer.snapshot();assert.equal(snapshot.focusId,'own','race tracking preference is retained');
+    const switched=new RacePlayback(h.root,record,{},snapshot);assert.equal(switched.time,22);switched.dispose();
+    viewer.seek(26);assert.equal(h.element('[data-commentary-speaker]').textContent,'サハギン / 解説');
+    viewer.control({dataset:{viewer:'paddock-prev'}});assert.equal(viewer.time,6);
+    assert.match(h.element('[data-commentary-text]').textContent,/1番 アオバ/);
+    viewer.onChange({target:{value:'rival',matches:selector=>selector==='[data-viewer-focus]'},stopPropagation(){}});
+    assert.equal(viewer.time,22);assert.equal(viewer.focusId,'rival');
+    viewer.control({dataset:{viewer:'paddock-skip'}});assert.equal(viewer.time,viewer.timeline.gate);
+    assert.equal(h.element('[data-paddock-controls]').hidden,true);assert.match(h.element('[data-commentary-text]').textContent,/ゲート/);
+    viewer.seek(0);assert.equal(h.element('[data-viewer-focus]').value,'own');assert.equal(viewer.paused,true);
+    viewer.dispose();assert.equal(h.events.size,0);
+  }finally{for(const [key,value] of Object.entries(originals)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
+});

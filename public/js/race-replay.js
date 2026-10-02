@@ -8,12 +8,24 @@
   const COLORS=['yellow','golden','red','blue','green','rose','white','black','purple','gray'];
   const METRES=Course.METRES;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const ABILITIES=['speed','cardio','power','reserve','legs','economy','start','resilience'];
+  const TRAITS=['grit','drive','wisdom','control','crowd','fight'];
+  const PADDOCK=Object.freeze({intro:6,runnerSeconds:16,analysisDelay:4});
   function capture(runs,event){
     return {version:2,distance:event.distance,hill:event.hill||0,runners:runs.map((r,i)=>({
       id:r.id,name:r.name,color:r.color||'yellow',crest:r.crest||r.color||'yellow',
       lane:r.lane??i,player:!!r.player,time:r.time,finished:r.finished,
+      ...(r.paddock?{paddock:{...r.paddock,abilities:{...r.paddock.abilities},traits:{...r.paddock.traits}}}:{}),
       samples:r.samples.map(s=>[s.time,s.distance,s.speed,MODES.indexOf(s.mode),s.lateral??r.lane??i]),
     }))};
+  }
+  function validPaddock(p){
+    const finite=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
+    return !!p&&!!p.abilities&&ABILITIES.every(k=>finite(p.abilities[k],50,150))&&
+      !!p.traits&&TRAITS.every(k=>finite(p.traits[k],50,150))&&finite(p.condition,0,100)&&
+      finite(p.strain,0,100)&&finite(p.traction,0,2)&&Number.isInteger(p.age)&&finite(p.age,0,50)&&
+      ['M','F'].includes(p.sex)&&Number.isInteger(p.races)&&finite(p.races,0,1e15)&&
+      Number.isInteger(p.wins)&&finite(p.wins,0,p.races);
   }
   function valid(replay,record){
     const finite=(v,a,b)=>Number.isFinite(v)&&v>=a&&v<=b;
@@ -26,6 +38,7 @@
       if(!r||!result||ids.has(r.id)||lanes.has(r.lane)||typeof r.name!=='string'||r.name!==result.name||
         !COLORS.includes(r.color)||![...COLORS,'rainbow'].includes(r.crest)||
         !Number.isInteger(r.lane)||r.lane<0||r.lane>=12||typeof r.player!=='boolean'||
+        (r.paddock!==undefined&&!validPaddock(r.paddock))||
         typeof r.finished!=='boolean'||r.finished!==result.finished||r.time!==result.time||
         !finite(r.time,0,900)||!Array.isArray(r.samples)||r.samples.length<2||r.samples.length>(replay.version===2?36002:452))return false;
       ids.add(r.id);lanes.add(r.lane);
@@ -73,8 +86,91 @@
   function timeline(record){
     const raceEnd=Math.max(...record.replay.runners.map(r=>r.time));
     const awarded=record.rank===1&&record.finished!==false;
-    return {paddock:0,gate:10,race:16,result:16+raceEnd,award:awarded?24+raceEnd:null,
-      end:24+raceEnd+(awarded?16:0),raceEnd};
+    const gate=PADDOCK.intro+record.replay.runners.length*PADDOCK.runnerSeconds,race=gate+6;
+    return {paddock:0,gate,race,result:race+raceEnd,award:awarded?race+8+raceEnd:null,
+      end:race+8+raceEnd+(awarded?16:0),raceEnd};
+  }
+  // One immutable pre-race snapshot per entrant; results and samples are never
+  // consulted by the paddock assessment, including when watching a saved race.
+  function paddockOrder(record){return record.replay.runners.slice().sort((a,b)=>a.lane-b.lane);}
+  function paddockAt(record,time){
+    const order=paddockOrder(record),index=clamp(Math.floor((time-PADDOCK.intro)/PADDOCK.runnerSeconds),0,order.length-1),
+      at=PADDOCK.intro+index*PADDOCK.runnerSeconds;
+    return {runner:order[index],index,total:order.length,at,elapsed:Math.max(0,time-at),intro:time<PADDOCK.intro};
+  }
+  function paddockAssessments(record){
+    const endurance=clamp((record.distance-1200)/2000,0,1),
+      weights={speed:1.3-.65*endurance,cardio:.7+1.2*endurance,power:1-.5*endurance,
+        reserve:.8,legs:.5+1.1*endurance,economy:.8+.6*endurance,start:.7-.45*endurance,resilience:.5+.5*endurance};
+    const rows=paddockOrder(record).map(runner=>{
+      const p=runner.paddock;if(!validPaddock(p))return {runner,known:false,tier:'unknown',chance:null};
+      const a=p.abilities,total=Object.values(weights).reduce((x,y)=>x+y,0),
+        score=ABILITIES.reduce((sum,k)=>sum+a[k]*weights[k],0)/total+
+          (p.condition-100)*.08-p.strain*.035+(p.traction-1)*65+
+          (p.traits.wisdom+p.traits.control-200)*.015,
+        strength=ABILITIES.slice().sort((x,y)=>a[y]-a[x]||ABILITIES.indexOf(x)-ABILITIES.indexOf(y))[0],
+        weakness=ABILITIES.slice().sort((x,y)=>a[x]-a[y]||ABILITIES.indexOf(x)-ABILITIES.indexOf(y))[0],
+        style=(a.start+a.resilience-a.power-a.reserve)>12?'front':
+          (a.power+a.reserve-a.start-a.resilience)>12?'closer':'balanced';
+      return {runner,known:true,score,strength,weakness,style,tier:'unknown',chance:null};
+    });
+    // Partial legacy fields cannot support a comparison with the whole field.
+    if(rows.some(r=>!r.known))return rows;
+    const sorted=rows.slice().sort((a,b)=>b.score-a.score||a.runner.lane-b.runner.lane),best=sorted[0].score,
+      total=rows.reduce((sum,r)=>sum+Math.exp((r.score-best)/7),0),average=1/rows.length;
+    for(const row of rows){
+      row.chance=Math.exp((row.score-best)/7)/total;
+      row.tier=rows.length===1?'solo':row===sorted[0]&&best-sorted[1].score>=8?'standout':
+        row.chance<average*.3?'longshot':row.chance<average*.65?'outsider':
+        row.chance>=average*1.3?'contender':'open';
+    }
+    return rows;
+  }
+  const STRENGTH_LINES={
+    speed:['スピードが持ち味です。直線での伸びに注目したいですね。','最高速には見るものがあります。速い流れにも対応できそうです。','持ち前のスピードを生かせれば、最後の直線が楽しみです。','速さを武器にするタイプです。自分のリズムで走りたいですね。'],
+    cardio:['心肺の強さが持ち味です。息の長い脚を使えそうです。','持久力を生かして、じっくり勝負したいタイプですね。','長く脚を使えるのが強みです。消耗戦になれば面白いでしょう。','安定した巡航力があります。道中の流れには乗れそうです。'],
+    power:['瞬発力が持ち味です。勝負どころの加速に注目です。','一瞬の切れ味が魅力です。仕掛けが決まれば怖い存在ですね。','反応の鋭さが強みです。直線で抜け出す脚はありそうです。','加速する力を備えています。勝負どころでどう使うかですね。'],
+    reserve:['スパートを長く続けられるのが持ち味です。','終いに使える脚を持っています。早めの仕掛けも面白いでしょう。','最後の勝負に向けた余力が強みです。道中は大切に運びたいですね。','追い出してからの持続力に注目です。長い直線は楽しみですね。'],
+    legs:['脚の持久力が持ち味です。最後までしぶとく走れそうです。','長く踏ん張れる脚があります。タフな流れは歓迎でしょう。','持続力で勝負するタイプです。早めに動く展開も合いそうですね。','脚を長く使えるのがいいですね。終盤の粘りに注目です。'],
+    economy:['無駄の少ない走りが持ち味です。道中で脚をためられそうです。','効率よく運べるのが強みです。長い距離でも楽しみがあります。','力を浪費せずに走れるタイプですね。終いの余力につなげたいところです。','走りの効率がいいですね。落ち着いた流れなら力を出せそうです。'],
+    start:['立ち上がりの速さが持ち味です。好位置を取れそうですね。','スタートから流れに乗れるタイプです。序盤の位置取りに注目です。','出脚の良さがあります。すんなり前につけたいですね。','序盤の反応がいいですね。ゲートを出てからの動きに注目です。'],
+    resilience:['疲れてからの粘りが持ち味です。最後まで簡単には止まらないでしょう。','苦しい場面でも踏ん張れるタイプです。競り合いも楽しみですね。','疲労に強いのが魅力です。厳しい流れでも粘りを見せそうです。','終盤に踏ん張れるのがいいですね。最後のひと伸びに期待しましょう。']
+  };
+  const WEAKNESS_LINES={
+    speed:['ただ、速さ比べでは少し分が悪いですね。','瞬間の最高速は課題です。仕掛けを工夫したいところです。','スピード勝負になると、もうひと押しが欲しいですね。'],
+    cardio:['道中で飛ばしすぎると、息切れが心配です。','持久力には課題があります。ペース配分が鍵でしょう。','厳しい流れでは、道中の消耗を抑えたいですね。'],
+    power:['急な加速には課題があります。早めに動きたいですね。','切れ味比べより、流れに乗る競馬が合いそうです。','一瞬の反応は控えめです。仕掛けを遅らせたくないですね。'],
+    reserve:['スパートの余力には限りがあります。使いどころが大切です。','長い追い比べになると、最後の余力が心配ですね。','終いの脚は大切に使いたいですね。早仕掛けは避けたいところです。'],
+    legs:['脚の消耗には注意が必要です。長い追い比べはどうでしょうか。','長く脚を使う形では、終盤の踏ん張りが課題ですね。','脚をためて運びたいですね。早めの消耗は避けたいところです。'],
+    economy:['走りに力を使いやすい面があります。余力を残せるかですね。','道中のロスは抑えたいですね。消耗が最後に響くかもしれません。','力を浪費しない運びが鍵です。落ち着いて走りたいですね。'],
+    start:['出脚は課題です。序盤で置かれすぎないようにしたいですね。','立ち上がりはゆっくりです。慌てず流れに乗れるかでしょう。','スタート後の位置取りには、少し気をつけたいですね。'],
+    resilience:['疲れてからの踏ん張りが課題です。余力を残したいですね。','消耗が重なると、終盤の失速が心配です。','厳しいペースでは最後の粘りが鍵になりますね。']
+  };
+  const CHANCE_LINES={
+    standout:['この中では実力は頭一つ抜けているように見えます。中心になるでしょう。','能力比較では一歩リードしています。勝ち負けを期待したいですね。','ここでは有力な一羽です。力を出せれば優勝に近いでしょう。','この顔ぶれなら、主役を張れるだけの力があります。'],
+    contender:['チャンスは十分あるでしょう。上位争いが楽しみです。','この相手でも勝ち負けに加われる力があります。','勝つ見込みは十分です。うまく流れに乗れれば楽しみですね。','優勝争いに加わってきそうです。展開がはまれば面白いでしょう。'],
+    open:['力関係は拮抗しています。展開ひとつでチャンスはあるでしょう。','この顔ぶれなら、うまく運べば上位に届いてもおかしくありません。','抜けた存在ではありませんが、勝つチャンスはありそうです。','混戦ですからね。持ち味を出せれば勝負になるでしょう。','勝負は位置取り次第でしょう。十分に見せ場を作れる一羽です。'],
+    outsider:['相手はそろっていますが、展開が向けば食い込めるでしょう。','簡単な相手ではありません。持ち味を生かして、どこまで迫れるかですね。','上位とは少し差がありますが、一角を崩す余地はあるでしょう。','勝つにはひと工夫が必要でしょう。展開の助けも欲しいところです。'],
+    longshot:['厳しい戦いになると思いますが、爪痕を残せるかに注目です。','この相手では苦戦も予想されます。最後まで持ち味を見せてほしいですね。','能力比較では分が悪いですが、一つでも上を目指したいところです。','勝ち負けには厳しい相手です。自分の競馬で見せ場を作れるでしょうか。'],
+    solo:['自分のリズムで走って、力を出し切ってほしいですね。'],
+    unknown:['今回は力関係が読みづらいですね。自分のリズムで走れるかに注目しましょう。','比較は難しい顔ぶれですが、展開を味方につけたいですね。','ここは実際の走りを見てみたいですね。落ち着いて流れに乗れるかでしょう。']
+  };
+  const STYLE_LINES={front:['先行してレースを作っていきそうです。','前々で流れに乗る競馬が合いそうです。','出脚を生かして、早めに好位置を取りたいですね。'],
+    closer:['道中で脚をためて、直線で勝負したいタイプです。','終いの脚を生かす競馬が合いそうです。','じっくり構えて、勝負どころで動いていきそうです。'],
+    balanced:['位置取りには融通が利きそうです。','流れを見ながら、無理なく運びたいタイプですね。','前を見ながら、自分のリズムで進めたいですね。']};
+  function paddockComment(row,record,index){
+    let seed=0;for(const char of `${record.name}|${record.week||0}|${record.distance}|${record.trackId||''}`)seed=(seed*31+char.charCodeAt(0))>>>0;
+    const pick=(pool,salt=0)=>pool[(seed+index+salt)%pool.length],p=row.runner.paddock;
+    if(!row.known)return pick(CHANCE_LINES.unknown);
+    const a=p.abilities,parts=[pick(STRENGTH_LINES[row.strength])];
+    // Use real pre-race deficiencies before describing a tactical preference.
+    if(p.condition<70)parts.push('ただ、調子は万全とは言えません。どこまで力を出せるかですね。');
+    else if(p.strain>55)parts.push('疲れが少し気になります。終盤まで踏ん張れるかでしょう。');
+    else if(p.traction<.9)parts.push('今日の馬場は得意とは言えません。ロスを抑えたいですね。');
+    else if(a[row.weakness]<90)parts.push(pick(WEAKNESS_LINES[row.weakness],1));
+    else parts.push(pick(STYLE_LINES[row.style],2));
+    parts.push(pick(CHANCE_LINES[row.tier],3));
+    return parts.join('');
   }
   function phase(record,time){
     const t=timeline(record);
@@ -175,7 +271,13 @@
       cues=[],add=(at,speaker,text)=>cues.push({at,speaker,text});
     const number=r=>`${r.lane+1}番 ${r.name}`;
     add(0,'lamia',`${record.name}。パドックからお届けします！ ${replay.runners.length}羽が登場です。`);
-    add(4,'sahagin',`${record.distance}メートル、${record.surface==='dirt'?'ダート':'芝'}の競走です。${own?`${own.name}の走りにも注目しましょう。`:''}`);
+    add(3,'sahagin',`${record.distance}メートル、${record.surface==='dirt'?'ダート':'芝'}の競走です。一羽ずつご紹介しましょう。`);
+    paddockAssessments(record).forEach((row,index)=>{
+      const r=row.runner,p=r.paddock,at=PADDOCK.intro+index*PADDOCK.runnerSeconds,
+        details=row.known?`${p.age}歳の${p.sex==='M'?'牡羽':'牝羽'}。${p.races?`${p.races}戦${p.wins}勝`:'これが初めてのレース'}です。`:'';
+      add(at,'lamia',`${number(r)}です。${details}`);
+      add(at+PADDOCK.analysisDelay,'sahagin',paddockComment(row,record,index));
+    });
     add(t.gate,'lamia','各羽、ゲートに入りました。まもなく発走です！');
     add(t.race,'lamia','ゲートが開いた！ 全羽、いっせいにスタート！');
     let previous='',lastCall=-20,spurt=false;
@@ -201,5 +303,5 @@
       add(t.award+6,'sahagin','表彰台で翼を振って、応援に応えています。牧場にとって大切な一勝ですね。');}
     return cues.sort((a,b)=>a.at-b.at);
   }
-  return {MODES,COLORS,METRES,capture,valid,sample,visualSample,standings,ceremony,timeline,phase,course,position,frame,cameraShot,commentary};
+  return {MODES,COLORS,METRES,PADDOCK,capture,valid,validPaddock,paddockOrder,paddockAt,paddockAssessments,paddockComment,sample,visualSample,standings,ceremony,timeline,phase,course,position,frame,cameraShot,commentary};
 });

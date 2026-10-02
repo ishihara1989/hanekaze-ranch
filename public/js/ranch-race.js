@@ -216,6 +216,7 @@
     return runners.map(r=>{
       if(trace&&r.samples.at(-1).time!==r.state.time)r.samples.push({...r.state,mode:r.samples.at(-1).mode});
       return {id:r.id,name:r.name,lane:r.lane,time:r.state.time,finished:r.state.distance>=event.distance,
+        ...(r.paddock?{paddock:r.paddock}:{}),
         state:r.state,parameters:r.parameters??r.p,ground:r.ground,samples:r.samples,interactions:r.interactions};
     });
   }

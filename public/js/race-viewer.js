@@ -270,7 +270,12 @@ class RaceViewer extends RacePlayback {
   cameraView(phase,dt,snap,frame){
     const camera=this.camera,desired=this.desired,target=new THREE.Vector3();
     let key=phase,label=phases[phase],fov=34;
-    if(phase==='paddock'){target.copy(this.paddock).y=1.25;desired.copy(target).add(new THREE.Vector3(22,17,23));}
+    if(phase==='paddock'){
+      const shot=R.paddockAt(this.record,this.time),subject=this.racers.find(r=>r.entry.id===shot.runner.id),heading=subject.model.rotation.y;
+      target.copy(subject.model.position).y+=1.25;
+      desired.copy(target).add(new THREE.Vector3(Math.cos(heading)*9,3.5,-Math.sin(heading)*9));
+      key=`paddock-${shot.runner.id}`;label=`${shot.runner.lane+1}番を紹介 / ${shot.index+1}・${shot.total}羽`;fov=38;
+    }
     else if(phase==='award'){target.set(0,2.7,0);desired.set(Math.sin((this.time-this.timeline.award)*.13)*3,4.2,10);}
     else if(phase==='gate'){
       const positions=frame.runners.map(r=>r.position);

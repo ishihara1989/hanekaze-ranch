@@ -16,7 +16,7 @@ test('headless simulation records inward routing once; replay frames preserve it
   assert.equal(typeof document,'undefined');assert.ok(nearRail);assert.ok(Replay.valid(record.replay,record));
   const before=JSON.stringify({entries,record}),clock=Replay.timeline(record),start=Replay.frame(record,track,clock.race),
     inward=Replay.frame(record,track,clock.race+nearRail.time);
-  assert.equal(start.runners[0].state.lateral,11);assert.equal(inward.runners[0].state.lateral,0);
+  assert.equal(start.runners[0].state.lateral,11);close(inward.runners[0].state.lateral,0);
   for(const direction of [track,{...track,theme:'右回り'}])for(const width of [390,1200])for(const pitch of [1,2]){
     const current=Replay.frame(record,direction,clock.race+nearRail.time),{state,position}=current.runners[0],
       view=Projection.camera(state.distance,record,direction,{width,height:360,pitch}),

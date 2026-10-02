@@ -19,3 +19,7 @@
 1792×896、4列×2行、448×448の8コマ。本体と額羽を同じコマ・座標・倍率で描く。
 再構築: `node tools/build_chocobo_sprites.cjs`（既定は版5）。以前の版は引数 `2` / `3` / `4` で再構築できる。
 検査結果: `output/imagegen/sprite-v5-validation.json`。
+
+追加モーション: [ラストスパート](spurt/README.md)。低い首・滑空するように広げた翼・本気の表情の8コマを、同じ本体10色・額羽6色で用意。親の `manifest.json` の `motions.spurt` から参照する。
+
+追加モーション: [歩行](walk/README.md)。パドック用の短い歩幅・低い足上げの8コマを、同じ本体10色・額羽6色で用意。親の `manifest.json` の `motions.walk` から参照する。

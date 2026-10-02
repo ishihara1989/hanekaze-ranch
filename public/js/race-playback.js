@@ -17,7 +17,12 @@ export class RacePlayback {
     this.onInput=e=>{if(e.target.matches('[data-viewer-seek]')){e.stopPropagation();this.seek(Number(e.target.value));}};
     this.onChange=e=>{
       if(e.target.matches('[data-viewer-speed]')){e.stopPropagation();this.rate=Number(e.target.value);this.cancelSpeech();}
-      if(e.target.matches('[data-viewer-focus]')){e.stopPropagation();this.focusId=e.target.value;}
+      if(e.target.matches('[data-viewer-focus]')){e.stopPropagation();this.focusId=e.target.value;
+        if(this.ready&&R.phase(this.record,this.time)==='paddock'){
+          const index=R.paddockOrder(this.record).findIndex(r=>r.id===this.focusId);
+          if(index>=0)this.seek(R.PADDOCK.intro+index*R.PADDOCK.runnerSeconds);
+        }
+      }
       if(e.target.matches('[data-viewer-seek]'))e.stopPropagation();
     };
     this.onVisibility=()=>{if(document.hidden){this.paused=true;this.cancelSpeech();this.updateControls();}};
@@ -31,17 +36,26 @@ export class RacePlayback {
   }
   readFrame(){return R.frame(this.record,this.track,this.time);}
   updateOverlay(phase,order,raceTime){
+    const paddock=phase==='paddock'?R.paddockAt(this.record,this.time):null;
     this.$('[data-race-phase]').textContent=phases[phase];
-    this.$('[data-race-clock]').textContent=phase==='race'?format(raceTime):phase==='award'?this.decor.title:phase==='gate'?`${Math.ceil(this.timeline.race-this.time)}秒後に発走`:'RACE REPLAY';
-    this.$('[data-race-remaining]').textContent=phase==='race'?`残り ${Math.ceil(Math.max(0,this.record.distance-order[0].distance))}m`:phase==='paddock'?`${this.replay.runners.length}羽の出走をお届けします`:phase==='result'?`${this.record.rank}着 / ${format(this.record.time)}`:'';
-    if(this.lastListTime===undefined||this.time<this.lastListTime||this.time-this.lastListTime>=.2||phase!==this.listPhase){
+    this.$('[data-race-clock]').textContent=phase==='race'?format(raceTime):phase==='award'?this.decor.title:phase==='gate'?`${Math.ceil(this.timeline.race-this.time)}秒後に発走`:paddock?`${paddock.runner.lane+1}番 ${paddock.runner.name}`:'RACE REPLAY';
+    this.$('[data-race-remaining]').textContent=phase==='race'?`残り ${Math.ceil(Math.max(0,this.record.distance-order[0].distance))}m`:paddock?`出走羽紹介 ${paddock.index+1} / ${paddock.total}`:phase==='result'?`${this.record.rank}着 / ${format(this.record.time)}`:'';
+    const controls=this.$('[data-paddock-controls]');if(controls)controls.hidden=!paddock;
+    this.root.querySelectorAll('[data-viewer="paddock-prev"],[data-viewer="paddock-next"]').forEach(el=>{
+      el.disabled=!paddock||(el.dataset.viewer==='paddock-prev'?paddock.index===0:paddock.index===paddock.total-1);
+    });
+    const label=this.$('[data-paddock-progress]');if(label&&paddock)label.textContent=`${paddock.index+1} / ${paddock.total}羽`;
+    if(paddock)this.$('[data-viewer-focus]').value=paddock.runner.id;
+    if(this.lastListTime===undefined||this.time<this.lastListTime||this.time-this.lastListTime>=.2||phase!==this.listPhase||paddock?.index!==this.lastPaddockIndex){
       const list=this.$('[data-live-order]');list.replaceChildren();
       const racing=['race','result','award'].includes(phase),shown=racing?order:order.slice().sort((a,b)=>a.lane-b.lane);
       list.setAttribute('aria-label',racing?'現在の上位5羽':'出走羽');
-      shown.slice(0,5).forEach((r,i)=>{const row=document.createElement('li');row.className=r.player?'is-player':'';
-        const rank=document.createElement('span');rank.textContent=String(i+1);const name=document.createElement('b');name.textContent=r.name;
-        const gap=document.createElement('small');gap.textContent=!racing?`${r.lane+1}番`:r.finished?'入線':i===0?'先頭':`${Math.max(0,order[0].distance-r.distance).toFixed(1)}m`;
-        row.append(rank,name,gap);list.append(row);});this.lastListTime=this.time;this.listPhase=phase;
+      const start=paddock?Math.min(Math.max(0,paddock.index-2),Math.max(0,shown.length-5)):0;
+      shown.slice(start,start+5).forEach((r,i)=>{const row=document.createElement('li');row.className=[r.player?'is-player':'',r.id===paddock?.runner.id?'is-paddock-focus':''].filter(Boolean).join(' ');
+        if(paddock)row.setAttribute('aria-current',String(r.id===paddock.runner.id));
+        const rank=document.createElement('span');rank.textContent=String(racing?i+1:r.lane+1);const name=document.createElement('b');name.textContent=r.name;
+        const gap=document.createElement('small');gap.textContent=!racing?(r.id===paddock?.runner.id?'紹介中':`${r.lane+1}番`):r.finished?'入線':i===0?'先頭':`${Math.max(0,order[0].distance-r.distance).toFixed(1)}m`;
+        row.append(rank,name,gap);list.append(row);});this.lastListTime=this.time;this.listPhase=phase;this.lastPaddockIndex=paddock?.index;
     }
     this.$('[data-viewer-seek]').value=this.time;
     this.$('[data-viewer-time]').textContent=`${format(this.time)} / ${format(this.timeline.end)}`;
@@ -69,6 +83,11 @@ export class RacePlayback {
       if(this.speaking&&!this.paused&&this.cues[this.lastCue])this.speak(this.cues[this.lastCue]);}
     if(action==='restart'){this.paused=false;this.seek(0);}
     if(action==='phase')this.seek(this.timeline[button.dataset.phase]);
+    if(action==='paddock-prev'||action==='paddock-next'){
+      const current=R.paddockAt(this.record,this.time),index=Math.max(0,Math.min(current.total-1,current.index+(action==='paddock-next'?1:-1)));
+      this.seek(R.PADDOCK.intro+index*R.PADDOCK.runnerSeconds);
+    }
+    if(action==='paddock-skip')this.seek(this.timeline.gate);
     if(action==='camera')this.cameraMode=button.dataset.camera;
     if(action==='voice'){
       if(!('speechSynthesis'in window)){this.$('[data-voice-status]').textContent='このブラウザでは字幕のみで実況します。';return;}

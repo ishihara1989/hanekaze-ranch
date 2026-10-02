@@ -96,5 +96,223 @@
   "visibleNearLeg": "right",
   "visibleFarLeg": "left",
   "thighCoupling": "Each bright near / shaded far feathered thigh connects to and follows its own orange / brown lower leg.",
-  "compositing": "Draw body then crest at identical coordinates. Layers have disjoint nonzero-alpha pixels."
+  "compositing": "Draw body then crest at identical coordinates. Layers have disjoint nonzero-alpha pixels.",
+  "motions": {
+    "spurt": {
+      "revision": 5,
+      "motion": "spurt",
+      "label": "ラストスパート",
+      "columns": 4,
+      "rows": 2,
+      "cellWidth": 448,
+      "cellHeight": 448,
+      "width": 1792,
+      "height": 896,
+      "frameCount": 8,
+      "recommendedFps": 10,
+      "source": "../run-spurt-yellow-v1.png",
+      "semanticMask": "../regions-spurt-v1.png",
+      "metallicSource": "../run-spurt-golden-metallic-v1.png",
+      "body": {
+        "yellow": {
+          "label": "黄",
+          "file": "spurt/body-yellow.png"
+        },
+        "red": {
+          "label": "赤",
+          "file": "spurt/body-red.png"
+        },
+        "blue": {
+          "label": "青",
+          "file": "spurt/body-blue.png"
+        },
+        "green": {
+          "label": "緑",
+          "file": "spurt/body-green.png"
+        },
+        "rose": {
+          "label": "ピンク",
+          "file": "spurt/body-rose.png"
+        },
+        "white": {
+          "label": "白",
+          "file": "spurt/body-white.png"
+        },
+        "black": {
+          "label": "黒",
+          "file": "spurt/body-black.png"
+        },
+        "purple": {
+          "label": "紫",
+          "file": "spurt/body-purple.png"
+        },
+        "gray": {
+          "label": "灰",
+          "file": "spurt/body-gray.png"
+        },
+        "golden": {
+          "label": "金",
+          "file": "spurt/body-golden.png"
+        }
+      },
+      "crest": {
+        "yellow": {
+          "label": "黄",
+          "file": "spurt/crest-yellow.png"
+        },
+        "red": {
+          "label": "赤",
+          "file": "spurt/crest-red.png"
+        },
+        "blue": {
+          "label": "青",
+          "file": "spurt/crest-blue.png"
+        },
+        "white": {
+          "label": "白",
+          "file": "spurt/crest-white.png"
+        },
+        "black": {
+          "label": "黒",
+          "file": "spurt/crest-black.png"
+        },
+        "rainbow": {
+          "label": "虹",
+          "file": "spurt/crest-rainbow.png"
+        }
+      },
+      "masks": {
+        "body": "spurt/body-mask.png",
+        "crest": "spurt/crest-mask.png"
+      },
+      "phases": [
+        "奥の暗い脚が前で着地",
+        "奥の脚が体の下で荷重",
+        "奥の脚で後方へ蹴る",
+        "浮遊・手前の太ももと脚を前へ",
+        "手前の明るい脚が前で着地",
+        "手前の脚が体の下で荷重",
+        "手前の脚で後方へ蹴る",
+        "浮遊・手前の太ももと脚を後ろへ"
+      ],
+      "visibleNearLeg": "right",
+      "visibleFarLeg": "left",
+      "thighCoupling": "Each bright near / shaded far feathered thigh connects to and follows its own orange / brown lower leg.",
+      "compositing": "Draw body then crest at identical coordinates. Layers have disjoint nonzero-alpha pixels.",
+      "crestCrop": {
+        "x": 260,
+        "y": 92,
+        "width": 184,
+        "height": 170
+      }
+    },
+    "walk": {
+      "revision": 5,
+      "motion": "walk",
+      "label": "歩行",
+      "columns": 4,
+      "rows": 2,
+      "cellWidth": 448,
+      "cellHeight": 448,
+      "width": 1792,
+      "height": 896,
+      "frameCount": 8,
+      "recommendedFps": 6,
+      "source": "../walk-yellow-v2.png",
+      "semanticMask": "../regions-walk-v2.png",
+      "metallicSource": "../walk-golden-metallic-v2.png",
+      "body": {
+        "yellow": {
+          "label": "黄",
+          "file": "walk/body-yellow.png"
+        },
+        "red": {
+          "label": "赤",
+          "file": "walk/body-red.png"
+        },
+        "blue": {
+          "label": "青",
+          "file": "walk/body-blue.png"
+        },
+        "green": {
+          "label": "緑",
+          "file": "walk/body-green.png"
+        },
+        "rose": {
+          "label": "ピンク",
+          "file": "walk/body-rose.png"
+        },
+        "white": {
+          "label": "白",
+          "file": "walk/body-white.png"
+        },
+        "black": {
+          "label": "黒",
+          "file": "walk/body-black.png"
+        },
+        "purple": {
+          "label": "紫",
+          "file": "walk/body-purple.png"
+        },
+        "gray": {
+          "label": "灰",
+          "file": "walk/body-gray.png"
+        },
+        "golden": {
+          "label": "金",
+          "file": "walk/body-golden.png"
+        }
+      },
+      "crest": {
+        "yellow": {
+          "label": "黄",
+          "file": "walk/crest-yellow.png"
+        },
+        "red": {
+          "label": "赤",
+          "file": "walk/crest-red.png"
+        },
+        "blue": {
+          "label": "青",
+          "file": "walk/crest-blue.png"
+        },
+        "white": {
+          "label": "白",
+          "file": "walk/crest-white.png"
+        },
+        "black": {
+          "label": "黒",
+          "file": "walk/crest-black.png"
+        },
+        "rainbow": {
+          "label": "虹",
+          "file": "walk/crest-rainbow.png"
+        }
+      },
+      "masks": {
+        "body": "walk/body-mask.png",
+        "crest": "walk/crest-mask.png"
+      },
+      "phases": [
+        "手前の明るい脚が前で接地",
+        "手前の脚で荷重・奥の脚を持ち上げる",
+        "奥の暗い脚を低く前へ運ぶ",
+        "奥の脚を下ろして接地へ",
+        "奥の暗い脚が前で接地",
+        "奥の脚で荷重・手前の脚を持ち上げる",
+        "手前の明るい脚を低く前へ運ぶ",
+        "手前の脚を下ろしてループへ"
+      ],
+      "visibleNearLeg": "right",
+      "visibleFarLeg": "left",
+      "thighCoupling": "Each bright near / shaded far feathered thigh connects to and follows its own orange / brown lower leg.",
+      "compositing": "Draw body then crest at identical coordinates. Layers have disjoint nonzero-alpha pixels.",
+      "crestCrop": {
+        "x": 264,
+        "y": 0,
+        "width": 178,
+        "height": 145
+      }
+    }
+  }
 }

@@ -19,6 +19,14 @@ function loadSprite(file){
   return spriteImages.get(file);
 }
 export function mount(root,record,track,options={}){return new RaceViewer2D(root,record,track,options);}
+// Traffic and routing labels can temporarily hide the underlying final effort.
+export function spriteMotion(state,phase,finishDistance){
+  if(phase==='paddock')return 'walk';
+  if(phase!=='race'||state.stopped||state.finished)return 'run';
+  if(state.mode==='スパート')return 'spurt';
+  const remaining=finishDistance-state.distance;
+  return remaining>=0&&remaining<=400&&['競り合い','羽混み','内へ進路変更','進路確保','前詰まり'].includes(state.mode)?'spurt':'run';
+}
 
 export class RaceViewer2D extends RacePlayback {
   constructor(root,record,track,options={}){
@@ -41,12 +49,13 @@ export class RaceViewer2D extends RacePlayback {
   async init(){
     if(!this.ctx)throw Error('Canvas 2D is unavailable');
     this.manifest=await loadManifest();if(this.disposed)return;
+    const motions=[['',this.manifest],...Object.entries(this.manifest.motions||{}).map(([name,m])=>[name+':',m])];
     const keys=new Set(this.replay.runners.flatMap(r=>['body:'+r.color,'crest:'+this.crest(r.crest)]));
     const artwork=loadBackdrop(this.track).then(image=>{if(!this.disposed)this.backdropImage=image;});
-    await Promise.all([artwork,...[...keys].map(async key=>{
-      const [kind,color]=key.split(':'),entry=this.manifest[kind][color]||this.manifest[kind].yellow;
-      const img=await loadSprite(entry.file);if(!this.disposed)this.images.set(key,img);
-    })]);
+    await Promise.all([artwork,...motions.flatMap(([prefix,m])=>[...keys].map(async key=>{
+      const [kind,color]=key.split(':'),entry=m[kind][color]||m[kind].yellow;
+      const img=await loadSprite(entry.file);if(!this.disposed)this.images.set(prefix+key,img);
+    }))]);
     if(this.disposed)return;
     this.observer=new ResizeObserver(()=>this.draw(0,true));this.observer.observe(this.stage);
     this.$('[data-viewer-seek]').max=this.timeline.end;
@@ -103,9 +112,11 @@ export class RaceViewer2D extends RacePlayback {
     }
     const ctx=this.ctx;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
     const frame=this.readFrame(),{phase,raceTime,order,runners}=frame,view=this.view(frame,w,h);
-    this.currentView=view;this.backdrop(view);
-    if(phase==='award')this.podium(view,raceTime);
+    this.currentView=view;
+    if(phase==='paddock')this.paddockScene(view);
+    else if(phase==='award'){this.backdrop(view);this.podium(view,raceTime);}
     else{
+      this.backdrop(view);
       this.trackSurface(view);
       this.rail(view,-.5,false);
       const birds=runners.map(({entry,state,position})=>
@@ -118,22 +129,62 @@ export class RaceViewer2D extends RacePlayback {
         if(bird.p.x<-35||bird.p.x>w+35){edges[bird.p.x<0?0:1].push(bird);continue;}
         const travelled=C.travelled(bird.entry,raceTime,bird.state,this.paths.get(bird.entry.id));
         if(this.theme.dirt&&!bird.state.stopped)this.dust(bird.p,view,travelled,bird.state.speed);
-        this.bird(bird.entry,bird.p,view,bird.state.stopped?0:C.frame(travelled,this.motionPitch),null,phase!=='gate');
+        this.bird(bird.entry,bird.p,view,bird.state.stopped?0:C.frame(travelled,this.motionPitch),null,phase!=='gate',spriteMotion(bird.state,phase,this.record.distance));
       }
       if(showGates)this.gates(view,phase,raceTime,true);
       this.rail(view,11.5,true);
       this.edges(edges,view);
     }
-    this.minimap(view,runners);
+    if(phase!=='paddock')this.minimap(view,runners);
     const selected=C.section(view.distance,this.record,this.track);
     const mode=view.finishLocked?'ゴール定点・後続の入線':{broadcast:'外側から中継',follow:'注目羽を追走',overview:'全羽の位置',finish:'ゴール・真横'}[this.cameraMode];
-    this.$('[data-race-camera]').textContent=`${this.course.right?'右回り ←':'左回り →'} / ${mode} / ${C.SECTIONS[selected]}`;
+    const paddock=R.paddockAt(this.record,this.time);
+    this.$('[data-race-camera]').textContent=phase==='paddock'?`${paddock.runner.lane+1}番を紹介 / ${paddock.index+1}・${paddock.total}羽`:`${this.course.right?'右回り ←':'左回り →'} / ${mode} / ${C.SECTIONS[selected]}`;
     this.root.querySelectorAll('[data-section]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.section===selected&&phase==='race')));
     this.stage.dataset.section=selected;this.stage.dataset.direction=this.course.right?'left':'right';
     this.stage.dataset.finishLocked=String(!!view.finishLocked);
     this.stage.dataset.motionPitch=String(this.motionPitch);this.stage.dataset.venue=this.theme.key;
     this.stage.dataset.backdrop=this.backdropImage?'image':'fallback';
+    this.stage.dataset.phase=phase;
+    if(phase==='paddock')this.stage.dataset.paddockId=paddock.runner.id;else delete this.stage.dataset.paddockId;
     this.updateOverlay(phase,order,raceTime);
+  }
+  paddockScene(view){
+    const ctx=this.ctx,{width:w,height:h}=view,shot=R.paddockAt(this.record,this.time),
+      walk=this.manifest.motions?.walk||this.manifest,travel=this.time*46,
+      ground=h*.79,size=Math.min(h*.64,w*.58,310),x=w<560?w*.53:w*.5;
+    // Track the walking bird: rails and paving move while the subject stays
+    // large in frame. All motion derives from the playback clock, so seeking
+    // and changing renderer preserve the introduction and gait.
+    const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#87b8bf');sky.addColorStop(.55,'#e8efda');sky.addColorStop(1,'#d0d6b1');
+    ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='#9ab28a';ctx.fillRect(0,h*.38,w,h*.26);
+    for(let i=-1;i<w/180+2;i++){
+      const tx=i*180-mod(travel*.18,180);ctx.fillStyle=i%2?'#79977b':'#89a382';ctx.beginPath();ctx.ellipse(tx,h*.37,88,36,0,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#426951';ctx.fillRect(0,h*.49,w,h*.14);
+    ctx.fillStyle='#678456';ctx.fillRect(0,h*.6,w,h*.07);
+    ctx.fillStyle='#cbbd99';ctx.fillRect(0,h*.67,w,h*.33);
+    ctx.fillStyle='#e4d6b1';ctx.fillRect(0,h*.68,w,4);
+    ctx.strokeStyle='#9b89682b';ctx.lineWidth=1;
+    for(let i=-1;i<w/85+2;i++){
+      const px=i*85-mod(travel,85);ctx.beginPath();ctx.moveTo(px,h*.69);ctx.lineTo(px-40,h);ctx.stroke();
+    }
+    ctx.strokeStyle='#fcf1d2';ctx.lineWidth=4;
+    for(const y of [.54,.61]){ctx.beginPath();ctx.moveTo(0,h*y);ctx.lineTo(w,h*y);ctx.stroke();}
+    for(let i=-1;i<w/100+2;i++){
+      const px=i*100-mod(travel,100);ctx.fillStyle='#eadcba';ctx.fillRect(px-3,h*.52,6,h*.15);
+    }
+    const gait=Math.floor((this.time+shot.index*.17)*walk.recommendedFps)%walk.frameCount;
+    this.bird(shot.runner,{x,y:ground},{...view,dir:1},gait,size,false,'walk');
+    const nameSize=w<560?15:20,number=`${shot.runner.lane+1}番`,p=shot.runner.paddock;
+    ctx.fillStyle='#294b3e';ctx.font=`600 ${nameSize}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText(`${number}  ${shot.runner.name}`,x,h*.91,Math.max(160,w-36));
+    ctx.font='11px sans-serif';ctx.fillStyle='#5e654c';
+    ctx.fillText(R.validPaddock(p)?`${p.age}歳 ${p.sex==='M'?'牡羽':'牝羽'}  ·  ${p.races}戦 ${p.wins}勝${shot.runner.player?'  ·  自家牧場':''}`:`出走羽 ${shot.index+1} / ${shot.total}`,x,h*.96);
+    // A quiet progress strip marks how long this entrant remains on screen.
+    const progress=shot.intro?0:Math.min(1,shot.elapsed/R.PADDOCK.runnerSeconds);
+    ctx.fillStyle='#687f542b';ctx.fillRect(w*.25,h-4,w*.5,3);ctx.fillStyle='#a89450';ctx.fillRect(w*.25,h-4,w*.5*progress,3);
   }
   backdrop(view){
     if(this.backdropImage){drawBackdropImage(this.ctx,view,this.backdropImage,this.motionPitch);return;}
@@ -222,8 +273,9 @@ export class RaceViewer2D extends RacePlayback {
       ctx.beginPath();ctx.moveTo(p.x,p.y+2);ctx.lineTo(p.x,p.y-view.scale*1.05);ctx.stroke();}
     ctx.restore();
   }
-  bird(entry,p,view,frame,size=null,showNumber=true){
-    const ctx=this.ctx,m=this.manifest,body=this.images.get('body:'+entry.color),crest=this.images.get('crest:'+this.crest(entry.crest));
+  bird(entry,p,view,frame,size=null,showNumber=true,motion='run'){
+    const m=this.manifest.motions?.[motion]||this.manifest,prefix=m===this.manifest?'':motion+':',
+      ctx=this.ctx,body=this.images.get(prefix+'body:'+entry.color),crest=this.images.get(prefix+'crest:'+this.crest(entry.crest));
     const s=size??R.METRES.birdHeight/.89*view.scale;
     ctx.fillStyle='#3e543333';ctx.beginPath();ctx.ellipse(p.x,p.y-1,s*.33,s*.042,0,0,Math.PI*2);ctx.fill();
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(view.dir,1);

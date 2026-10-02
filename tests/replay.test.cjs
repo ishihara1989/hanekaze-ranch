@@ -16,6 +16,9 @@ test('settled races record all gates, feather colors and exact finishing samples
     assert.equal(Replay.sample(runner,runner.time).finished,true);
   }
   const mine=r.replay.runners.find(x=>x.id===bird.id);assert.equal(mine.color,bird.color);assert.equal(mine.crest,bird.crest);
+  for(const runner of r.replay.runners)assert.ok(Replay.validPaddock(runner.paddock));
+  assert.equal(mine.paddock.races,bird.races-1);assert.equal(mine.paddock.wins,bird.wins-1);
+  assert.ok(mine.paddock.condition>bird.condition,'paddock preserves condition before the race cost');
   const before=JSON.stringify(state);Replay.commentary({...r,birdId:bird.id});Replay.standings(r.replay,50);assert.equal(JSON.stringify(state),before);
   const order=Replay.standings(r.replay,900).map(x=>x.id);assert.deepEqual(order,r.field.map(x=>x.id));
 });
@@ -126,22 +129,22 @@ test('broadcast cameras face the last bend from the straight and cut exactly sid
     samples:[[0,0,20,0],[70,1400,20,2]]})),record={distance:1400,replay:{runners},rank:1,finished:true};
   for(const track of Object.values(W.TRACKS)){
     const c=Replay.course(record,track),dir=c.right?-1:1;
-    const cornerTime=16+(1400-c.finalStraight-100)/20,
+    const race=Replay.timeline(record).race,cornerTime=race+(1400-c.finalStraight-100)/20,
       corner=Replay.cameraShot(record,track,cornerTime,'broadcast',null,4.5),
       exit=Replay.position(1400-c.finalStraight,5.5,record,track);
     assert.equal(corner.key,'final-corner');
     assert.ok((corner.position.x-exit.x)*dir>0);
     assert.ok((corner.target.x-corner.position.x)*dir<0);
-    const straight=Replay.cameraShot(record,track,16+(1400-c.finalStraight/2)/20,'broadcast',null,4.5);
+    const straight=Replay.cameraShot(record,track,race+(1400-c.finalStraight/2)/20,'broadcast',null,4.5);
     assert.equal(straight.key,'home-straight');
-    for(const t of [83.5,85.9,86,86.8]){
+    for(const t of [67.5,69.9,70,70.8].map(t=>t+race)){
       const goal=Replay.cameraShot(record,track,t,'broadcast',null,4.5);
       assert.equal(goal.key,'finish');assert.equal(goal.position.x,0);assert.equal(goal.target.x,0);
       assert.ok(goal.position.z>-c.radius);
     }
-    assert.equal(Replay.cameraShot(record,track,88,'broadcast').key,'runout');
-    const manual=Replay.cameraShot(record,track,40,'finish');assert.equal(manual.key,'finish');
-    for(const mode of ['broadcast','follow','overview','finish'])for(const aspect of [.7,1.5,4.5])for(const time of [16,25,50,83.5,86,90]){
+    assert.equal(Replay.cameraShot(record,track,race+72,'broadcast').key,'runout');
+    const manual=Replay.cameraShot(record,track,race+24,'finish');assert.equal(manual.key,'finish');
+    for(const mode of ['broadcast','follow','overview','finish'])for(const aspect of [.7,1.5,4.5])for(const time of [0,9,34,67.5,70,74].map(t=>t+race)){
       const shot=Replay.cameraShot(record,track,time,mode,'5',aspect);
       assert.ok([...Object.values(shot.position),...Object.values(shot.target),shot.fov].every(Number.isFinite));
       assert.ok(shot.fov>=7&&shot.fov<=48);
@@ -166,7 +169,7 @@ test('multiple player entrants in a shared graded race preserve one immutable fi
   const second=structuredClone(first);second.id=`bird-${state.serial++}`;second.name='もう一羽';state.birds.push(second);
   const event=R.calendar(state.week).find(e=>e.level==='GIII');assert.ok(event);
   // Both birds have already reached open class and meet the stakes age requirement.
-  for(const b of [first,second]){b.wins=4;b.birthYear=0;b.lastRace=-100;}
+  for(const b of [first,second]){b.races=Math.max(b.races,4);b.wins=4;b.birthYear=0;b.lastRace=-100;}
   const field=R.simulateField(state,[first,second,...R.worldRoster(state,event)].slice(0,12),event,true);
   const a=R.race(state,first,event,field),b=R.race(state,second,event,field);
   assert.ok(Replay.valid(a.replay,a));assert.ok(Replay.valid(b.replay,b));assert.deepEqual(a.replay,b.replay);
