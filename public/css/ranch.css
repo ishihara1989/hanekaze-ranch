@@ -16,4 +16,38 @@
 .trait-hints p, .career-summary p { margin:4px 0; }
 .career-summary { font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
 .selected-career { border-top:1px solid var(--line, #ddd); margin-top:18px; padding-top:12px; }
+.cross-preview { margin:20px 0; }
+.cross-scroll { overflow-x:auto; }
+.cross-preview table { width:100%; border-collapse:collapse; font-size:12px; text-align:left; }
+.cross-preview th,.cross-preview td { padding:10px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.cross-preview p { font-size:12px; line-height:1.9; }
+.cross-preview .cross-danger { padding:12px 15px; border-left:3px solid #a45343; background:#f8ece6; color:#874438; }
+.pedigree-tree,.pedigree-tree ul { list-style:none; margin:8px 0; padding-left:14px; border-left:1px solid var(--line); }
+.pedigree-tree { padding-left:0; border-left:0; }
+.pedigree-tree li { margin:5px 0; font-size:11px; }
+.pedigree-tree .button { min-height:30px; padding:4px 6px; white-space:normal; text-align:left; overflow-wrap:anywhere; }
+.pedigree-tree summary { cursor:pointer; }
+.mother-panel>.pedigree { grid-column:1/-1; min-width:0; }
+.status-record>h3:first-child { margin-top:5px; font-size:15px; color:var(--ink); }
+.research .speaker { margin:12px 0; font-size:10px; }
+.research p { font-size:11px; line-height:1.9; }
+.ratings-only b { font-size:16px; color:#657f50; }
+.ratings-only>div { padding:8px 0; border-bottom:1px solid var(--line); align-items:center; }
+.race-traits,.gene-details { margin-top:20px; padding-top:14px; border-top:1px solid var(--line); }
+.race-traits summary,.gene-details summary { cursor:pointer; }
+.genetics .disclosure-note { padding:12px; background:#edf0e1; border-radius:6px; }
+.gene-group { margin:8px 0; padding:9px 10px; border:1px solid var(--line); border-radius:5px; }
+.gene-group summary { display:flex; justify-content:space-between; gap:10px; cursor:pointer; font-size:11px; }
+.gene-group summary small { color:var(--muted); white-space:nowrap; }
+.gene-loci { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; list-style:none; padding:12px 0 0; margin:0; }
+.gene-loci li { padding:6px; background:#f0f3e6; border-radius:4px; font-size:10px; overflow-wrap:anywhere; }
+.gene-loci span { display:block; color:var(--muted); margin-bottom:4px; }
+.gene-loci b { font-variant-numeric:tabular-nums; }
+.mother-panel>.genetics { grid-column:1/-1; min-width:0; }
+.mother-panel .ability-grid,.selected-career .ability-grid { gap:10px 15px; }
+.sale-grid .genetics>summary { cursor:pointer; }
+.sale-grid .genetics>summary span { float:none; display:block; margin-top:5px; }
+.sale-grid .genetics .ability-grid { gap:10px 15px; }
+.sale-grid .genetics p { min-height:0; }
+@media (max-width:650px) { .gene-loci { grid-template-columns:repeat(2,minmax(0,1fr)); } .research summary span { float:none; display:block; margin-top:6px; } }
 @media (max-width:700px) { .sire-search { grid-template-columns:1fr; } }

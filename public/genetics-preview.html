@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#183d36">
+  <title>源流の遺伝情報 — 公開段階プレビュー</title>
+  <link rel="stylesheet" href="css/ranch.css">
+  <link rel="stylesheet" href="css/genetics-preview.css">
+</head>
+<body>
+  <main class="preview-page">
+    <header class="preview-heading">
+      <span class="eyebrow">WING & WIND / GENETICS PREVIEW</span>
+      <h1>源流の遺伝情報を見比べる。</h1>
+      <p>32羽の源流と施設の公開段階を選んで、ゲーム内の見え方を確認できます。</p>
+    </header>
+    <section class="paper preview-controls" aria-label="プレビュー設定">
+      <div class="preview-source">
+        <label for="root-choice">源流を選ぶ</label>
+        <div class="preview-source-picker">
+          <button class="button outline" type="button" data-step="-1" aria-label="前の源流">←</button>
+          <select id="root-choice"></select>
+          <button class="button outline" type="button" data-step="1" aria-label="次の源流">→</button>
+        </div>
+      </div>
+      <fieldset class="preview-stages">
+        <legend>施設による公開段階</legend>
+        <div id="stage-choices" class="preview-stage-choices"></div>
+      </fieldset>
+      <div class="preview-options">
+        <label><input type="checkbox" id="compare-stages">4段階を並べて比較</label>
+        <label><input type="checkbox" id="show-status">現在ステータスの表示も確認</label>
+      </div>
+    </section>
+    <div class="preview-source-summary" id="root-summary" role="status"></div>
+    <div id="preview-display"></div>
+    <footer>GENETICS PREVIEW <span>源流カタログの確認用ページ</span></footer>
+  </main>
+  <noscript>プレビューにはJavaScriptが必要です。</noscript>
+  <script src="js/model.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/race-physics.js"></script>
+  <script src="js/race-course.js"></script>
+  <script src="js/ranch-race.js"></script>
+  <script src="js/trait-mapping.js"></script>
+  <script src="js/ranch-genetics.js"></script>
+  <script src="js/ranch-ground.js"></script>
+  <script src="js/ranch-breeding.js"></script>
+  <script src="js/race-replay.js"></script>
+  <script src="js/ranch-engine.js"></script>
+  <script src="js/ranch-observation.js"></script>
+  <script src="js/genetics-preview.js"></script>
+</body>
+</html>

@@ -23,9 +23,10 @@ test('catalog strengths exist in actual heritable genes, with no missing favorab
   for(const b of sources){
     const p=R.ROOTS.find(p=>p.lineage===b.lineage),q=R.quality(b.genome);
     for(const key in q)assert.equal(q[key],key===p.primary?100:key===p.secondary?85:70,`${b.name}/${key}`);
-    for(const key in b.inborn)assert.equal(b.inborn[key],key===p.primary?112:key===p.secondary?98:80);
+    const penalty=R.Breeding.penalties(b.genome,R.DEFECTS);
+    for(const key in b.inborn)assert.equal(b.inborn[key],(key===p.primary?112:key===p.secondary?98:80)-(penalty[key]||0));
     assert.deepEqual(b.personality,b.inborn);
-    assert.deepEqual(b.management,{robustness:q.robustness,recovery:q.recovery});
+    assert.deepEqual(b.management,{robustness:q.robustness-(penalty.robustness||0),recovery:q.recovery-(penalty.recovery||0)});
     assert.deepEqual(b.genome.distance,[p.distance,p.distance]);
     assert.deepEqual(b.genome.release,[p.release,p.release]);
     assert.equal(R.breedFee(b),600);
@@ -40,6 +41,7 @@ test('catalog strengths exist in actual heritable genes, with no missing favorab
 test('every source passes its actual alleles and inborn personality to offspring',()=>{
   for(const profile of R.ROOTS){
     const s=R.initial(),father=roots(s).find(b=>b.lineage===profile.lineage),mother=R.bird(s,s.sale[0]);
+    mother.parents=[]; // Isolate Mendelian transmission from the separately tested cross mutations.
     R.buy(s,mother.id);while(s.reports.length)R.acknowledge(s);R.breed(s,mother.id,father.id);
     for(let week=0;week<4;week++){while(s.reports.length)R.acknowledge(s);R.advance(s);}
     const child=R.own(s).find(b=>b.role==='young');
@@ -48,7 +50,12 @@ test('every source passes its actual alleles and inborn personality to offspring
       assert.ok(father.genome.quality[key][i].includes(pair[0]));
       assert.ok(mother.genome.quality[key][i].includes(pair[1]));
     });
-    for(const key in child.inborn)assert.ok(Math.abs(child.inborn[key]-(father.inborn[key]+mother.inborn[key])/2)<=7);
+    const penalty=R.Breeding.penalties(child.genome,R.DEFECTS);
+    for(const key in child.inborn){
+      assert.ok(father.genome.character[key].includes(child.genome.character[key][0]));
+      assert.ok(mother.genome.character[key].includes(child.genome.character[key][1]));
+      assert.ok(Math.abs(child.inborn[key]+(penalty[key]||0)-R.Genetics.mean(child.genome.character[key]))<=7);
+    }
     assert.ok(R.validState(s));
   }
 });
@@ -57,6 +64,7 @@ test('upgrading a four-source v4 save preserves IDs, owned birds, pregnancy and 
   const s=R.initial();
   delete s.rootCatalogVersion;
   s.birds=s.birds.filter(b=>b.kind!=='root'||Number(b.lineage.split('-')[1])<4);
+  for(const b of s.birds)b.parents=b.parents.map(id=>R.bird(s,id)?id:null);
   const father=roots(s)[0],mother=R.bird(s,s.sale[0]);father.name='源流・アカツキ';
   R.buy(s,mother.id);while(s.reports.length)R.acknowledge(s);R.breed(s,mother.id,father.id);
   const child={...copy(mother),id:`bird-${s.serial++}`,name:'育てている子',sex:'M',role:'stud',kind:'home',lineage:father.lineage,parents:[father.id,mother.id],pregnancy:null};

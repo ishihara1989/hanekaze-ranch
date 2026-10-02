@@ -1,0 +1,33 @@
+.preview-page { max-width:1300px; margin:auto; padding:45px 28px; }
+.preview-heading h1 { margin:12px 0; font:600 30px/1.6 var(--serif); }
+.preview-heading p { font-size:13px; color:var(--muted); }
+.preview-controls { margin:26px 0; }
+.preview-source label,.preview-stages legend { display:block; margin-bottom:10px; font-size:12px; }
+.preview-source-picker { display:flex; gap:10px; max-width:480px; }
+.preview-source-picker select { flex:1; min-width:0; }
+.preview-stages { border:0; padding:0; margin:24px 0 0; }
+.preview-stage-choices { display:flex; flex-wrap:wrap; gap:10px; }
+.preview-stage-choices .button { font-size:12px; gap:8px; }
+.preview-stage-choices small { font-size:10px; opacity:.75; }
+.preview-options { display:flex; flex-wrap:wrap; gap:18px; margin-top:22px; }
+.preview-options label { display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer; }
+.preview-options input { width:16px; height:16px; accent-color:#627d52; }
+.preview-source-summary { margin:28px 0 18px; }
+.preview-source-summary h2 { font:600 24px var(--serif); }
+.preview-source-summary p { font-size:12px; color:var(--muted); margin-top:8px; }
+.preview-grid { display:grid; grid-template-columns:minmax(0,760px); gap:22px; align-items:start; }
+.preview-grid.comparison { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.preview-stage { min-width:0; }
+.preview-stage>header h2 { font:600 20px/1.6 var(--serif); margin:8px 0; }
+.preview-stage>header p { color:var(--muted); font-size:12px; line-height:1.9; }
+.preview-stage .research { margin-top:15px; }
+.preview-stage .research summary { cursor:pointer; }
+.preview-current { margin-top:25px; }
+.preview-current>h2 { font-size:14px; }
+@media(max-width:700px) {
+  .preview-page { padding:25px 16px; }
+  .preview-heading h1 { font-size:23px; }
+  .preview-stage-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .preview-stage-choices .button { white-space:normal; text-align:left; line-height:1.6; padding:10px; }
+  .preview-grid.comparison { grid-template-columns:minmax(0,1fr); }
+}

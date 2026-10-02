@@ -1,14 +1,33 @@
 /* The new ranch lifecycle. Balance-lab abilities and physics are the source of truth. */
 (function (root, factory) {
   const api = typeof module === 'object' && module.exports
-    ? factory(require('./world.js'), require('./trait-mapping.js'), require('./race-physics.js'), require('./ranch-genetics.js'), require('./ranch-ground.js'), require('./ranch-race.js'))
-    : factory(root.RanchWorld, root.TraitMapping, root.RacePhysics, root.RanchGenetics, root.RanchGround, root.RanchRace);
+    ? factory(require('./world.js'), require('./trait-mapping.js'), require('./race-physics.js'), require('./ranch-genetics.js'), require('./ranch-ground.js'), require('./ranch-race.js'), require('./ranch-breeding.js'), require('./race-replay.js'))
+    : factory(root.RanchWorld, root.TraitMapping, root.RacePhysics, root.RanchGenetics, root.RanchGround, root.RanchRace, root.RanchBreeding, root.RaceReplay);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.Ranch = api;
-})(globalThis, function (Calendar, Mapping, Physics, Genetics, Ground, Race) {
+})(globalThis, function (Calendar, Mapping, Physics, Genetics, Ground, Race, Breeding, Replay) {
   'use strict';
   const VERSION = 4, SAVE_KEY = 'hanekaze-ranch-v4', YEAR = 48, GESTATION = 4;
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const validBirdName=name=>typeof name==='string'&&/^[ァ-ヺー]{2,9}$/.test(name);
+  const NAME_ERROR='名前は2〜9文字のカタカナで入力してください（長音「ー」も使えます）。';
+  const NAME_WORDS=['リーフ','ウィング','ブレイズ','クラウン','ノヴァ','ホープ','ハヤテ','ヒカリ',
+    'アカツキ','ツバサ','シズク','ミライ','ソラ','ユメ','カゼ','ホシ','ルナ','ステラ','フレア','ミスト',
+    'ソニック','レイ','フロスト','スノウ','シャイン','グロウ','スピカ','コメット','オリオン','ラピス','アイリス','セレナ'];
+  function generatedName(s,prefix='ハネカゼ',preferred=''){
+    const head=String(prefix).replace(/[^ァ-ヺー]/g,'').slice(0,4)||'ハネカゼ',
+      used=new Set(s.birds.map(b=>b.name)),start=s.serial%NAME_WORDS.length;
+    for(const word of [preferred,...NAME_WORDS.slice(start),...NAME_WORDS.slice(0,start)]){
+      const name=head+word;if(validBirdName(name)&&!used.has(name))return name;
+    }
+    // Exhausted word pools use kana only, without consuming the genetic RNG.
+    const alphabet='カキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワ';
+    for(let n=s.serial;;n++){
+      let value=n%alphabet.length**5,code='';do{code=alphabet[value%alphabet.length]+code;value=Math.floor(value/alphabet.length);}while(value);
+      const name=head.slice(0,Math.max(1,9-code.length))+code;
+      if(validBirdName(name)&&!used.has(name))return name;
+    }
+  }
   const date = week => ({...Calendar.date(((week-1)%YEAR+YEAR)%YEAR+1),year:Math.floor((week-1)/YEAR)+1});
   const when = week => { const d = date(week); return `${d.year>0?d.year+'年':'開業'+(1-d.year)+'年前'} ${d.month}月 第${d.monthWeek}週`; };
   const PERSONALITY = {grit:'根性', drive:'走る意欲', wisdom:'賢さ', control:'自制心', crowd:'羽混み耐性', fight:'闘争心'};
@@ -24,9 +43,9 @@
     meadow:{name:'穏やかな平原',cost:8000000,max:3,description:'自制心と賢さを育てる放牧地。最初から利用できます。'},
     forest:{name:'過酷な森',cost:8000000,max:3,description:'走る意欲と刺激への慣れを育てる放牧地。'},
     shop:{name:'グッズ販売所',cost:25000000,max:3,description:'GⅠ勝者のファンから毎月収入。引退後は5年で減衰、殿堂入りは一部継続。'},
-    lab:{name:'研究所',cost:5000000,max:3,description:'Lv.1で性格、Lv.2で現在能力、Lv.3で遺伝と伸びしろを調べられます。',lock:'レース初勝利'},
-    statue:{name:'銅像',cost:50000000,max:1,description:'三冠を記念する銅像。研究所の公開段階を1つ進めます。',lock:'三冠制覇'},
-    museum:{name:'記念館',cost:100000000,max:1,description:'牧場で8大競走を制覇した記念館。研究所の公開段階を1つ進めます。',lock:'8大競走制覇'},
+    lab:{name:'研究所',cost:5000000,max:1,description:'羽場・成長・羽色などの遺伝と、得意羽場などの競走情報を調べられます。',lock:'レース初勝利'},
+    statue:{name:'銅像',cost:50000000,max:1,description:'三冠を記念する銅像。研究所と合わせて全遺伝の座位を公開。記念館も完成すると現在能力の数値を公開します。',lock:'三冠制覇'},
+    museum:{name:'記念館',cost:100000000,max:1,description:'牧場で8大競走を制覇した記念館。研究所と合わせて全遺伝の座位を公開。銅像も完成すると現在能力の数値を公開します。',lock:'8大競走制覇'},
   };
   const TITLES = {
     triple:['神竜賞','チョコボダービー','オメガ賞'],
@@ -39,7 +58,7 @@
   };
   const TITLE_NAMES = {triple:'三冠',filly:'牝羽三冠',sprint:'春秋スプリント',mile:'春秋マイル',dirt:'中央ダートダブル',spring:'春古羽三冠',autumn:'秋古羽三冠'};
   const EIGHT = ['クリスタル賞','神竜賞','チョコボオークス','チョコボダービー','オメガ賞','オーディーン賞（春）','オーディーン賞（秋）','バハムート記念'];
-  const ROOT_CATALOG_VERSION = 2;
+  const ROOT_CATALOG_VERSION = 3;
   const TRAIT_LABELS = {...Object.fromEntries(Mapping.ABILITIES.map(a=>[a.key,a.label])),...MANAGEMENT,...PERSONALITY};
   // Two primary and two supporting donors per trait. Stable order is the lineage ID.
   // See docs/ROOT_STALLIONS.md for naming sources, tradeoffs and the coverage matrix.
@@ -47,8 +66,8 @@
     ['チョコエクレア','speed','start'],
     ['カフェガナッシュ','power','speed'],
     ['メープルブレッド','cardio','legs'],
-    ['ヘーゼルビスコッティ','legs','robustness'],
-    ['キャラメルフォンダン','reserve','power'],
+    ['ヘーゼルビスコット','legs','robustness'],
+    ['キャラメルタルト','reserve','power'],
     ['ピスタチオサブレ','economy','cardio'],
     ['ジンジャースナップ','start','resilience'],
     ['カカオニブ','resilience','recovery'],
@@ -58,7 +77,7 @@
     ['シナモンチャイ','drive','fight'],
     ['アールグレイ','wisdom','crowd'],
     ['バニラカスタード','control','wisdom'],
-    ['ミルクブランマンジェ','crowd','grit'],
+    ['ブランマンジェ','crowd','grit'],
     ['スパイスショコラ','fight','reserve'],
     ['フランボワーズ','speed','economy'],
     ['ショコラフラン','power','reserve'],
@@ -72,7 +91,7 @@
     ['ココナッツラッシー','recovery','start'],
     ['コクトウカヌレ','grit','cardio'],
     ['オレンジコンフィ','drive','speed'],
-    ['ローズマリーフォカッチャ','wisdom','power'],
+    ['ハーブフォカッチャ','wisdom','power'],
     ['カモミールシフォン','control','fight'],
     ['ホワイトスフレ','crowd','wisdom'],
     ['ペッパークラッカー','fight','drive'],
@@ -84,6 +103,8 @@
     return Object.freeze({lineage:`root-${index}`,name,primary,secondary,distance,release,tendency,
       strengths:Object.freeze(strengths),comment:`${TRAIT_LABELS[primary]}と${TRAIT_LABELS[secondary]}をつなぐ、${tendency}の血統。${strengths.map(key=>labels[key]).join('・')}。`});
   }));
+  const DEFECTS=Object.freeze(Breeding.catalog(ROOTS));
+  const DEFECT_LABELS={...TRAIT_LABELS,frailty:'虚弱体質',temper:'気性難'};
   const own = s => s.birds.filter(b => b.owner === 'player' && !['retired','archived'].includes(b.role));
   const bird = (s, id) => s.birds.find(b => b.id === id);
   const age = (s, b) => b.kind === 'root' || b.kind === 'founder' ? null : date(s.week).year - b.birthYear;
@@ -91,7 +112,8 @@
   const pick = (s, items) => items[Math.floor(random(s) * items.length)];
   const capacity = s => ({racing:8 * s.facilities.stalls, mare:4 * s.facilities.stalls, stud:4 * s.facilities.stalls});
   const racingCount = s => own(s).filter(b => ['young','racing'].includes(b.role)).length + own(s).filter(b => b.pregnancy).length;
-  const labLevel = s => s.facilities.lab ? Math.min(3, s.facilities.lab + s.facilities.statue + s.facilities.museum) : 0;
+  // Legacy lab upgrades remain saved, but disclosure now depends on the monuments.
+  const labLevel = s => s.facilities.lab ? 1 + Number(s.facilities.statue > 0) + Number(s.facilities.museum > 0) : 0;
   function pay(s, amount, note) {
     if (amount < 0 && s.money < -amount) throw Error('ギルが足りません。');
     s.money += amount;
@@ -122,21 +144,44 @@
   }
   const quality = g => Object.fromEntries(Object.entries(g.quality).map(([k, pairs]) => [k, 50 + 1.25 * pairs.flat().reduce((n, x) => n + x, 0)]));
   const mean = a => a.reduce((n, x) => n + x, 0) / a.length;
+  const crossStrengths=b=>{
+    const source=b.kind==='root'&&ROOTS.find(p=>p.lineage===b.lineage);
+    return source?[source.primary,source.secondary]:Object.entries({...quality(b.genome),...Object.fromEntries(Object.entries(b.genome.character||{}).map(([k,p])=>[k,mean(p)]))}).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k])=>k);
+  };
+  const pedigree=(s,b)=>Breeding.pedigree(b.parents,id=>bird(s,id));
+  const breedingCrosses=(s,sire,dam)=>Breeding.crosses([sire,dam],id=>bird(s,id));
+  const crossRisk=(s,sire,dam)=>breedingCrosses(s,sire,dam).find(c=>c.blood>Breeding.MAX_CROSS_BLOOD)||null;
+  function crossReason(s,sire,dam) {
+    const risk=crossRisk(s,sire,dam);
+    return risk?`${risk.name}の${risk.positions.join('×')}クロスは血量${+(risk.blood*100).toFixed(3)}%で危険なため、配合できません。許される濃さは2×3（37.5%）までです。2×2など上限を超える配合は禁止されています。`:'';
+  }
+  const crossPlan=(s,sire,dam)=>Breeding.mutationPlan(breedingCrosses(s,sire,dam),id=>bird(s,id),crossStrengths);
+  function constitution(b) {
+    const frailty=Breeding.defectSummary(b.genome,DEFECTS).filter(d=>d.trait==='frailty').reduce((n,d)=>n+d.active,0);
+    return {illnessChance:Math.min(.02,.002+frailty*.0005),recoveryWeeks:3+Math.min(4,Math.ceil(frailty/4))};
+  }
   function createBird(s, options = {}, parents = null) {
-    const g = options.genome ?? genome(s, parents, options.distance ?? 0, options.release ?? 0, options.alleleFrequency ?? .25), q = quality(g);
+    const g = options.genome ?? genome(s, parents, options.distance ?? 0, options.release ?? 0, options.alleleFrequency ?? .25);
     g.traits ??= Genetics.generate(()=>random(s),parents?.map(p=>p.genome.traits));
     const color=Genetics.expressColor(g.traits.body,g.traits.gold);
     if(color===null)return null;
-    const potential = Mapping.generate({quality:q,distance:mean(g.distance),release:mean(g.release),random:() => random(s),birthBounds:parents?pedigreeBonus(s,parents[0],parents[1]):null});
-    const temperament = options.inborn ?? Object.fromEntries(Object.keys(PERSONALITY).map(k => [k, clamp(parents ? mean(parents.map(p => p.inborn[k])) + (random(s) - .5) * 14 : 65 + random(s) * 30,50,150)]));
-    const b = {id:`bird-${s.serial++}`,name:'名無しの幼羽',sex:random(s)<.5?'F':'M',owner:'player',role:'young',kind:'home',
+    g.defects??=parents?Breeding.inheritDefects(parents,()=>random(s)):{};
+    g.character??=Object.fromEntries(Object.keys(PERSONALITY).map(k=>[k,parents?parents.map(p=>pick(s,p.genome.character?.[k]||[p.inborn[k],p.inborn[k]])):
+      Array(2).fill(options.inborn?.[k]??(65+random(s)*30))]));
+    if(parents)Breeding.mutate(g,crossPlan(s,...parents),()=>random(s));
+    const q=quality(g),penalty=Breeding.penalties(g,DEFECTS);
+    const reduce=scores=>Object.fromEntries(Object.entries(scores).map(([key,value])=>[key,clamp(value-(penalty[key]||0),50,150)]));
+    const potential = reduce(Mapping.generate({quality:q,distance:mean(g.distance),release:mean(g.release),random:() => random(s),birthBounds:parents?pedigreeBonus(s,parents[0],parents[1]):null}));
+    const temperament = reduce(options.inborn??Object.fromEntries(Object.keys(PERSONALITY).map(k=>[k,clamp(mean(g.character[k])+(parents?(random(s)-.5)*14:0),50,150)])));
+    const name=validBirdName(options.name)?options.name:generatedName(s,options.farm&&MAJOR_FARMS.find(f=>f.name===options.farm)?.prefix);
+    const b = {id:`bird-${s.serial++}`,name,sex:random(s)<.5?'F':'M',owner:'player',role:'young',kind:'home',
       birthYear:date(s.week).year,bornWeek:s.week,parents:parents ? parents.map(p => p.id) : [],genome:g,potential,
-      inborn:temperament,personality:{...temperament},management:{robustness:q.robustness,recovery:q.recovery},
+      inborn:temperament,personality:{...temperament},management:reduce({robustness:q.robustness,recovery:q.recovery}),
       training:Object.fromEntries(Mapping.ABILITIES.map(a => [a.key, .1])),
       condition:100,strain:0,health:0,pasture:'meadow',policy:'steady',registered:false,pregnancy:null,bredYear:0,
       races:0,wins:0,g1:0,graded:0,earnings:0,fans:0,records:[],titles:[],lastRace:-100,retiredYear:null,hall:false,
-      ...options,color,crest:g.traits.crest,growth:Genetics.growthLabel(g.traits)};
-    if (parents) b.lineage = parents[0].lineage;
+      ...options,name,inborn:temperament,color,crest:g.traits.crest,growth:Genetics.growthLabel(g.traits)};
+    if (parents?.[0].lineage) b.lineage = parents[0].lineage;
     s.birds.push(b);
     return b;
   }
@@ -155,8 +200,8 @@
       }));
       const inborn=Object.fromEntries(Object.keys(PERSONALITY).map(key=>[key,key===profile.primary?112:key===profile.secondary?98:80]));
       const b=createBird(scratch,{name:profile.name,sex:'M',owner:'source',role:'stud',kind:'root',lineage:profile.lineage,
-        genome:{quality:genes,distance:[profile.distance,profile.distance],release:[profile.release,profile.release],traits:Genetics.source(index)},
-        inborn,comment:profile.comment,fee:600});
+        genome:{quality:genes,distance:[profile.distance,profile.distance],release:[profile.release,profile.release],traits:Genetics.source(index),defects:Breeding.sourceDefects(profile.lineage,DEFECTS)},
+        inborn,comment:`${profile.comment} 潜性の欠点：${DEFECT_LABELS[DEFECTS[`${profile.lineage}-weak`].trait]}。`,fee:600});
       if(existing)Object.assign(existing,{...b,id:existing.id});
       else {s.birds.push(b);s.serial=scratch.serial;}
     });
@@ -173,6 +218,19 @@
   ];
   const farmName=b=>b.owner==='player'?'羽風牧場':b.farm||'他の牧場';
   const rating=value=>value<60?'X':value<80?'△':value<100?'◯':value<120?'◎':'☆';
+  const geneticRating=value=>value<65?'X':value<80?'△':value<95?'◯':value<110?'◎':'☆';
+  const geneticEffectRating=value=>value<-10?'X':value<-2?'△':value<=2?'◯':value<=10?'◎':'☆';
+  function geneticBreakdown(b) {
+    const g=b.genome,q=quality(g),penalties=Breeding.penalties(g,DEFECTS);
+    const base={...q,...Object.fromEntries(Object.entries(g.character).map(([key,pair])=>[key,mean(pair)]))};
+    const effects=Object.fromEntries(Object.keys(base).map(key=>[key,-(penalties[key]||0)]));
+    for(const ability of Mapping.ABILITIES)
+      effects[ability.key]+=ability.distance*mean(g.distance)+ability.release*mean(g.release);
+    // Include every expressed negative effect, including frailty and temperament.
+    const total=Object.fromEntries(Object.entries(base).map(([key,value])=>[key,value+effects[key]]));
+    return {base,effects,total};
+  }
+  const geneticScores=b=>geneticBreakdown(b).total;
   function profile(b) {
     const values={...b.potential,...b.management,...b.inborn};
     const sorted=Object.entries(values).sort((a,b)=>b[1]-a[1]);
@@ -221,6 +279,7 @@
     return bonus;
   }
   function worldGroup(e) {
+    if(!/^G/.test(e.level))return `local-${e.level}-${e.surface}`;
     if(e.level!=='GI')return `support-${e.surface}`;
     if(e.sex)return `female-${e.minAge===2?'young':e.maxAge===3?'classic':'older'}`;
     if(e.minAge===2&&e.maxAge===2)return 'juvenile';
@@ -231,21 +290,43 @@
     if(e.distance>=2800)return 'long';
     return 'middle';
   }
+  function npcParents(s,farm,e,birthYear,frequency=farm.quality) {
+    const group=`${e.surface}-${e.distance>=2600?'long':e.distance<=1800?'short':'middle'}-${/^G/.test(e.level)?'major':e.level}`;
+    const distance=e.distance>=2800?.9:e.distance>=2200?.5:e.distance<=1600?-.8:0;
+    const selected=[];
+    for(const sex of ['M','F']){
+      const candidates=s.birds.filter(b=>b.farm===farm.name&&b.breedingGroup===group&&b.sex===sex&&b.birthYear<=birthYear-3&&b.birthYear>=birthYear-20&&
+        (sex==='M'||!crossRisk(s,selected[0],b)));
+      candidates.sort((a,b)=>b.g1-a.g1||b.graded-a.graded||mean(Object.values(quality(b.genome)))-mean(Object.values(quality(a.genome)))||b.birthYear-a.birthYear);
+      if(candidates.length){selected.push(candidates[Math.floor(random(s)*Math.min(3,candidates.length))]);continue;}
+      // Imported foundation stock is the explicit unknown boundary of the pedigree.
+      const release=-.8+random(s)*1.6,g=genome(s,null,distance,release,frequency);
+      const source=ROOTS[(MAJOR_FARMS.indexOf(farm)*5+[...group].reduce((n,c)=>n+c.charCodeAt(0),0)+(sex==='F'?1:0))%ROOTS.length];
+      g.defects={[`${source.lineage}-weak`]:Array.from({length:Breeding.DEFECT_LOCI},()=>[0,1])};
+      const base=createBird(s,{name:generatedName(s,farm.prefix,sex==='M'?'オリジン':'プリマ'),owner:'archive',farm:farm.name,role:'archived',kind:'general',
+        sex,birthYear:birthYear-5,bornWeek:(birthYear-6)*YEAR+9,genome:g,breedingGroup:group,npcFoundation:true,lineage:`import-${farm.prefix}-${group}`});
+      base.genome.traits.aptitude[e.surface]=[1,1];base.genome.traits.development.earlyGrowth=[1,1];base.growth='early';
+      selected.push(base);
+    }
+    return selected;
+  }
   function worldRoster(s,e) {
     const year=date(s.week).year,group=worldGroup(e);
     let runners=s.birds.filter(b=>b.owner==='npc'&&b.season===year&&b.worldGroup===group);
     if(!runners.length) {
       const suffix=['リーフ','ウィング','ブレイズ','クラウン','ノヴァ','ホープ'];
-      runners=MAJOR_FARMS.map((farm,i)=>{
-        const distance=e.distance>=2800?.9:e.distance>=2200?.5:e.distance<=1600?-.8:0;
-        const routeNames={juvenile:'若葉',dirt:'砂塵',sprint:'疾風','classic-middle':'神竜','classic-mile':'新星','classic-derby':'王冠','classic-long':'大河',mile:'閃光',long:'悠久',middle:'栄光','female-young':'若姫','female-classic':'水晶','female-older':'女王','support-turf':'草原','support-dirt':'砂丘'};
-        const b=createBird(s,{name:`${farm.prefix}${suffix[i]}${routeNames[group]}${year}`,owner:'npc',farm:farm.name,season:year,worldGroup:group,
-          role:'racing',kind:'general',registered:true,sex:e.sex||(e.level==='GI'?'M':'F'),birthYear:year-(e.maxAge===3?3:e.maxAge===2?2:5),distance,release:-.8+random(s)*1.6,alleleFrequency:farm.quality,lineage:`root-${Math.floor(random(s)*32)}`});
-        b.training=Object.fromEntries(Mapping.ABILITIES.map(a=>[a.key,.95]));
-        b.genome.traits.aptitude[e.surface]=[1,1];
-        b.genome.traits.development.earlyGrowth=[1,1];b.growth='early';
+      const farms=/^G/.test(e.level)?MAJOR_FARMS:Array.from({length:11},(_,i)=>MAJOR_FARMS[i%MAJOR_FARMS.length]);
+      runners=farms.map((farm,i)=>{
+        const routeNames={juvenile:'ワカバ',dirt:'サジン',sprint:'ハヤテ','classic-middle':'ドラゴン','classic-mile':'ノヴァ','classic-derby':'クラウン','classic-long':'タイガ',mile:'フラッシュ',long:'エターナル',middle:'グロリア','female-young':'プリマ','female-classic':'クリスタル','female-older':'クイーン','support-turf':'リーフ','support-dirt':'デューン'};
+        const birthYear=year-(e.maxAge===3?3:e.maxAge===2?2:5),frequency={new:.10,maiden:.10,c1:.22,c2:.3,c3:.38,open:.45}[e.level]??farm.quality;
+        const parents=npcParents(s,farm,e,birthYear,frequency);
+        const b=createBird(s,{name:generatedName(s,farm.prefix,routeNames[group]||suffix[i%suffix.length]),owner:'npc',farm:farm.name,season:year,worldGroup:group,breedingGroup:parents[0].breedingGroup,
+          role:'racing',kind:'general',registered:true,sex:e.sex||(e.level==='GI'?'M':'F'),birthYear,bornWeek:(birthYear-1)*YEAR+9},parents);
+        // A failed gold egg is an absent runner, never a rerolled genotype.
+        if(!b)return null;
+        b.training=Object.fromEntries(Mapping.ABILITIES.map(a=>[a.key,/^G/.test(e.level)?.95:['new','maiden'].includes(e.level)?.25:.65]));
         return b;
-      });
+      }).filter(Boolean);
     }
     return runners.filter(b=>age(s,b)>=e.minAge&&age(s,b)<=e.maxAge);
   }
@@ -273,9 +354,9 @@
     for(const b of candidates)if(selected.length<10&&!selected.includes(b))selected.push(b);
     for(const b of s.birds.filter(b=>b.owner==='npc')){b.owner='archive';b.role='archived';if(b.sex==='F')b.retiredYear=year;}
     for(const b of selected){b.owner='public';b.role='stud';b.retiredYear=year+1;}
-    // Non-winners remain named in the race fields; they need no full genome in saves.
+    // Keep prospective breeding stock and every referenced ancestor.
     const ancestors=new Set(s.birds.flatMap(b=>b.parents));
-    s.birds=s.birds.filter(b=>!(b.owner==='archive'&&b.farm&&!b.graded&&!ancestors.has(b.id)));
+    s.birds=s.birds.filter(b=>!(b.owner==='archive'&&b.farm&&!b.graded&&year-b.birthYear>23&&!ancestors.has(b.id)));
   }
   let historyTemplate=null;
   function ensureWorld(s) {
@@ -296,7 +377,7 @@
     const imported=JSON.parse(historyTemplate),ids=new Map(imported.map(b=>[b.id,`bird-${s.serial++}`]));
     const shift=date(s.week).year-6;
     for(const b of imported) {
-      b.id=ids.get(b.id);b.birthYear+=shift;b.bornWeek+=shift*YEAR;b.season+=shift;
+      b.id=ids.get(b.id);b.parents=b.parents.map(id=>ids.get(id)||id);b.birthYear+=shift;b.bornWeek+=shift*YEAR;if(b.season!==undefined)b.season+=shift;
       if(b.retiredYear!==null)b.retiredYear+=shift;
       b.lastRace+=shift*YEAR;
       b.records.forEach(r=>{r.week+=shift*YEAR;r.year+=shift;r.field.forEach(x=>x.id=ids.get(x.id)||x.id);});
@@ -314,6 +395,37 @@
     }
     refreshRoots(s);
     ensureWorld(s);
+    if(s.breedingVersion!==Breeding.VERSION){
+      // Existing phenotypes and RNG stay intact; new genes start neutral.
+      for(const b of s.birds){
+        b.genome.defects??={};
+        b.genome.character??=Object.fromEntries(Object.entries(b.inborn).map(([k,v])=>[k,[v,v]]));
+      }
+      const scratch={week:s.week,rng:0x50454449,serial:s.serial,birds:s.birds};
+      for(const b of [...s.birds])if(b.farm&&!b.parents.length&&!b.npcFoundation){
+        const farm=MAJOR_FARMS.find(f=>f.name===b.farm)||MAJOR_FARMS[0],record=b.records[0]||{surface:'turf',distance:1800,level:'GI'};
+        b.parents=npcParents(scratch,farm,record,b.birthYear).map(p=>p.id);b.pedigreeReconstructed=true;
+      }
+      for(const b of s.birds)if(!b.farm&&b.kind==='general'&&b.sex==='F'&&!b.parents.length){
+        const source=s.birds.find(p=>p.kind==='root'&&p.lineage===b.lineage)||s.birds.find(p=>p.kind==='root'&&p.lineage==='root-13');
+        b.parents=[source.id,null];b.pedigreeReconstructed=true;
+      }
+      s.serial=scratch.serial;s.breedingVersion=Breeding.VERSION;
+    }
+    // Upgrade names without changing identities, pedigrees, race times or RNG.
+    const renamed=new Map();
+    for(const b of s.birds)if(!validBirdName(b.name)){
+      const root=b.kind==='root'&&ROOTS.find(p=>p.lineage===b.lineage),farm=MAJOR_FARMS.find(f=>f.name===b.farm);
+      b.name=root?root.name:generatedName(s,farm?.prefix);renamed.set(b.id,b.name);
+    }
+    const updateRecord=r=>{
+      for(const runner of r.field||[])if(renamed.has(runner.id))runner.name=renamed.get(runner.id);
+      for(const runner of r.replay?.runners||[])if(renamed.has(runner.id))runner.name=renamed.get(runner.id);
+      if(renamed.has(r.birdId))r.birdName=renamed.get(r.birdId);
+    };
+    for(const b of s.birds)for(const r of b.records)updateRecord(r);
+    for(const report of [...s.reports,...s.journal])for(const r of report.results||[])updateRecord(r);
+    for(const award of s.awards)if(renamed.has(award.birdId))award.name=renamed.get(award.birdId);
     return s;
   }
   function refreshMarket(s) {
@@ -326,8 +438,13 @@
       ['ミズノシズク',.8,.4,'長く歩いても、まだ先へ行きたそうですね。',3200],
       ['アカネノハネ',-.8,.65,'走り始めると、とても軽やか。少し元気いっぱいです。',3200],
     ].map(([name,distance,release,comment,price],i) => {
-      const b=createBird(s,{name:year===1?name:`${name}${year}`,sex:'F',role:'mare',owner:'sale',kind:'general',birthYear:year-4,distance,release,comment,price});
+      const father=s.birds.find(b=>b.kind==='root'&&b.lineage===`root-${[13,2,1][i]}`);
+      const scratch={week:s.week,rng:random(s)*4294967296,serial:1,birds:[]};
+      const unknown=createBird(scratch,{distance,release});
+      unknown.id=null;
       const traits=i===0?{control:98,drive:75,wisdom:86}:i===1?{drive:87,control:80}:{drive:105,control:68};
+      for(const [key,value] of Object.entries(traits))unknown.genome.character[key]=Array(2).fill(clamp(2*value-mean(father.genome.character[key]),50,150));
+      const b=createBird(s,{name:year===1?name:generatedName(s,'ハネカゼ'),sex:'F',role:'mare',owner:'sale',kind:'general',birthYear:year-4,bornWeek:(year-5)*YEAR+9,parents:[father.id,null],comment,price},[father,unknown]);
       Object.assign(b.inborn,traits);Object.assign(b.personality,traits);return b.id;
     });
     s.birds.filter(b => b.owner==='public' && b.role==='stud' && year-b.retiredYear>=5).forEach(b => b.role='archived');
@@ -337,7 +454,7 @@
   }
 
   function initial(seed = 20260930) {
-    const s = {version:VERSION,geneticsVersion:Genetics.VERSION,week:9,money:20000,debt:0,rng:seed>>>0,serial:1,birds:[],sale:[],marketYear:0,stage:'buy',reports:[],journal:[],ledger:[],milestones:{},awards:[],founderOffers:[],
+    const s = {version:VERSION,geneticsVersion:Genetics.VERSION,breedingVersion:Breeding.VERSION,week:9,money:20000,debt:0,rng:seed>>>0,serial:1,birds:[],sale:[],marketYear:0,stage:'buy',reports:[],journal:[],ledger:[],milestones:{},awards:[],founderOffers:[],
       facilities:Object.fromEntries(Object.keys(FACILITIES).map(k => [k,['stalls','meadow'].includes(k)?1:0])),difficulty:'normal',lastAnnual:0};
     refreshRoots(s);
     ensureWorld(s);
@@ -373,6 +490,7 @@
   function breedingReason(s, dam, sire) {
     if (!dam || dam.owner!=='player' || dam.role!=='mare') return '繁殖牝羽を選んでください。';
     if (!sire || !sires(s).includes(sire)) return '種牡羽を選んでください。';
+    const danger=crossReason(s,sire,dam);if(danger)return danger;
     if (age(s,dam)>=20) return 'この繁殖牝羽は繁殖を引退する年齢です。';
     if (dam.pregnancy) return '出産を待っています。';
     if (dam.bredYear===date(s.week).year) return '今年の配合は済んでいます。来年また会いましょう。';
@@ -426,7 +544,7 @@
   }
   function rename(s,id,name) {
     const b=bird(s,id),clean=String(name).trim();
-    if (!b||b.owner!=='player'||!clean||clean.length>20) throw Error('名前は1〜20文字で入力してください。');
+    if (!b||b.owner!=='player'||!validBirdName(clean)) throw Error(NAME_ERROR);
     b.name=clean;
   }
   function retire(s,id) {
@@ -473,7 +591,8 @@
     return {id:b.id,name:b.name,p:effective,parameters:p,traits:b.personality,cruise:groundCruise,state:runner,ground};
   }
   function simulateField(s,birds,e,trace=false) {
-    return Race.simulate(birds.map(b=>raceEntry(s,b,e)),e,{trace});
+    return Race.simulate(birds.map((b,lane)=>({...raceEntry(s,b,e),lane})),e,{trace,track:Calendar.TRACKS[e.trackId]||{}}).map((run,lane)=>
+      ({...run,lane,color:birds[lane].color,crest:birds[lane].crest,player:birds[lane].owner==='player'}));
   }
   function simulateBird(s,b,e,trace=false) {
     return simulateField(s,[b],e,trace)[0];
@@ -487,26 +606,16 @@
       sharedRuns=runWorldEvent(s,e,[b]);
     }
     pay(s,-e.fee,`${b.name} 出走登録`);
-    const rivals=[];
+    let rivals=[];
     if(!sharedRuns) {
-    // Race-specific rivals use a separate seed: replay and saves never reroll the field.
-    const scratch={rng:(s.rng^s.week^b.races)>>>0,serial:10000,birds:[],week:s.week};
-    // Class strength is a genetic population, not a hidden race-speed multiplier.
-    // Beginners meet immature novice rivals; GI fields approach quality 100.
-    const frequency={new:.10,maiden:.10,c1:.22,c2:.3,c3:.38,open:.45,GIII:.50,GII:.56,GI:.625}[e.level];
-    for(let i=0;i<11;i++) {
-      const r=createBird(scratch,{name:`${['ファイア','ブリザド','サンダラ','フレア'][i%4]}${['リーフ','スター','ウィング'][i%3]}`,role:'racing',registered:true,birthYear:date(s.week).year-Math.max(2,e.minAge),distance:-1+2*random(scratch),release:-1+2*random(scratch),alleleFrequency:frequency});
-      // Rivals are local to this race, outside the persistent bird ID namespace.
-      r.id=`rival-${i}`;
-      r.training=Object.fromEntries(Mapping.ABILITIES.map(a=>[a.key,b.wins===0?.25:.65]));
-      rivals.push(r);
-    }
+      rivals=worldRoster(s,e);
     }
     const runs=(sharedRuns||simulateField(s,[b,...rivals],e,true)).sort((a,b)=>Number(b.finished)-Number(a.finished)||
       (a.finished?a.time-b.time:b.state.distance-a.state.distance));
     const rank=runs.findIndex(x=>x.id===b.id)+1,run=runs[rank-1],reward=(run.finished?e.purse[rank-1]||0:0)+e.allowance;
     pay(s,reward,`${b.name} ${e.name} ${rank}着`);
     const result={week:s.week,year:date(s.week).year,name:e.name,level:e.level,distance:e.distance,surface:e.surface,trackId:e.trackId,going:run.ground.going,cushion:run.ground.cushion,rank,reward,time:run.time,finished:run.finished,field:runs.map(({name,time,id,finished})=>({name,time,id,finished})),sexRestricted:!!e.sex,interactions:run.interactions};
+    result.replay=Replay.capture(runs,e);
     b.races++;b.lastRace=s.week;b.earnings+=reward;b.records.push(result);
     const durability=1-.1*(b.management.robustness-100)/50;
     b.condition=clamp(b.condition-durability*(4+14*run.state.energyUsed/12000+10*run.state.reserveSpent/run.parameters.reserveCapacity),0,100);
@@ -569,7 +678,8 @@
   function acknowledge(s, options={}) {
     const r=s.reports[0];if(!r)return;
     if(r.type==='registration')for(const id of r.birdIds){
-      if(options.names?.[id]!==undefined&&(!String(options.names[id]).trim()||String(options.names[id]).trim().length>20))throw Error('名前は1〜20文字で入力してください。');
+      const name=String(options.names?.[id]??bird(s,id)?.name).trim();
+      if(!validBirdName(name))throw Error(NAME_ERROR);
       if(options.policies?.[id]!==undefined&&!['steady','challenge'].includes(options.policies[id]))throw Error('方針を選んでください。');
     }
     if(r.type==='registration')for(const id of r.birdIds){const b=bird(s,id);if(!b)continue;if(options.names?.[id])rename(s,id,options.names[id]);if(options.policies?.[id])setPolicy(s,id,options.policies[id]);b.registered=true;b.role='racing';}
@@ -613,7 +723,7 @@
           b.condition=clamp(b.condition+12+8*(b.management.recovery-50)/100+(rest?s.facilities.spa*3:0),0,100);
           b.strain=clamp(b.strain-5-5*(b.management.recovery-50)/100-(rest?s.facilities.spa*2:0),0,100);
           if(b.health)b.health=Math.max(0,b.health-1-s.facilities.clinic);
-          else if(!rest&&random(s)<.002){b.health=3;notes.push(`${b.name}は脚を休めています。回復まで出走を見合わせます。`);}
+          else if(!rest&&random(s)<constitution(b).illnessChance){b.health=constitution(b).recoveryWeeks;notes.push(`${b.name}は脚を休めています。回復まで出走を見合わせます。`);}
         }
       }
     }
@@ -635,7 +745,7 @@
     if(d.week===48){annual(s,d.year);retireWorld(s,d.year);}
     s.week++;
     for(const mother of own(s).filter(b=>b.pregnancy&&b.pregnancy.due<=s.week)) {
-      const father=bird(s,mother.pregnancy.sireId),child=createBird(s,{name:`${mother.name}の子${s.birds.filter(b=>b.parents.includes(mother.id)).length+1}`},[father,mother]);
+      const father=bird(s,mother.pregnancy.sireId),child=createBird(s,{},[father,mother]);
       mother.pregnancy=null;
       if(!child){
         report(s,'event','卵は、かえりませんでした',`${mother.name}の卵は、今回はかえりませんでした。予約していた羽房を空け、お母さんを見守ります。今年の配合は終了しています。`,{expression:'sad'});
@@ -662,14 +772,27 @@
     if(!s||s.version!==VERSION||!Number.isInteger(s.week)||s.week<9||!Number.isInteger(s.serial)||s.serial<1||!Number.isInteger(s.rng)||!finite(s.money,0,1e15)||!finite(s.debt,0,1e15)||!['buy','breed','grow','running'].includes(s.stage)||!['easy','normal','hard'].includes(s.difficulty))return false;
     if(s.geneticsVersion!==undefined&&s.geneticsVersion!==Genetics.VERSION)return false;
     if(s.worldVersion!==undefined&&s.worldVersion!==1)return false;
+    if(s.breedingVersion!==undefined&&s.breedingVersion!==Breeding.VERSION)return false;
     if(!Array.isArray(s.birds)||!s.birds.every(b=>b&&((s.geneticsVersion===undefined&&b.genome?.traits===undefined)||
       (Genetics.valid(b.genome?.traits)&&b.color===Genetics.expressColor(b.genome.traits.body,b.genome.traits.gold)&&b.crest===b.genome.traits.crest))))return false;
-    if(!s.facilities||!Object.entries(FACILITIES).every(([k,f])=>Number.isInteger(s.facilities[k])&&s.facilities[k]>=(['stalls','meadow'].includes(k)?1:0)&&s.facilities[k]<=f.max))return false;
+    if(!s.facilities||!Object.entries(FACILITIES).every(([k,f])=>Number.isInteger(s.facilities[k])&&s.facilities[k]>=(['stalls','meadow'].includes(k)?1:0)&&s.facilities[k]<=(k==='lab'?3:f.max)))return false;
     if(!['birds','sale','reports','journal','ledger','awards','founderOffers'].every(k=>Array.isArray(s[k]))||!s.milestones||!Number.isInteger(s.marketYear)||!Number.isInteger(s.lastAnnual))return false;
     if(s.birds.length>50000||new Set(s.birds.map(b=>b.id)).size!==s.birds.length)return false;
+    const byId=new Map(s.birds.map(b=>[b.id,b]));
+    if(!s.birds.every(b=>Array.isArray(b.parents)&&b.parents.length<=2&&b.parents.every(id=>id===null||byId.has(id))))return false;
+    const visited=new Set(),active=new Set();
+    for(const b of s.birds){
+      const stack=[[b.id,false]];
+      while(stack.length){const [id,done]=stack.pop();if(done){active.delete(id);visited.add(id);continue;}
+        if(active.has(id))return false;if(visited.has(id))continue;active.add(id);stack.push([id,true]);
+        for(const parent of byId.get(id).parents)if(parent!==null)stack.push([parent,false]);
+      }
+    }
+    if(!s.birds.every(b=>b.genome&&(s.breedingVersion===undefined&&b.genome.defects===undefined||Breeding.validDefects(b.genome,DEFECTS))&&
+      (s.breedingVersion===undefined&&b.genome.character===undefined||Object.keys(PERSONALITY).every(k=>Array.isArray(b.genome.character?.[k])&&b.genome.character[k].length===2&&b.genome.character[k].every(v=>finite(v,50,150))))))return false;
     const scores=(x,keys)=>x&&keys.every(k=>finite(x[k],50,150));
-    const record=r=>r&&typeof r.name==='string'&&Number.isInteger(r.week)&&Number.isInteger(r.year)&&finite(r.rank,1,12)&&finite(r.time,0,900)&&finite(r.reward,0,1e15)&&finite(r.distance,100,10000)&&['turf','dirt'].includes(r.surface)&&typeof r.level==='string'&&Array.isArray(r.field)&&r.field.every(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&finite(x.time,0,900));
-    if(!s.birds.every(b=>b&&/^bird-\d+$/.test(b.id)&&typeof b.name==='string'&&b.name.length<=40&&(b.farm===undefined||typeof b.farm==='string'&&b.farm.length<=40)&&(b.season===undefined||Number.isInteger(b.season))&&(b.worldGroup===undefined||typeof b.worldGroup==='string')&&['M','F'].includes(b.sex)&&['player','sale','public','source','archive','npc'].includes(b.owner)&&['young','racing','mare','stud','retired','archived'].includes(b.role)&&['root','founder','home','general'].includes(b.kind)&&Number.isInteger(b.birthYear)&&Number.isInteger(b.bornWeek)&&Array.isArray(b.parents)&&b.parents.every(id=>s.birds.some(p=>p.id===id))&&
+    const record=r=>r&&typeof r.name==='string'&&Number.isInteger(r.week)&&Number.isInteger(r.year)&&finite(r.rank,1,12)&&finite(r.time,0,900)&&finite(r.reward,0,1e15)&&finite(r.distance,100,10000)&&['turf','dirt'].includes(r.surface)&&typeof r.level==='string'&&Array.isArray(r.field)&&r.field.every(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&finite(x.time,0,900))&&(r.replay===undefined||Replay.valid(r.replay,r));
+    if(!s.birds.every(b=>b&&/^bird-\d+$/.test(b.id)&&typeof b.name==='string'&&b.name.length<=40&&(b.farm===undefined||typeof b.farm==='string'&&b.farm.length<=40)&&(b.season===undefined||Number.isInteger(b.season))&&(b.worldGroup===undefined||typeof b.worldGroup==='string')&&['M','F'].includes(b.sex)&&['player','sale','public','source','archive','npc'].includes(b.owner)&&['young','racing','mare','stud','retired','archived'].includes(b.role)&&['root','founder','home','general'].includes(b.kind)&&Number.isInteger(b.birthYear)&&Number.isInteger(b.bornWeek)&&
       scores(b.potential,Mapping.ABILITIES.map(a=>a.key))&&scores(b.personality,Object.keys(PERSONALITY))&&scores(b.inborn,Object.keys(PERSONALITY))&&scores(b.management,Object.keys(MANAGEMENT))&&b.training&&Mapping.ABILITIES.every(a=>finite(b.training[a.key],0,1))&&finite(b.condition,0,100)&&finite(b.strain,0,100)&&finite(b.health,0,100)&&['steady','challenge'].includes(b.policy)&&['meadow','forest'].includes(b.pasture)&&['early','normal','late'].includes(b.growth)&&Object.hasOwn(Genetics.COLORS,b.color)&&typeof b.registered==='boolean'&&['races','wins','g1','graded','earnings','fans','bredYear'].every(k=>finite(b[k],0,1e15))&&Number.isInteger(b.lastRace)&&Array.isArray(b.records)&&b.records.every(record)&&Array.isArray(b.titles)&&b.titles.every(t=>typeof t==='string')&&
       b.genome&&['distance','release'].every(k=>Array.isArray(b.genome[k])&&b.genome[k].length===2&&b.genome[k].every(x=>finite(x,-1,1)))&&[...Mapping.ABILITIES.map(a=>a.key),...Object.keys(MANAGEMENT)].every(k=>Array.isArray(b.genome.quality?.[k])&&b.genome.quality[k].length===32&&b.genome.quality[k].every(p=>Array.isArray(p)&&p.length===2&&p.every(x=>x===0||x===1)))&&
       (b.pregnancy===null||(b.sex==='F'&&b.role==='mare'&&Number.isInteger(b.pregnancy.due)&&b.pregnancy.due>s.week&&s.birds.some(p=>p.id===b.pregnancy.sireId&&p.sex==='M')))))return false;
@@ -679,5 +802,44 @@
     if(!s.reports.every(validReport)||!s.journal.every(validReport))return false;
     return s.ledger.every(l=>l&&Number.isInteger(l.week)&&Number.isFinite(l.amount)&&typeof l.note==='string')&&s.awards.every(a=>a&&Number.isInteger(a.year)&&typeof a.title==='string'&&typeof a.name==='string'&&bird(s,a.birdId))&&s.sale.every(id=>bird(s,id))&&s.founderOffers.every(id=>bird(s,id))&&racingCount(s)<=capacity(s).racing&&['mare','stud'].every(role=>own(s).filter(b=>b.role===role).length<=capacity(s)[role]);
   }
-  return {calendar,g1Points,pedigreeBonus,rating,profile,farmName,MAJOR_FARMS,searchSires,marePrice,VERSION,SAVE_KEY,YEAR,GESTATION,PERSONALITY,MANAGEMENT,FACILITIES,ROOTS,TITLES,EIGHT,Mapping,Genetics,Ground,date,when,initial,refreshRoots,upgradeState,own,bird,age,capacity,racingCount,labLevel,quality,saleOpen,sires,studFee,breedFee,buy,breedingReason,breed,observe,currentAbilities,facilityCost,facilityReason,build,setPasture,setPolicy,rename,retire,classFor,nextRace,eligible,simulateBird,simulateField,race,founderEligible,promote,acknowledge,advance,validState};
+  // Full pedigrees retain more birds. Pack binary loci and repeated race fields
+  // only at the storage boundary; the simulation always uses ordinary arrays.
+  function serializeState(s) {
+    const fields=[],indices=new Map(),replays=[],replayIndices=new Map(),pack=loci=>loci.map(p=>p[0]*2+p[1]).join('');
+    const record=r=>{
+      const key=JSON.stringify(r.field);let index=indices.get(key);
+      if(index===undefined){index=fields.length;indices.set(key,index);fields.push(r.field);}
+      const result={...r,field:index};
+      if(r.replay){const key=JSON.stringify(r.replay);let index=replayIndices.get(key);
+        if(index===undefined){index=replays.length;replayIndices.set(key,index);replays.push(r.replay);}result.replay=index;}
+      return result;
+    };
+    const birds=s.birds.map(b=>({...b,genome:{...b.genome,
+      quality:Object.fromEntries(Object.entries(b.genome.quality).map(([k,p])=>[k,pack(p)])),
+      defects:Object.fromEntries(Object.entries(b.genome.defects||{}).map(([k,p])=>[k,pack(p)]))},records:b.records.map(record)}));
+    const packReports=reports=>reports.map(r=>({...r,...(r.results?{results:r.results.map(record)}:{})}));
+    return JSON.stringify({...s,birds,reports:packReports(s.reports),journal:packReports(s.journal),packedGenomes:1,raceFields:fields,raceReplays:replays});
+  }
+  function deserializeState(raw) {
+    const s=JSON.parse(raw);
+    if(s?.packedGenomes===undefined)return s;
+    if(s.packedGenomes!==1||!Array.isArray(s.raceFields)||!Array.isArray(s.birds))throw Error('invalid packed save');
+    const unpack=(value,length)=>{
+      if(typeof value!=='string'||value.length!==length||/[^0-3]/.test(value))throw Error('invalid packed genes');
+      return [...value].map(c=>[Number(c)>>1,Number(c)&1]);
+    };
+    const unpackRecord=r=>{
+      if(Number.isInteger(r.field)){if(!Array.isArray(s.raceFields[r.field]))throw Error('invalid race field');r.field=s.raceFields[r.field].map(x=>({...x}));}
+      else if(!Array.isArray(r.field))throw Error('invalid race field');
+      if(r.replay!==undefined){if(!Number.isInteger(r.replay)||!s.raceReplays?.[r.replay])throw Error('invalid race replay');r.replay=s.raceReplays[r.replay];}
+    };
+    for(const b of s.birds){
+      b.genome.quality=Object.fromEntries(Object.entries(b.genome.quality).map(([k,p])=>[k,unpack(p,32)]));
+      b.genome.defects=Object.fromEntries(Object.entries(b.genome.defects).map(([k,p])=>[k,unpack(p,Breeding.DEFECT_LOCI)]));
+      for(const r of b.records)unpackRecord(r);
+    }
+    for(const report of [...(s.reports||[]),...(s.journal||[])])for(const r of report.results||[])unpackRecord(r);
+    delete s.packedGenomes;delete s.raceFields;delete s.raceReplays;return s;
+  }
+  return {validBirdName,generatedName,crossRisk,crossReason,constitution,serializeState,deserializeState,Breeding,DEFECTS,DEFECT_LABELS,pedigree,breedingCrosses,crossPlan,createBird,worldRoster,calendar,g1Points,pedigreeBonus,rating,geneticRating,geneticEffectRating,geneticBreakdown,geneticScores,profile,farmName,MAJOR_FARMS,searchSires,marePrice,VERSION,SAVE_KEY,YEAR,GESTATION,PERSONALITY,MANAGEMENT,FACILITIES,ROOTS,TITLES,EIGHT,Mapping,Genetics,Ground,date,when,initial,refreshRoots,upgradeState,own,bird,age,capacity,racingCount,labLevel,quality,saleOpen,sires,studFee,breedFee,buy,breedingReason,breed,observe,currentAbilities,facilityCost,facilityReason,build,setPasture,setPolicy,rename,retire,classFor,nextRace,eligible,simulateBird,simulateField,race,founderEligible,promote,acknowledge,advance,validState};
 });

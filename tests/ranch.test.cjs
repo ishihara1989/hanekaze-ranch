@@ -44,10 +44,11 @@ test('reload keeps random stream, reports, finances and races deterministic with
   const {s,b}=racer();const loaded=copy(s);R.advance(s);R.advance(loaded);assert.deepEqual(s,loaded);assert.ok(R.validState(s));
   const result=b.records[0],paid=s.money;assert.ok(result);assert.throws(()=>R.race(s,b,W.calendar(result.week)[0]));assert.equal(s.money,paid);
 });
-test('all starter combinations can debut without extra purchases, loans or manual training',()=>{
+test('all allowed starter combinations can debut without extra purchases, loans or manual training',()=>{
   for(let mare=0;mare<3;mare++){
     let winningPairings=0;
     for(let sire=0;sire<R.ROOTS.length;sire++) {
+      if(sire===[13,2,1][mare])continue; // Source backcross exceeds the 2 x 3 limit.
       const s=founded(20260930,mare,sire);progress(s,150);read(s);const b=R.own(s).find(b=>b.role==='racing'&&b.parents.length);
       assert.ok(b.races>0,`${mare}/${sire}`);assert.ok(b.records.every(r=>r.finished));assert.ok(s.money>0);assert.equal(s.debt,0);assert.ok(R.validState(s));
       if(b.wins>0)winningPairings++;
@@ -64,7 +65,7 @@ test('winning unlocks one-time conversations, fan bonuses and research; race set
   const result=R.race(s,b,e);assert.equal(result.rank,1);assert.ok(s.milestones.win);assert.ok(s.milestones.g1);assert.ok(s.milestones.derby);assert.ok(b.fans>=1200);
   const after=s.money;assert.throws(()=>R.race(s,b,e));assert.equal(s.money,after);
   assert.equal(R.facilityReason(s,'lab'),'');R.build(s,'lab');assert.equal(R.labLevel(s),1);
-  R.build(s,'lab');assert.equal(R.labLevel(s),2);assert.equal(s.reports.filter(r=>r.title.includes('ダービー')).length,1);assert.ok(R.validState(s));
+  assert.throws(()=>R.build(s,'lab'),/最大まで拡張済み/);s.facilities.statue=1;assert.equal(R.labLevel(s),2);assert.equal(s.reports.filter(r=>r.title.includes('ダービー')).length,1);assert.ok(R.validState(s));
 });
 test('facility caps, cash guards and separate bird capacities are enforced',()=>{
   const s=founded();assert.match(R.facilityReason(s,'lab'),/レース初勝利/);assert.throws(()=>R.build(s,'lab'));

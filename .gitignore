@@ -32,3 +32,6 @@ Desktop.ini
 # Common build output (keep source assets under public/ tracked)
 dist/
 build/
+
+
+output/

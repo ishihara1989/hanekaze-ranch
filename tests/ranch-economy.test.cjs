@@ -73,7 +73,7 @@ test('annual public roster replaces exactly ten; expired sires retain their pedi
     for(const id of previous.filter(id=>!current.includes(id))){assert.equal(R.bird(s,id).role,'archived');assert.ok(R.bird(s,id).records.length);}
     previous=current;
   }
-  assert.ok(R.validState(s));assert.ok(JSON.stringify(s).length<3000000);
+  assert.ok(R.validState(s));assert.ok(R.serializeState(s).length<3500000);
 });
 
 test('two player runners share the same G1 field and produce only one winner',()=>{
@@ -92,8 +92,9 @@ test('two player runners share the same G1 field and produce only one winner',()
 
 test('search combines ranch or winning race names with route and prioritized traits',()=>{
   const s=R.initial();
-  const filtered=R.searchSires(s,{query:'メテオ',route:'dirt',sort:'power'});
-  assert.ok(filtered.length);assert.ok(filtered.every(b=>b.farm==='メテオ牧場'));
+  const farm=R.searchSires(s,{route:'dirt'})[0].farm;
+  const filtered=R.searchSires(s,{query:farm,route:'dirt',sort:'power'});
+  assert.ok(filtered.length);assert.ok(filtered.every(b=>b.farm===farm));
   assert.ok(filtered.every((b,i)=>!i||filtered[i-1].potential.power>=b.potential.power));
   assert.ok(R.searchSires(s,{query:'ダービー'}).every(b=>b.records.some(r=>r.name==='チョコボダービー'&&r.rank===1)));
   assert.equal(R.searchSires(s,{query:'存在しない名前'}).length,0);

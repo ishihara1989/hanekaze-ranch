@@ -1,0 +1,165 @@
+{
+  "revision": 3,
+  "asset": "chocobo-v3.glb",
+  "blender": "3.2+",
+  "forward": "glTF +Z / Blender -Y",
+  "up": "glTF +Y / Blender +Z",
+  "units": "meters",
+  "height": 3.126,
+  "rootMotion": false,
+  "vertices": 23299,
+  "triangles": 45534,
+  "bones": 25,
+  "materials": [
+    "Plumage_Main",
+    "Beak",
+    "Mouth",
+    "Eye_White",
+    "Iris",
+    "Pupil",
+    "Eye_Glint",
+    "Eyelid",
+    "Crest_Plume",
+    "Plumage_Dark",
+    "Plumage_Light",
+    "Leg",
+    "Leg_Scale",
+    "Claw"
+  ],
+  "recolor": {
+    "plumage": [
+      "Plumage_Main",
+      "Plumage_Light",
+      "Plumage_Dark"
+    ],
+    "crest": "Crest_Plume",
+    "iris": "Iris",
+    "rainbowCrestUv": "TEXCOORD_0.x: 0 where the plume leaves the head, 1 at the tip"
+  },
+  "palette": {
+    "yellow": {
+      "main": "#f3b92a",
+      "light": "#fcd565",
+      "dark": "#d7861a",
+      "iris": "#1f8a6c"
+    },
+    "red": {
+      "main": "#d9432f",
+      "light": "#f07b5c",
+      "dark": "#9c2720",
+      "iris": "#2c6cb4"
+    },
+    "blue": {
+      "main": "#3d7ed2",
+      "light": "#7fb3ee",
+      "dark": "#28508f",
+      "iris": "#e39a1d"
+    },
+    "green": {
+      "main": "#4c9a59",
+      "light": "#8ccb88",
+      "dark": "#2d6440",
+      "iris": "#7a3b1c"
+    },
+    "rose": {
+      "main": "#ec8ea6",
+      "light": "#f9bfcd",
+      "dark": "#c05b7a",
+      "iris": "#3a6db0"
+    },
+    "white": {
+      "main": "#eceae3",
+      "light": "#ffffff",
+      "dark": "#b4bdc3",
+      "iris": "#3a7bd5"
+    },
+    "black": {
+      "main": "#2b2d39",
+      "light": "#4a4e5f",
+      "dark": "#16171e",
+      "iris": "#d8282e"
+    },
+    "purple": {
+      "main": "#8a5db8",
+      "light": "#b893de",
+      "dark": "#593784",
+      "iris": "#e0b030"
+    },
+    "gray": {
+      "main": "#9ba1a7",
+      "light": "#c7ccd0",
+      "dark": "#6a7075",
+      "iris": "#2f7f6a"
+    },
+    "golden": {
+      "main": "#e0a526",
+      "light": "#f8d56a",
+      "dark": "#ad7210",
+      "iris": "#b8322a"
+    }
+  },
+  "crests": {
+    "yellow": "#ffcf3c",
+    "red": "#e0352b",
+    "blue": "#3b7ee0",
+    "white": "#f6f4ee",
+    "black": "#24252d",
+    "rainbow": [
+      "#e0474f",
+      "#f09a3a",
+      "#f2d24a",
+      "#6cc26a",
+      "#4d9ee0",
+      "#9b6fd6"
+    ]
+  },
+  "clips": {
+    "Idle": {
+      "seconds": 3.0,
+      "loop": true,
+      "wings": "closed"
+    },
+    "Run_StartDash": {
+      "seconds": 0.6333,
+      "loop": true,
+      "wings": "closed",
+      "groundSpeed": 3.395,
+      "turn": "straight"
+    },
+    "Run_Cruise": {
+      "seconds": 0.7333,
+      "loop": true,
+      "wings": "closed",
+      "groundSpeed": 2.338,
+      "turn": "straight"
+    },
+    "Run_Corner": {
+      "seconds": 0.7333,
+      "loop": true,
+      "wings": "spread",
+      "groundSpeed": 2.273,
+      "turn": "left"
+    },
+    "Run_Downhill": {
+      "seconds": 0.7333,
+      "loop": true,
+      "wings": "half",
+      "groundSpeed": 2.591,
+      "turn": "straight"
+    },
+    "Run_LastSpurt": {
+      "seconds": 0.5667,
+      "loop": true,
+      "wings": "spread",
+      "groundSpeed": 4.608,
+      "turn": "straight"
+    },
+    "Run_Corner_R": {
+      "seconds": 0.7333,
+      "loop": true,
+      "wings": "spread",
+      "groundSpeed": 2.273,
+      "turn": "right"
+    }
+  }
+}

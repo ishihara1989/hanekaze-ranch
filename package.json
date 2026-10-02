@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.cjs",
     "test": "node --test tests/*.test.cjs",
-    "test:ranch": "node --test tests/ranch.test.cjs tests/ranch-ui.test.cjs tests/ranch-economy.test.cjs tests/roots.test.cjs tests/genetics.test.cjs",
+    "test:ranch": "node --test tests/ranch.test.cjs tests/ranch-ui.test.cjs tests/ranch-economy.test.cjs tests/roots.test.cjs tests/genetics.test.cjs tests/breeding.test.cjs",
     "balance": "node tools/simulate-balance.cjs",
     "balance:report": "node tools/simulate-balance.cjs --write",
     "balance:pacing": "node tools/compare-pacing.cjs --write",

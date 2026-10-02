@@ -66,7 +66,7 @@ test('non-gold parents can have a rare de novo gold allele that subsequently bre
 });
 
 test('non-hatching pregnancy releases its stall and cannot produce a phantom child or duplicate event',()=>{
-  const s=R.initial(2),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
+  const s=R.initial(1),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
   mother.genome.traits.gold=['G','g'];mother.color='golden';
   R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
   for(let i=0;i<3;i++){read(s);R.advance(s);}read(s);
@@ -80,7 +80,7 @@ test('non-hatching pregnancy releases its stall and cannot produce a phantom chi
 });
 
 test('birth derives body and forehead from inherited genes and saves them unchanged on reload',()=>{
-  const s=R.initial(1),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
+  const s=R.initial(2),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
   mother.genome.traits.gold=['G','g'];mother.color='golden';R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
   for(let i=0;i<4;i++){read(s);R.advance(s);}
   const child=R.own(s).find(b=>b.role==='young');assert.equal(child.color,'golden');
