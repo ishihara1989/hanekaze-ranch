@@ -100,11 +100,26 @@
     if(c.right){x=-x;dx=-dx;}
     return {x,z,y:0,heading:Math.atan2(dx,dz),corner};
   }
-  function cameraShot(record,track,time,mode='broadcast',focusId=null,aspect=1){
-    const c=course(record,track),clock=timeline(record),raceTime=Math.max(0,time-clock.race),
-      order=standings(record.replay,raceTime),leader=order[0],focus=order.find(r=>r.id===focusId)||leader,
-      state=visualSample(mode==='follow'?focus:leader,raceTime),
-      subject=mode==='follow'?focus:leader,p=position(state.distance,state.lateral,record,track),
+  // Pure playback data: neither the DOM nor a renderer takes part in the race.
+  // Official standings stay separate from the visible run-out after the finish.
+  function frame(record,track={},time=0){
+    const clock=timeline(record),at=clamp(time,0,clock.end),stage=phase(record,at),
+      raceTime=Math.max(0,at-clock.race),racing=stage==='race'||stage==='result',
+      order=standings(record.replay,raceTime),runners=record.replay.runners.map(entry=>{
+        const state=racing?visualSample(entry,raceTime):{distance:0,lateral:entry.lane,speed:0,stopped:true},
+          p=position(state.distance,state.lateral,record,track);
+        if(racing&&!state.stopped){
+          const next=visualSample(entry,raceTime+.1),q=position(next.distance,next.lateral,record,track);
+          if(Math.hypot(q.x-p.x,q.z-p.z)>.001)p.heading=Math.atan2(q.x-p.x,q.z-p.z);
+        }
+        return {entry,state,position:p};
+      });
+    return {time:at,phase:stage,raceTime,order,runners};
+  }
+  function cameraShot(record,track,time,mode='broadcast',focusId=null,aspect=1,sampledFrame=null){
+    const current=sampledFrame||frame(record,track,time),c=course(record,track),raceTime=current.raceTime,
+      order=current.order,leader=order[0],focus=order.find(r=>r.id===focusId)||leader,
+      subject=mode==='follow'?focus:leader,p=current.runners.find(r=>r.entry.id===subject.id).position,
       dir=c.right?-1:1,centreX=-dir*c.finishOffset,centreZ=-c.radius-c.width/2;
     const shot=(key,label,eye,target,height=24)=>{
       const distance=Math.hypot(eye.x-target.x,eye.y-target.y,eye.z-target.z);
@@ -130,7 +145,7 @@
     // Cut early enough that the camera is settled exactly side-on at the line.
     if(raceTime>=firstFinish-2.5&&raceTime<=lastFinish+1)return finish();
     if(raceTime>lastFinish+1&&Number.isFinite(lastFinish)){
-      const positions=order.map(r=>{const s=visualSample(r,raceTime);return position(s.distance,s.lateral,record,track);});
+      const positions=current.runners.map(r=>r.position);
       target.x=positions.reduce((sum,q)=>sum+q.x,0)/positions.length;
       target.z=positions.reduce((sum,q)=>sum+q.z,0)/positions.length;
       return shot('runout','入線後の走り',{x:0,y:10,z:-c.radius+90},target,34);
@@ -186,5 +201,5 @@
       add(t.award+6,'sahagin','表彰台で翼を振って、応援に応えています。牧場にとって大切な一勝ですね。');}
     return cues.sort((a,b)=>a.at-b.at);
   }
-  return {MODES,COLORS,METRES,capture,valid,sample,visualSample,standings,ceremony,timeline,phase,course,position,cameraShot,commentary};
+  return {MODES,COLORS,METRES,capture,valid,sample,visualSample,standings,ceremony,timeline,phase,course,position,frame,cameraShot,commentary};
 });

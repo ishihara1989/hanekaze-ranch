@@ -20,12 +20,17 @@
     const c=R.course(record,track),p=R.position(distance,5.5,record,track),dir=c.right?-1:1,
       tangent={x:Math.sin(p.heading),z:Math.cos(p.heading)},
       outward={x:Math.cos(p.heading)*dir,z:-Math.sin(p.heading)*dir},
-      scale=Math.min(width/span,height/16),gain=motionPitch(pitch);
+      scale=Math.min(width/span,height/16),gain=motionPitch(pitch),
+      // Keep actual lateral movement legible when the viewport limits bird size.
+      depth=Math.max(.19,Math.min(.34,height*.3/(c.width*scale)));
     return {distance,origin:p,tangent,outward,dir,width,height,
-      scale,pitch:gain,motionScale:scale*gain,depth:.19,curveDepth:.65,cx:width/2,cy:height*.73};
+      scale,pitch:gain,motionScale:scale*gain,depth,curveDepth:.65,cx:width/2,cy:height*.73};
   }
   function project(distance,lateral,record,track,view){
-    const p=R.position(distance,lateral,record,track),centre=R.position(distance,5.5,record,track),dx=p.x-view.origin.x,dz=p.z-view.origin.z,
+    return projectPosition(R.position(distance,lateral,record,track),distance,record,track,view);
+  }
+  function projectPosition(p,distance,record,track,view){
+    const centre=R.position(distance,5.5,record,track),dx=p.x-view.origin.x,dz=p.z-view.origin.z,
       along=dx*view.tangent.x+dz*view.tangent.z,depth=dx*view.outward.x+dz*view.outward.z,
       centreDepth=(centre.x-view.origin.x)*view.outward.x+(centre.z-view.origin.z)*view.outward.z;
     // Compress the 50m lane depth, while keeping the bend legible in side view.
@@ -87,5 +92,5 @@
     const a=runner.samples[i-1],b=runner.samples[i];
     return a[0]+(b[0]-a[0])*(distance-a[1])/(b[1]-a[1]);
   }
-  return {GAIT,SCENERY,SECTIONS,section,camera,broadcastCamera,project,gaitPath,travelled,frame,motionPitch,sceneryDistance,sceneryPattern,sectionDistance,timeAtDistance};
+  return {GAIT,SCENERY,SECTIONS,section,camera,broadcastCamera,project,projectPosition,gaitPath,travelled,frame,motionPitch,sceneryDistance,sceneryPattern,sectionDistance,timeAtDistance};
 });

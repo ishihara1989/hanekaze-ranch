@@ -24,9 +24,8 @@ function cloneRacer(source){
 export function mount(root,record,track,options={}){return new RaceViewer(root,record,track,options);}
 
 class RaceViewer extends RacePlayback {
-  constructor(root,record,track,options){
-    super(root,record,track);
-    this.time=options.time??0;this.paused=options.paused??this.paused;
+  constructor(root,record,track,options={}){
+    super(root,record,track,options);
     this.init().catch(error=>{
       if(this.disposed)return;
       console.error(error);this.status.hidden=false;
@@ -218,19 +217,18 @@ class RaceViewer extends RacePlayback {
     racer.mixer.setTime(time);
   }
   draw(dt,snap=false){
-    const phase=R.phase(this.record,this.time),raceTime=Math.max(0,this.time-this.timeline.race);
-    const order=R.standings(this.replay,raceTime);
+    const frame=this.readFrame(),{phase,raceTime,order,runners}=frame;
     this.gates.visible=['gate','race'].includes(phase)&&raceTime<3;
     this.doors.forEach(door=>door.visible=phase==='gate');this.awardGroup.visible=phase==='award';
-    for(const racer of this.racers){
-      const {entry,model}=racer,s=R.visualSample(entry,raceTime),p=R.position(s.distance,s.lateral,this.record,this.track);
+    for(const [index,racer] of this.racers.entries()){
+      const {entry,model}=racer,s=runners[index].state,p={...runners[index].position};
       model.visible=phase!=='award'||entry.id===this.record.birdId;
       if(phase==='paddock'){
         const a=entry.lane/this.replay.runners.length*Math.PI*2+this.time*.08;
         p.x=this.paddock.x+Math.cos(a)*10.4;p.z=this.paddock.z+Math.sin(a)*10.4;p.heading=-a;p.y=0;
         this.setClip(racer,'Run_Cruise',this.time*.42+entry.lane*.12);
       }else if(phase==='gate'){
-        Object.assign(p,R.position(0,entry.lane,this.record,this.track));this.setClip(racer,'Idle',this.time);
+        this.setClip(racer,'Idle',this.time);
       }else if(phase==='award'){
         p.x=0;p.z=0;p.y=1.2;p.heading=0;
         const elapsed=this.time-this.timeline.award;this.setClip(racer,'Idle',elapsed);
@@ -238,8 +236,6 @@ class RaceViewer extends RacePlayback {
           w.bone.quaternion.copy(w.rest).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0,Math.sin(elapsed*3)*.08,(i%2?1:-1)*(.45+.45*(.5+.5*Math.sin(elapsed*5))))));
         }
       }else{
-        const next=R.visualSample(entry,raceTime+.1),q=R.position(next.distance,next.lateral,this.record,this.track);
-        if(Math.hypot(q.x-p.x,q.z-p.z)>.001)p.heading=Math.atan2(q.x-p.x,q.z-p.z);
         const corner=this.course.right&&racer.actions.Run_Corner_R?'Run_Corner_R':'Run_Corner';
         const clip=s.stopped?'Idle':raceTime<4?'Run_StartDash':p.corner?corner:
           s.finished&&raceTime>=entry.time+2?'Run_Cruise':this.record.distance-s.distance<=400?'Run_LastSpurt':'Run_Cruise';
@@ -266,23 +262,23 @@ class RaceViewer extends RacePlayback {
           cracker.position.y+(4+(i%7)*.45)*age-2.5*age*age,cracker.position.z+Math.cos(i*2)*1.4*age);
       }bursts.needsUpdate=true;
     }
-    this.cameraView(phase,dt,snap);
+    this.cameraView(phase,dt,snap,frame);
     const target=this.look;this.sun.position.set(target.x+25,90,target.z+45);this.sun.target.position.set(target.x,0,target.z);this.sun.target.updateMatrixWorld();
     this.renderer.render(this.scene,this.camera);
     this.updateOverlay(phase,order,raceTime);
   }
-  cameraView(phase,dt,snap){
+  cameraView(phase,dt,snap,frame){
     const camera=this.camera,desired=this.desired,target=new THREE.Vector3();
     let key=phase,label=phases[phase],fov=34;
     if(phase==='paddock'){target.copy(this.paddock).y=1.25;desired.copy(target).add(new THREE.Vector3(22,17,23));}
     else if(phase==='award'){target.set(0,2.7,0);desired.set(Math.sin((this.time-this.timeline.award)*.13)*3,4.2,10);}
     else if(phase==='gate'){
-      const positions=this.replay.runners.map(r=>R.position(0,r.lane,this.record,this.track));
+      const positions=frame.runners.map(r=>r.position);
       positions.forEach(p=>target.add(new THREE.Vector3(p.x,1.25,p.z)));target.divideScalar(positions.length);
       const heading=positions[Math.floor(positions.length/2)].heading;
       desired.copy(target).add(new THREE.Vector3(Math.sin(heading)*40+Math.cos(heading)*55,13,Math.cos(heading)*40-Math.sin(heading)*55));
     }else{
-      const shot=R.cameraShot(this.record,this.track,this.time,this.cameraMode,this.focusId,camera.aspect);
+      const shot=R.cameraShot(this.record,this.track,this.time,this.cameraMode,this.focusId,camera.aspect,frame);
       key=shot.key;label=shot.label;fov=shot.fov;
       desired.set(shot.position.x,shot.position.y,shot.position.z);target.set(shot.target.x,shot.target.y,shot.target.z);
     }

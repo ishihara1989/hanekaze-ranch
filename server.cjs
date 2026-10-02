@@ -3,6 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const files = {'/':'index.html','/index.html':'index.html','/css/style.css':'css/style.css','/js/game.js':'js/game.js','/js/model.js':'js/model.js','/js/world.js':'js/world.js','/js/world-views.js':'js/world-views.js'};
 for (const file of ['chocobo-preview.html','js/chocobo-preview.js','js/chocobo-animation.js',
+  'js/ranch-portraits.js','css/ranch-portraits.css','chocobo-portrait-preview.html','js/chocobo-portrait-preview.js',
+  ...['adult','yearling','chick'].map(stage=>`assets/chocobo-portraits/${stage}-v1.png`),
   'chocobo-sprite-preview.html',...['run-yellow.png','run-blue.png','run-rainbow-crest.png'].map(file=>`assets/chocobo-sprite-study/${file}`),
   'js/chocobo-sprite-preview.js',...['run-yellow-v2.png','regions-v2.png','run-yellow-v3.png','regions-v3.png','run-yellow-v4.png','regions-v4.png','run-golden-metallic-v1.png'].map(file=>`assets/chocobo-sprite-study/${file}`),
   ...['v2','v3','v4','v5'].flatMap(revision=>['manifest.json','body-mask.png','crest-mask.png',

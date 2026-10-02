@@ -4,16 +4,28 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
 const R=require('../public/js/ranch-engine.js'),W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
+const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 function boot(saved,failSave=false){
-  const elements=new Map(),handlers={},storage=new Map(saved?[[R.SAVE_KEY,saved]]:[]);
+  const elements=new Map(),handlers={},windowHandlers={},storage=new Map(saved?[[R.SAVE_KEY,saved]]:[]);
   const node=key=>{if(!elements.has(key))elements.set(key,{innerHTML:'',textContent:'',value:'',focus(){},dataset:{},classList:{toggle(){}},matches(){return false;}});return elements.get(key);};
-  const ctx=vm.createContext({Ranch:R,RanchObservation,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>{if(failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener(){}}});
+  const ctx=vm.createContext({Ranch:R,RanchObservation,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>{if(failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
-  vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},advance,render};})();`),ctx);
-  return {h:ctx.hooks,node,storage,click(action,data={}){handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key){handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})}});}};
+  vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},setViewer(value){raceViewer=value},advance,render};})();`),ctx);
+  return {h:ctx.hooks,node,storage,windowEvent(type,event={}){windowHandlers[type]?.(event);},click(action,data={}){handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key){handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})}});}};
 }
 const html=g=>g.node('#app').innerHTML;
 function purchase(g){g.click('buy-dialog',{id:g.h.state.sale[0]});g.click('buy-confirm',{id:g.h.state.sale[0]});g.click('ack');}
+
+test('list and status portraits follow calendar age and show inherited crest only on adults',()=>{
+  const g=boot(),b=R.own(g.h.state)[0];b.color='blue';b.crest='rainbow';
+  for(const [age,stage] of [[0,'chick'],[1,'yearling'],[2,'adult']]){
+    b.birthYear=R.date(g.h.state.week).year-age;
+    g.click('nav',{page:'birds'});
+    assert.match(html(g),new RegExp(`data-portrait-stage="${stage}" data-portrait-color="blue" data-portrait-crest="${age<2?'blue':'rainbow'}"`));
+    g.click('detail',{id:b.id});
+    assert.match(html(g),new RegExp(`<div class="detail-cover blue"><span[^>]+data-portrait-stage="${stage}"`));g.click('close');
+  }
+});
 
 test('race results explain observed pack behavior, retain old records and distinguish nonfinishers',()=>{
   const g=boot();purchase(g);const b=R.own(g.h.state)[0];
@@ -53,6 +65,10 @@ test('losing races omit the podium chapter and pre-feature records explain unava
   const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');g.click('breed-confirm');g.click('ack');await g.h.advance(1);
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);r.rank=2;
   g.click('watch-race',{id:b.id,week:String(r.week)});assert.doesNotMatch(html(g),/data-phase="award"/);
+  assert.doesNotMatch(html(g),/横方向の進路が保存されていない/);
+  g.click('close');r.replay.version=1;r.replay.runners.forEach(runner=>runner.samples=runner.samples.map(sample=>sample.slice(0,4)));
+  const legacy=JSON.stringify(g.h.state);g.click('watch-race',{id:b.id,week:String(r.week)});
+  assert.match(html(g),/横方向の進路が保存されていない/);assert.equal(JSON.stringify(g.h.state),legacy);
   g.click('close');delete r.replay;g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/走行データがありません/);assert.doesNotMatch(html(g),/data-action="watch-race"/);
 });
 
@@ -61,17 +77,42 @@ test('all venue records open 2D and can switch renderer without changing a saved
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);r.trackId='tenku';
   g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/2Dでレースを見る/);
   const before=JSON.stringify(g.h.state);g.click('watch-race',{id:b.id,week:String(r.week)});
-  assert.match(html(g),/data-section="entry"/);assert.match(html(g),/data-renderer="2d" aria-pressed="true"/);
+  assert.doesNotMatch(html(g),/2D 試作|data-viewer="section"/);assert.match(html(g),/data-renderer="2d" aria-pressed="true"/);
   assert.match(html(g),/data-viewer-pitch/);assert.match(html(g),/value="2" selected/);
-  g.click('watch-mode',{renderer:'3d'});assert.doesNotMatch(html(g),/data-section="entry"|data-viewer-pitch/);
+  g.click('watch-mode',{renderer:'3d'});assert.doesNotMatch(html(g),/data-viewer-pitch/);
   assert.match(html(g),/data-renderer="3d" aria-pressed="true"/);assert.equal(JSON.stringify(g.h.state),before);
-  g.click('watch-mode',{renderer:'2d'});assert.match(html(g),/data-section="exit"/);assert.equal(JSON.stringify(g.h.state),before);
+  g.click('watch-mode',{renderer:'2d'});assert.match(html(g),/data-viewer-pitch/);assert.equal(JSON.stringify(g.h.state),before);
   for(const trackId of ['oukyu','sunahama','haikou','mitsurin','iseki']){
     g.click('close');r.trackId=trackId;r.surface=['mitsurin','iseki'].includes(trackId)?'turf':'dirt';const saved=JSON.stringify(g.h.state);
     g.click('watch-race',{id:b.id,week:String(r.week)});
     assert.match(html(g),/data-renderer="2d" aria-pressed="true"/);assert.match(html(g),/data-viewer-pitch/);
     assert.equal(JSON.stringify(g.h.state),saved);
   }
+  g.click('close');delete r.trackId;g.click('watch-race',{id:b.id,week:String(r.week)});
+  assert.match(html(g),/data-renderer="2d" aria-pressed="true"/,'records without venue metadata use the 2D fallback');
+});
+
+test('renderer changes and page navigation retain playback choices, dispose the viewer and never save the ranch',async()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');g.click('breed-confirm');g.click('ack');await g.h.advance(1);
+  const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);
+  g.click('watch-race',{id:b.id,week:String(r.week)});
+  const before=JSON.stringify(g.h.state),saved=g.storage.get(R.SAVE_KEY),focusId=r.replay.runners[1].id;
+  const playback={time:51.25,paused:true,rate:4,focusId,cameraMode:'follow',speaking:true,pitch:1.5};
+  let disposed=0;g.h.setViewer({ready:true,snapshot:()=>playback,dispose(){disposed++;}});
+  g.click('watch-mode',{renderer:'2d'});assert.equal(disposed,0,'the active renderer is not restarted');
+  g.click('watch-mode',{renderer:'3d'});assert.equal(disposed,1);
+  assert.deepEqual(JSON.parse(JSON.stringify(g.h.modal.playback)),playback);
+  assert.match(html(g),/value="4" selected/);assert.match(html(g),new RegExp(`value="${focusId}" selected`));
+  assert.match(html(g),/data-camera="follow" aria-pressed="true"/);
+  const second={...playback,time:52,rate:2,cameraMode:'finish'};delete second.pitch;
+  g.h.setViewer({ready:true,snapshot:()=>second,dispose(){disposed++;}});
+  g.click('watch-mode',{renderer:'2d'});assert.equal(disposed,2);
+  assert.equal(g.h.modal.playback.pitch,1.5);assert.equal(g.h.modal.playback.time,52);
+  assert.match(html(g),/value="1.5" selected/);assert.match(html(g),/data-camera="finish" aria-pressed="true"/);
+  g.h.setViewer({snapshot:()=>({...playback,time:65}),dispose(){disposed++;}});
+  g.windowEvent('pagehide');assert.equal(disposed,3);assert.equal(g.h.modal.playback.time,65);
+  g.windowEvent('pageshow',{persisted:true});assert.equal(g.h.modal.type,'replay');
+  assert.equal(JSON.stringify(g.h.state),before);assert.equal(g.storage.get(R.SAVE_KEY),saved);
 });
 test('new UI exposes one tutorial action, hides numeric traits and renders every deliberate destination',()=>{
   const g=boot();assert.match(html(g),/牧場の、はじめの日/);assert.match(html(g),/繁殖牝羽セールへ/);assert.doesNotMatch(html(g),/最高速|遺伝品質/);
@@ -237,8 +278,8 @@ test('new surface and growth strengths can filter sources while gold alleles rem
 test('body and crest render separately; genetics and ground appear after research and factors after a monument',()=>{
   const g=boot();purchase(g);const b=R.own(g.h.state)[0];
   b.genome.traits.body=['black','white'];b.color='black';b.genome.traits.crest='rainbow';b.crest='rainbow';
-  g.click('detail',{id:b.id});assert.match(html(g),/羽色：黒 \/ 額羽：虹/);assert.match(html(g),/<linearGradient id="crest-/);
-  assert.match(html(g),/fill="#454653"/);assert.doesNotMatch(html(g),/成長と加齢の遺伝|<h3>羽場適性/);
+  g.click('detail',{id:b.id});assert.match(html(g),/羽色：黒 \/ 額羽：虹/);
+  assert.match(html(g),/data-portrait-color="black" data-portrait-crest="rainbow"/);assert.doesNotMatch(html(g),/成長と加齢の遺伝|<h3>羽場適性/);
   g.h.state.facilities.lab=1;g.h.render();assert.match(html(g),/<h3>羽場適性/);assert.doesNotMatch(html(g),/min="50" max="150"|成熟の目安|金因子/);
   g.h.state.facilities.museum=1;g.h.render();assert.match(html(g),/成熟の目安/);assert.match(html(g),/衰え始め/);assert.match(html(g),/羽色因子/);assert.match(html(g),/金因子/);
 });

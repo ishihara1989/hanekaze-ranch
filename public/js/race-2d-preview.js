@@ -23,8 +23,7 @@ function recording(track){
 let viewer,renderer='2d',generation=0;
 async function show(){
   const token=++generation,source=tracks[courseSelect.value],record=recording(source),
-    options={time:Math.min(viewer?.time??26,Replay.timeline(record).end),paused:viewer?.paused,pitch:Number(pitchSelect.value)},
-    rate=viewer?.rate??1,focusId=viewer?.focusId??record.birdId,mode=viewer?.cameraMode??'broadcast';
+    options={...viewer?.snapshot(),time:Math.min(viewer?.time??26,Replay.timeline(record).end),pitch:Number(pitchSelect.value)};
   viewer?.dispose();viewer=null;
   document.title=`${source.name} — 2Dレース試走`;
   document.querySelector('[data-preview-title]').textContent={tenku:'雲の上を、駆ける。',oukyu:'城下を、駆ける。',sunahama:'潮風の中を、駆ける。',haikou:'山あいを、駆ける。',mitsurin:'緑の深みを、駆ける。',iseki:'古の景色を、駆ける。'}[source.id];
@@ -39,7 +38,7 @@ async function show(){
   direction.querySelector('[value="auto"]').textContent=`標準：${standardRight?'右回り ←':'左回り →'}`;
   try{
     const module=await import(renderer==='2d'?'./race-viewer-2d.js':'./race-viewer.js');if(token!==generation)return;
-    viewer=module.mount(root,record,track,options);viewer.rate=rate;viewer.focusId=focusId;viewer.cameraMode=mode;
+    viewer=module.mount(root,record,track,options);
   }catch(error){if(token===generation){console.error(error);status.textContent='観戦を読み込めませんでした。ページを再読み込みしてください。';}}
 }
 root.querySelectorAll('[data-preview-renderer]').forEach(button=>button.addEventListener('click',()=>{renderer=button.dataset.previewRenderer;show();}));

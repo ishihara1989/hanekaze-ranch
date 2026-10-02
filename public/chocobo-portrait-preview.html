@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>チョコボ・年齢別ポートレート</title>
+  <link rel="stylesheet" href="css/ranch.css"><link rel="stylesheet" href="css/ranch-portraits.css">
+  <style>
+    body{padding:32px;max-width:1300px;margin:auto}h1{font:28px var(--serif);margin-bottom:12px}h2{margin:26px 0 14px;font:20px var(--serif)}.controls{display:flex;gap:20px;align-items:end;flex-wrap:wrap;margin:24px 0}.controls label{display:grid;gap:6px}.age-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.age-grid .bird-illustration{height:270px}.age-grid .chocobo-portrait{width:270px;height:250px}.bird-card-body{padding:16px}.swatch-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.swatch-grid .bird-illustration{height:170px}.swatch-grid .chocobo-portrait{width:170px;height:160px}.paused .chocobo-portrait-image,.paused .chocobo-portrait-shadow{animation-play-state:paused}@media(max-width:650px){body{padding:20px}.age-grid{grid-template-columns:1fr}.swatch-grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <span class="eyebrow">HANEKAZE RANCH / CHARACTER PORTRAITS</span><h1>小さなヒナから、競走羽へ。</h1>
+  <p class="muted">年齢別の生成画像・羽色10色・成羽の額羽6色。呼吸と小さな揺れの待機ループ。</p>
+  <div class="controls"><label>羽色<select id="body-color"></select></label><label>2歳以上の額羽<select id="crest-color"></select></label><button class="button outline" id="motion" aria-pressed="false">動きを止める</button><a href="/">牧場へ</a></div>
+  <div id="portraits"></div>
+  <script src="js/ranch-genetics.js"></script><script src="js/ranch-portraits.js"></script><script src="js/chocobo-portrait-preview.js"></script>
+</body>
+</html>

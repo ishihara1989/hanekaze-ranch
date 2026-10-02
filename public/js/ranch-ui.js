@@ -21,7 +21,6 @@
     if(!e.trackId)return surface;
     const ground=R.Ground.conditions(e);return `${surface}・${R.Ground.GOING[ground.going]}・${ground.label}`;
   };
-  let artSerial=0;
   const sireChoices={};
   let sireTab='root',rootTrait='',sireQuery='',sireRoute='',sireSort='fee';
   let state,page='home',modal=null,damId='',sireId='',busy=false,saveOK=true,saveBlocked=false,notice='',birdFilter='all',notebookTab='calendar',returnFocus=null;
@@ -45,11 +44,7 @@
   function portrait(expression='talk',speaker='shiroma') {return `<img class="portrait ${speaker}" src="assets/${speaker==='moogle'?'moogle/trainer.png':`shiroma/shiroma-${expression}.png`}" alt="${speaker==='moogle'?'トレーナーのモーグリ':'シロマ'}">`;}
   function avatar(speaker='shiroma'){return `<span class="avatar">${portrait('neutral',speaker)}</span>`;}
   function note(text,speaker='shiroma'){return `<div class="character-note">${avatar(speaker)}<div><span class="speaker">${speaker==='moogle'?'モーグリ / トレーナー':'シロマ / 牧場のパートナー'}</span><p>${esc(text)}</p></div></div>`;}
-  function birdArt(b) {
-    const palette={yellow:'#e7bf60',golden:'#dca635',red:'#ce6e60',blue:'#88afc1',green:'#87ad7b',rose:'#dca49d',white:'#f2eee3',black:'#454653',purple:'#a08bbb',gray:'#aaaeb2'};
-    const color=palette[b.color],gradient=`crest-${++artSerial}`,crest=b.crest==='rainbow'?`url(#${gradient})`:palette[b.crest];
-    return `<svg class="chocobo-art" viewBox="0 0 160 140" role="img" aria-label="${colorText(b)}">${b.crest==='rainbow'?`<defs><linearGradient id="${gradient}"><stop stop-color="#d9646c"/><stop offset=".25" stop-color="#edc660"/><stop offset=".5" stop-color="#81b17a"/><stop offset=".75" stop-color="#80afce"/><stop offset="1" stop-color="#a987c9"/></linearGradient></defs>`:''}<ellipse cx="81" cy="127" rx="41" ry="5" fill="#2c5534" opacity=".1"/><path d="M66 104l-8 20m34-20 5 20m-50 1h20m22 0h20" fill="none" stroke="#a9783f" stroke-width="5" stroke-linecap="round"/><path d="M60 75Q24 85 18 53q18 1 31 18Q29 46 34 35q22 8 29 30" fill="${color}"/><ellipse cx="79" cy="86" rx="37" ry="29" fill="${color}" stroke="#526449" stroke-opacity=".2"/><path d="M93 75q-9-35 10-43t30 20q2 24-22 33" fill="${color}" stroke="#526449" stroke-opacity=".2"/><path d="m99 33-6-20q16 0 19 17l4-21q14 13 9 27" fill="${crest}" stroke="#526449" stroke-opacity=".25"/><path d="m128 51 20 9-22 8" fill="#c18c48"/><ellipse cx="123" cy="46" rx="3.8" ry="5" fill="${b.color==='black'?'#f2eee3':'#344c3e'}"/><circle cx="124" cy="44" r="1.1" fill="#fff"/><path d="M63 71q-20 4-8 25t30-3q1-13-22-22" fill="#fff" opacity=".23"/>${b.color==='golden'?'<path d="m26 14 3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#e6c45d"/>':''}</svg>`;
-  }
+  function birdArt(b) {return RanchPortraits.markup(b,R.age(state,b));}
   function landscape(){return `<svg class="landscape" viewBox="0 0 1200 570" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#dce8db"/><stop offset="1" stop-color="#f4edd4"/></linearGradient><linearGradient id="field" x2="0" y2="1"><stop stop-color="#adb88a"/><stop offset="1" stop-color="#7b936b"/></linearGradient></defs><path fill="url(#sky)" d="M0 0h1200v570H0z"/><circle cx="925" cy="100" r="43" fill="#fff5d2" opacity=".8"/><path d="M0 280Q140 160 330 251T720 231T1200 184V570H0" fill="#c9d5bb"/><path d="M0 335Q183 254 348 294T698 273T1200 295V570H0" fill="#b8c69e"/><path d="M0 385Q220 290 434 346T780 310T1200 352V570H0" fill="url(#field)"/><path d="M594 330q-42 96 90 240h152Q587 394 623 332" fill="#d9d5b7" opacity=".8"/><g fill="#698560"><ellipse cx="183" cy="310" rx="50" ry="66"/><ellipse cx="127" cy="323" rx="40" ry="57"/><ellipse cx="1070" cy="299" rx="62" ry="84"/></g><g fill="#8d7560"><path d="M178 322h7v73h-7zM124 341h7v65h-7zM1065 327h9v72h-9z"/><path d="M424 300h114v73H424" fill="#e3dbc0"/><path d="m410 304 70-57 73 57" fill="#92796a"/><path d="M468 331h26v42h-26" fill="#7b7c60"/><path d="M438 324h16v19h-16m53-19h17v19h-17" fill="#abae83"/></g><g stroke="#e5e3c9" stroke-width="5" fill="none" opacity=".85"><path d="M40 410v64m75-79v62m75-80v65m75-76v60m75-70v61m-300-28 300-42m-300 65 300-42M838 378v63m78-64v69m79-63v72m76-66v71m75-63v72m-308-75 308 24m-308 3 308 26"/></g><g fill="#e8e7bf" opacity=".8"><circle cx="390" cy="439" r="2"/><circle cx="422" cy="470" r="3"/><circle cx="315" cy="484" r="2"/><circle cx="230" cy="512" r="3"/><circle cx="976" cy="511" r="3"/><circle cx="935" cy="484" r="2"/></g></svg>`;}
   function journey() {
     const index={buy:0,breed:1,grow:2,running:3}[state.stage];
@@ -71,21 +66,20 @@
     return `${heading(type,esc(r.title),R.when(r.week))}<section class="letter"><div class="letter-body"><div class="letter-from">${avatar()}<span>シロマから、あなたへ</span><span class="stamp">W & W</span></div><p class="letter-message">${esc(r.text)}</p>${r.notes?.map(n=>`<p class="soft-note">${esc(n)}</p>`).join('')||''}${r.income!==undefined?`<div class="finance-strip"><span>収入<strong>+ ${money(r.income)} <small>G</small></strong></span><span>支出<strong>− ${money(r.expense)} <small>G</small></strong></span><span>今のギル<strong>${money(state.money)} <small>G</small></strong></span></div>`:''}${r.results?.length?reportRaces(r):''}${r.type==='registration'?registration(r):''}${r.type==='birth'?`<div class="birth-card">${birdArt(R.bird(state,r.birdId))}<div><b>${esc(R.bird(state,r.birdId).name)}</b><p>穏やかな平原でお世話しています。</p>${button('detail','この子に会う',`data-id="${r.birdId}"`,'button quiet')}</div></div>`:''}<div class="letter-actions">${r.type==='founder'?button('promote','始祖入りを受ける',`data-id="${r.birdId}"`):''}${button('ack',r.type==='registration'?'この名前と方針で、モーグリに任せる →':state.reports.length>1?'つづきを聞く →':'報告を閉じる →')}<span>${state.reports.length>1?`あと${state.reports.length-1}件の報告`:r.change!==undefined?`今週の収支 ${r.change>=0?'+':''}${money(r.change)} G`:''}</span></div></div><div class="letter-portrait">${portrait(r.expression)}<span>SHIROMA</span></div></section>`;
   }
   function policyOptions(value){return `<option value="steady" ${value==='steady'?'selected':''}>着実に勝ちを積み上げる</option><option value="challenge" ${value==='challenge'?'selected':''}>積極的に重賞へ挑む</option>`;}
-  const prefer2D=r=>Object.hasOwn(tracks,r?.trackId);
   function replayButton(r,id,className='button outline'){
-    return r.replay?button('watch-race',prefer2D(r)?'2Dでレースを見る':'3Dでレースを見る',`data-id="${esc(id)}" data-week="${r.week}"`,className):'';
+    return r.replay?button('watch-race','2Dでレースを見る',`data-id="${esc(id)}" data-week="${r.week}"`,className):'';
   }
   function reportRaces(r){
     return `<div class="race-results">${(r.results||[]).map(x=>`<div class="race-report-entry"><button class="result-row" data-action="result" data-id="${esc(x.birdId)}" data-week="${x.week}"><b class="placing">${x.rank}<small>着</small></b><span><strong>${esc(x.birdName)}</strong><small>${esc(x.name)} ・ ${x.distance}m</small></span><span>+${money(x.reward)} G <small>結果を見る ↗</small></span></button>${replayButton(x,x.birdId,'button quiet')}</div>`).join('')}</div>`;
   }
   function finishOrder(r,id){return `<ol class="finish-order">${r.field.map((x,i)=>`<li class="${x.id===id?'mine':''}"><span>${i+1}</span><b>${esc(x.name)}</b><span>${x.finished===false?'未完走':`${Math.floor(x.time/60)}:${(x.time%60).toFixed(2).padStart(5,'0')}`}</span></li>`).join('')}</ol>`;}
   function viewerMarkup(r,id){
-    const awarded=r.rank===1&&r.finished!==false,mode=modal.renderer||(prefer2D(r)?'2d':'3d');
-    return `<div class="race-viewer"><header class="race-viewer-head"><div><span class="eyebrow">WING & WIND / RACE THEATER</span><h2 id="dialog-title">${esc(r.name)}</h2><p>${R.when(r.week)} / ${esc(tracks[r.trackId]?.name||'競走場')} / ${r.distance}m / ${groundText(r)}</p></div><div class="race-renderer-controls" aria-label="観戦の表示方式">${[['2d','2D 試作'],['3d','3D']].map(([key,label])=>`<button class="button quiet" data-action="watch-mode" data-renderer="${key}" aria-pressed="${mode===key}">${label}</button>`).join('')}</div></header>
+    const awarded=r.rank===1&&r.finished!==false,mode=modal.renderer||'2d',playback=modal.playback||{};
+    return `<div class="race-viewer"><header class="race-viewer-head"><div><span class="eyebrow">WING & WIND / RACE THEATER</span><h2 id="dialog-title">${esc(r.name)}</h2><p>${R.when(r.week)} / ${esc(tracks[r.trackId]?.name||'競走場')} / ${r.distance}m / ${groundText(r)}</p></div><div class="race-renderer-controls" aria-label="観戦の表示方式">${[['2d','2D'],['3d','3D']].map(([key,label])=>`<button class="button quiet" data-action="watch-mode" data-renderer="${key}" aria-pressed="${mode===key}">${label}</button>`).join('')}</div></header>
+      ${r.replay.version===1?'<p class="race-old-note">この走行記録には横方向の進路が保存されていないため、枠位置で表示します。新しい出走では内寄せ・進路変更も記録します。</p>':''}
       <div class="race-stage"><div class="race-loading" role="status">競走場とチョコボを準備しています…</div><div class="race-hud"><div><span data-race-phase>パドック</span><b data-race-clock>RACE REPLAY</b><small data-race-remaining></small><small data-race-camera>パドック</small></div><div><ol class="race-live-order" data-live-order aria-label="現在の上位5羽"></ol></div></div></div>
-      <div class="race-controls"><button class="button primary" data-viewer="pause" data-needs-viewer disabled aria-pressed="false">Ⅱ 一時停止</button><button class="button outline" data-viewer="restart" data-needs-viewer disabled>↺ 最初から</button><label>再生速度<select data-viewer-speed data-needs-viewer disabled><option value=".5">0.5×</option><option value="1" selected>1× リアルタイム</option><option value="2">2×</option><option value="4">4×</option></select></label>${mode==='2d'?`<label>描画ピッチ<select data-viewer-pitch data-needs-viewer disabled aria-label="描画ピッチ">${[[1,'1×（基準）'],[1.5,'1.5×（中間）'],[2,'2×（標準）']].map(([value,label])=>`<option value="${value}" ${value===(modal.viewerPitch??2)?'selected':''}>${label}</option>`).join('')}</select></label>`:''}<label>注目羽<select data-viewer-focus data-needs-viewer disabled>${r.replay.runners.slice().sort((a,b)=>a.lane-b.lane).map(x=>`<option value="${esc(x.id)}" ${x.id===id?'selected':''}>${x.lane+1}番 ${esc(x.name)}</option>`).join('')}</select></label><div class="race-camera-controls" aria-label="カメラ切替">${[['broadcast','中継'],['follow','追走'],['overview','全景'],['finish','ゴール']].map(([key,label])=>`<button class="button quiet" data-viewer="camera" data-camera="${key}" aria-pressed="${key==='broadcast'}" data-needs-viewer disabled>${label}</button>`).join('')}</div></div>
+      <div class="race-controls"><button class="button primary" data-viewer="pause" data-needs-viewer disabled aria-pressed="false">Ⅱ 一時停止</button><button class="button outline" data-viewer="restart" data-needs-viewer disabled>↺ 最初から</button><label>再生速度<select data-viewer-speed data-needs-viewer disabled>${[[.5,'0.5×'],[1,'1× リアルタイム'],[2,'2×'],[4,'4×']].map(([value,label])=>`<option value="${value}" ${value===(playback.rate??1)?'selected':''}>${label}</option>`).join('')}</select></label>${mode==='2d'?`<label>動き<select data-viewer-pitch data-needs-viewer disabled aria-label="動きのテンポ">${[[1,'ゆったり'],[1.5,'ふつう'],[2,'きびきび']].map(([value,label])=>`<option value="${value}" ${value===(playback.pitch??2)?'selected':''}>${label}</option>`).join('')}</select></label>`:''}<label>注目羽<select data-viewer-focus data-needs-viewer disabled>${r.replay.runners.slice().sort((a,b)=>a.lane-b.lane).map(x=>`<option value="${esc(x.id)}" ${x.id===(playback.focusId??id)?'selected':''}>${x.lane+1}番 ${esc(x.name)}</option>`).join('')}</select></label><div class="race-camera-controls" aria-label="カメラ切替">${[['broadcast','中継'],['follow','追走'],['overview','全景'],['finish','ゴール']].map(([key,label])=>`<button class="button quiet" data-viewer="camera" data-camera="${key}" aria-pressed="${key===(playback.cameraMode??'broadcast')}" data-needs-viewer disabled>${label}</button>`).join('')}</div></div>
       <div class="race-seek"><input type="range" min="0" max="1" value="0" step=".1" data-viewer-seek data-needs-viewer disabled aria-label="観戦の再生位置"><span data-viewer-time>0:00.00</span></div><div class="race-chapters" aria-label="場面へ移動">${[['paddock','パドック'],['gate','出走'],['race','レース'],['result','決着'],...(awarded?[['award','表彰']]:[])].map(([key,label])=>`<button class="button quiet" data-viewer="phase" data-phase="${key}" data-needs-viewer disabled>${label}</button>`).join('')}</div>
-      ${mode==='2d'?`<div class="race-sections" aria-label="コースの場面へ移動">${[['straight','直線'],['entry','直線 → カーブ'],['curve','カーブ'],['exit','カーブ → 直線']].map(([key,label])=>`<button class="button quiet" data-viewer="section" data-section="${key}" data-needs-viewer disabled>${label}</button>`).join('')}</div>`:''}
       <div class="race-commentary"><div class="race-commentator speaking" data-commentator="lamia"><img src="assets/commentators/lamia.png" alt="実況のラミア"><span>ラミア / 実況</span></div><div class="race-commentary-copy"><span data-commentary-speaker>ラミア / 実況</span><p data-commentary-text>パドックから、レースの模様をお届けします！</p><div class="race-voice-controls"><button class="button outline" data-viewer="voice" aria-pressed="false">実況音声</button><small data-voice-status>実況字幕 ON / 音声 OFF</small></div></div><div class="race-commentator" data-commentator="sahagin"><img src="assets/commentators/sahagin.png" alt="解説のサハギン"><span>サハギン / 解説</span></div></div>
       <details class="race-result-sheet"><summary>確定した結果・着順を見る（${r.rank}着）</summary>${finishOrder(r,id)}</details></div>`;
   }
@@ -177,7 +171,7 @@
     if(modal.type==='result'){
       const b=R.bird(state,modal.id),r=b.records.find(r=>r.week===modal.week),x=r.interactions;
       const notes=x?[x.crowdedSeconds>1?'羽混みの中を走る場面がありました。':'',x.duelSeconds>1?'近くの相手と競り合いました。':'',x.savingSeconds>1?'先頭で差を確かめながら、余力を温存しました。':'',x.laneChanges>1?'周囲を見ながら進路を変えました。':'',x.blockedSeconds>1?'前の羽に進路を塞がれ、速度を抑える場面がありました。':''].filter(Boolean).join(''):'';
-      body=`<span class="eyebrow">RACE RESULT</span><h2 id="dialog-title">${esc(r.name)}</h2><p>${R.when(r.week)} / ${r.distance}m / ${groundText(r)}</p><div class="result-summary"><strong>${r.rank}<small>着</small></strong><span>${esc(b.name)}<small>賞金・手当 ${money(r.reward)} G</small></span></div>${notes?`<p class="soft-note">${notes}</p>`:''}<div class="result-actions">${replayButton(r,b.id)||'<p class="race-old-note">このレースには走行データがありません。3D観戦は機能追加後の出走から利用できます。</p>'}</div>${finishOrder(r,b.id)}`;
+      body=`<span class="eyebrow">RACE RESULT</span><h2 id="dialog-title">${esc(r.name)}</h2><p>${R.when(r.week)} / ${r.distance}m / ${groundText(r)}</p><div class="result-summary"><strong>${r.rank}<small>着</small></strong><span>${esc(b.name)}<small>賞金・手当 ${money(r.reward)} G</small></span></div>${notes?`<p class="soft-note">${notes}</p>`:''}<div class="result-actions">${replayButton(r,b.id)||'<p class="race-old-note">このレースには走行データがありません。レース観戦は走行記録のある出走から利用できます。</p>'}</div>${finishOrder(r,b.id)}`;
     }
     if(modal.type==='replay'){
       const b=R.bird(state,modal.id),r=b?.records.find(x=>x.week===modal.week);
@@ -192,11 +186,12 @@
     const unread=state.reports.length;
     $('#app').innerHTML=`<div class="app-shell" ${modal?'inert':''}><aside class="sidebar"><button class="brand" data-action="nav" data-page="home"><span class="brand-feather">❧</span><span>羽風牧場<small>WING & WIND</small></span></button><span class="nav-caption">RANCH LIFE</span><nav aria-label="メインメニュー">${['home','birds','breed','facilities','notebook'].map(id=>`<button data-action="nav" data-page="${id}" class="nav-item ${page===id?'active':''}" ${page===id?'aria-current="page"':''}><span>${ICONS[id]}</span>${LABELS[id]}${id==='home'&&unread?'<i class="unread-dot"></i>':''}</button>`).join('')}</nav><div class="sidebar-letter"><span>Dear Rancher,</span><p>ひとつの血統、<br>あなたと育てる物語。</p><small>with Shiroma</small></div><button class="nav-item settings-link ${page==='settings'?'active':''}" data-action="nav" data-page="settings"><span>⚙</span>設定</button><div class="save-status ${saveOK?'':'failed'}"><i></i>${saveOK?'自動保存しています':'保存できていません'}</div></aside><main><header class="topbar"><div class="date"><span class="season-mark">${['冬','春','夏','秋'][Math.floor((R.date(state.week).month%12)/3)]}</span><span>${R.when(state.week)}</span></div><div class="wallet"><span>所持ギル</span><strong>${money(state.money)}</strong><small>G</small></div></header><div class="content">${notice?`<div class="notice" role="status">${esc(notice)} ${button('dismiss','閉じる','','button quiet small')}</div>`:''}${unread&&page!=='home'?`<button class="unread-banner" data-action="nav" data-page="home">シロマから${unread}件の報告が届いています <span>読む →</span></button>`:''}${({home,market,birds:birdsPage,breed:breedPage,facilities:facilitiesPage,notebook,settings}[page]||home)()}<footer>HANEKAZE RANCH <span>小さな羽音から、物語はつづく。</span></footer></div></main></div>${modal?modalMarkup():''}`;
     document.body.classList.toggle('has-modal',!!modal);
+    RanchPortraits.hydrate($('#app'));
     if(modal?.type==='replay'){
       const b=R.bird(state,modal.id),r=b?.records.find(x=>x.week===modal.week),root=$('.race-viewer');
-      const mode=modal.renderer||(prefer2D(r)?'2d':'3d'),available=mode==='2d'?typeof window.CanvasRenderingContext2D!=='undefined':typeof window.WebGLRenderingContext!=='undefined';
+      const mode=modal.renderer||'2d',available=mode==='2d'?typeof window.CanvasRenderingContext2D!=='undefined':typeof window.WebGLRenderingContext!=='undefined';
       if(r?.replay&&root&&available)import(mode==='2d'?'/js/race-viewer-2d.js':'/js/race-viewer.js').then(module=>{
-        if(generation===viewerGeneration)raceViewer=module.mount(root,{...r,birdId:b.id},tracks[r.trackId]||{},{time:modal.viewerTime??0,paused:modal.viewerPaused,pitch:modal.viewerPitch});
+        if(generation===viewerGeneration)raceViewer=module.mount(root,{...r,birdId:b.id},tracks[r.trackId]||{},modal.playback||{});
       }).catch(error=>{if(generation===viewerGeneration){console.error(error);const status=$('.race-loading');if(status)status.textContent='観戦を読み込めませんでした。結果は下で確認できます。';}});
       else{const status=$('.race-loading');if(status)status.textContent='このブラウザでは選択した観戦方式を表示できません。別の表示方式を選んでください。結果は下で確認できます。';}
     }
@@ -252,12 +247,13 @@
       if(action==='promote'){R.promote(state,id);if(state.reports[0]?.type==='founder')R.acknowledge(state);page='home';}
       if(action==='result'){openModal({type:'result',id,week:Number(target.dataset.week)});return;}
       if(action==='watch-mode'&&modal?.type==='replay'){
-        modal.renderer=target.dataset.renderer==='2d'?'2d':'3d';modal.viewerTime=raceViewer?.time??modal.viewerTime??0;modal.viewerPaused=raceViewer?.paused??modal.viewerPaused;modal.viewerPitch=raceViewer?.motionPitch??modal.viewerPitch;
-        render();return;
+        const mode=target.dataset.renderer;if(!['2d','3d'].includes(mode)||(mode===(modal.renderer||'2d')&&raceViewer?.ready))return;
+        modal.renderer=mode;modal.playback={...modal.playback,...raceViewer?.snapshot()};
+        render();$(`[data-action="watch-mode"][data-renderer="${mode}"]`)?.focus({preventScroll:true});return;
       }
       if(action==='watch-race'){
         const r=R.bird(state,id)?.records.find(x=>x.week===Number(target.dataset.week));
-        if(!r?.replay)throw Error('この過去のレースには走行データがありません。追加後に出走したレースから3Dで観戦できます。');
+        if(!r?.replay)throw Error('この過去のレースには走行データがありません。走行記録のあるレースから観戦できます。');
         openModal({type:'replay',id,week:r.week});return;
       }
       if(action==='reset-dialog'){openModal({type:'reset'});return;}
@@ -312,5 +308,10 @@
     }
   });
   window.addEventListener('storage',event=>{if(event.key===R.SAVE_KEY){notice='別のタブで牧場が更新されました。再読み込みして続けてください。';saveBlocked=true;saveOK=false;busy=true;render();}});
+  window.addEventListener('pagehide',()=>{
+    if(modal?.type==='replay')modal.playback={...modal.playback,...raceViewer?.snapshot()};
+    viewerGeneration++;raceViewer?.dispose();raceViewer=null;
+  });
+  window.addEventListener('pageshow',event=>{if(event.persisted&&modal?.type==='replay')render();});
   save();render();
 })();

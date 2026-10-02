@@ -4,12 +4,14 @@ const format=t=>`${Math.floor(t/60)}:${(t%60).toFixed(2).padStart(5,'0')}`;
 
 // Playback, standings and commentary are shared by both renderers.
 export class RacePlayback {
-  constructor(root,record,track){
+  constructor(root,record,track,options={}){
     this.root=root;this.record=record;this.track=track;this.replay=record.replay;
-    this.timeline=R.timeline(record);this.cues=R.commentary(record);this.time=0;this.rate=1;
-    this.paused=matchMedia('(prefers-reduced-motion: reduce)').matches;this.cameraMode='broadcast';
-    this.focusId=record.birdId||this.replay.runners.find(r=>r.player)?.id||this.replay.runners[0].id;
-    this.speaking=false;this.lastCue=-1;this.disposed=false;this.ready=false;
+    this.timeline=R.timeline(record);this.cues=R.commentary(record);
+    this.time=Math.max(0,Math.min(this.timeline.end,options.time??0));this.rate=options.rate??1;
+    this.paused=document.hidden||(options.paused??matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.cameraMode=options.cameraMode??'broadcast';
+    this.focusId=this.replay.runners.some(r=>r.id===options.focusId)?options.focusId:record.birdId||this.replay.runners.find(r=>r.player)?.id||this.replay.runners[0].id;
+    this.speaking=!!options.speaking&&'speechSynthesis'in window;this.lastCue=-1;this.disposed=false;this.ready=false;
     this.$=s=>root.querySelector(s);this.stage=this.$('.race-stage');this.status=this.$('.race-loading');
     this.onClick=e=>{const button=e.target.closest('[data-viewer]');if(!button)return;e.stopPropagation();this.control(button);};
     this.onInput=e=>{if(e.target.matches('[data-viewer-seek]')){e.stopPropagation();this.seek(Number(e.target.value));}};
@@ -23,11 +25,16 @@ export class RacePlayback {
     document.addEventListener('visibilitychange',this.onVisibility);
     this.decor=R.ceremony(record.level);
   }
+  snapshot(){
+    return {time:this.time,paused:this.paused,rate:this.rate,focusId:this.focusId,cameraMode:this.cameraMode,speaking:this.speaking,
+      ...(this.motionPitch!==undefined?{pitch:this.motionPitch}:{})};
+  }
+  readFrame(){return R.frame(this.record,this.track,this.time);}
   updateOverlay(phase,order,raceTime){
     this.$('[data-race-phase]').textContent=phases[phase];
     this.$('[data-race-clock]').textContent=phase==='race'?format(raceTime):phase==='award'?this.decor.title:phase==='gate'?`${Math.ceil(this.timeline.race-this.time)}秒後に発走`:'RACE REPLAY';
     this.$('[data-race-remaining]').textContent=phase==='race'?`残り ${Math.ceil(Math.max(0,this.record.distance-order[0].distance))}m`:phase==='paddock'?`${this.replay.runners.length}羽の出走をお届けします`:phase==='result'?`${this.record.rank}着 / ${format(this.record.time)}`:'';
-    if(this.time-(this.lastListTime??-1)>=.2||phase!==this.listPhase){
+    if(this.lastListTime===undefined||this.time<this.lastListTime||this.time-this.lastListTime>=.2||phase!==this.listPhase){
       const list=this.$('[data-live-order]');list.replaceChildren();
       const racing=['race','result','award'].includes(phase),shown=racing?order:order.slice().sort((a,b)=>a.lane-b.lane);
       list.setAttribute('aria-label',racing?'現在の上位5羽':'出走羽');
@@ -74,6 +81,8 @@ export class RacePlayback {
   updateControls(){
     const pause=this.$('[data-viewer="pause"]');pause.textContent=this.paused?'▶ 再生':'Ⅱ 一時停止';pause.setAttribute('aria-pressed',String(this.paused));
     this.$('[data-viewer="voice"]').setAttribute('aria-pressed',String(this.speaking));
+    this.$('[data-viewer-speed]').value=String(this.rate);this.$('[data-viewer-focus]').value=this.focusId;
+    if('speechSynthesis'in window)this.$('[data-voice-status]').textContent=this.speaking?'日本語読み上げ ON（声はブラウザの設定に従います）':'実況字幕 ON / 音声 OFF';
     this.root.querySelectorAll('[data-camera]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.camera===this.cameraMode)));
   }
   seek(time){if(!this.ready)return;this.time=Math.max(0,Math.min(this.timeline.end,time));this.lastCue=-1;this.lastListTime=-1;this.cancelSpeech();this.draw(0,true);}

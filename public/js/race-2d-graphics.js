@@ -15,9 +15,13 @@ export function themeFor(track={},surface='turf'){
   return track.id==='sunahama'?THEMES.coast:track.id==='haikou'?THEMES.mine:THEMES.city;
 }
 export const BACKGROUNDS=Object.freeze(Object.fromEntries(['tenku','oukyu','mitsurin','sunahama','iseki','haikou'].map(id=>[id,`/assets/race-2d-backgrounds/${id}-v1.png`])));
+const backdropImages=new Map();
 export function loadBackdrop(track){
   const path=BACKGROUNDS[track.id];if(!path)return Promise.resolve(null);
-  return new Promise(resolve=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>resolve(null);image.src=path;});
+  if(!backdropImages.has(path))backdropImages.set(path,new Promise(resolve=>{
+    const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>{backdropImages.delete(path);resolve(null);};image.src=path;
+  }));
+  return backdropImages.get(path);
 }
 export function drawBackdropImage(ctx,view,image,pitch){
   const h=view.height,w=h*image.naturalWidth/image.naturalHeight,

@@ -5,12 +5,24 @@ const R=globalThis.RaceReplay,C=globalThis.Race2DCourse;
 const directory='/assets/chocobo-sprite-study/v5/';
 const mod=(v,n)=>((v%n)+n)%n;
 const crestFallback={golden:'yellow',green:'yellow',rose:'red',purple:'blue',gray:'white'};
+let manifestPromise;
+const spriteImages=new Map();
+function loadManifest(){
+  return manifestPromise??=fetch(directory+'manifest.json').then(response=>{
+    if(!response.ok)throw Error('Sprite manifest is unavailable');return response.json();
+  }).catch(error=>{manifestPromise=null;throw error;});
+}
+function loadSprite(file){
+  if(!spriteImages.has(file))spriteImages.set(file,new Promise((resolve,reject)=>{
+    const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>{spriteImages.delete(file);reject(Error(file));};img.src=directory+file;
+  }));
+  return spriteImages.get(file);
+}
 export function mount(root,record,track,options={}){return new RaceViewer2D(root,record,track,options);}
 
 export class RaceViewer2D extends RacePlayback {
-  constructor(root,record,track,options){
-    super(root,record,track);
-    this.time=options.time??0;this.paused=options.paused??this.paused;
+  constructor(root,record,track,options={}){
+    super(root,record,track,options);
     this.motionPitch=C.motionPitch(options.pitch??this.$('[data-viewer-pitch]')?.value??2);
     this.theme=themeFor(track,record.surface);
     this.onPitch=e=>{if(e.target.matches('[data-viewer-pitch]')){e.stopPropagation();this.motionPitch=C.motionPitch(e.target.value);this.draw(0,true);}};
@@ -23,19 +35,18 @@ export class RaceViewer2D extends RacePlayback {
     this.stage.prepend(this.canvas);this.ctx=this.canvas.getContext('2d');
     this.init().catch(error=>{
       if(this.disposed)return;console.error(error);this.status.hidden=false;this.status.setAttribute('role','alert');
-      this.status.textContent='2Dの素材を読み込めませんでした。観戦を開き直してください。';
+      this.status.textContent='2D観戦を開始できませんでした。「2D」を選び直すか、3Dに切り替えてください。結果は下で確認できます。';
     });
   }
   async init(){
     if(!this.ctx)throw Error('Canvas 2D is unavailable');
-    const response=await fetch(directory+'manifest.json');if(!response.ok)throw Error('Sprite manifest is unavailable');
-    this.manifest=await response.json();
+    this.manifest=await loadManifest();if(this.disposed)return;
     const keys=new Set(this.replay.runners.flatMap(r=>['body:'+r.color,'crest:'+this.crest(r.crest)]));
-    const artwork=loadBackdrop(this.track).then(image=>{this.backdropImage=image;});
-    await Promise.all([artwork,...[...keys].map(key=>new Promise((resolve,reject)=>{
+    const artwork=loadBackdrop(this.track).then(image=>{if(!this.disposed)this.backdropImage=image;});
+    await Promise.all([artwork,...[...keys].map(async key=>{
       const [kind,color]=key.split(':'),entry=this.manifest[kind][color]||this.manifest[kind].yellow;
-      const img=new Image();img.onload=()=>{this.images.set(key,img);resolve();};img.onerror=()=>reject(Error(entry.file));img.src=directory+entry.file;
-    }))]);
+      const img=await loadSprite(entry.file);if(!this.disposed)this.images.set(key,img);
+    })]);
     if(this.disposed)return;
     this.observer=new ResizeObserver(()=>this.draw(0,true));this.observer.observe(this.stage);
     this.$('[data-viewer-seek]').max=this.timeline.end;
@@ -65,11 +76,12 @@ export class RaceViewer2D extends RacePlayback {
     }
     super.control(button);
   }
-  view(order,raceTime,phase,width,height){
-    const focus=order.find(r=>r.id===this.focusId)||order[0],leader=order[0],
-      moving=r=>R.visualSample(r,raceTime),samples=order.map(moving),first=moving(leader);
+  view(frame,width,height){
+    const {order,phase,runners}=frame,leader=order[0],
+      first=runners.find(r=>r.entry.id===leader.id).state,
+      focus=runners.find(r=>r.entry.id===this.focusId)?.state||first,samples=runners.map(r=>r.state);
     let distance=first.distance-8,span=58;
-    if(this.cameraMode==='follow'){distance=moving(focus).distance;span=46;}
+    if(this.cameraMode==='follow'){distance=focus.distance;span=46;}
     if(this.cameraMode==='overview'){
       const lo=Math.min(...samples.map(s=>s.distance)),hi=Math.max(...samples.map(s=>s.distance));
       distance=(lo+hi)/2;span=Math.max(65,(hi-lo+16)*this.motionPitch);
@@ -90,17 +102,15 @@ export class RaceViewer2D extends RacePlayback {
       this.canvas.width=Math.round(w*ratio);this.canvas.height=Math.round(h*ratio);
     }
     const ctx=this.ctx;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-    const phase=R.phase(this.record,this.time),raceTime=Math.max(0,this.time-this.timeline.race),order=R.standings(this.replay,raceTime),
-      view=this.view(order,raceTime,phase,w,h);
+    const frame=this.readFrame(),{phase,raceTime,order,runners}=frame,view=this.view(frame,w,h);
     this.currentView=view;this.backdrop(view);
     if(phase==='award')this.podium(view,raceTime);
     else{
       this.trackSurface(view);
       this.rail(view,-.5,false);
-      const birds=this.replay.runners.map(entry=>{
-        const state=phase==='race'||phase==='result'?R.visualSample(entry,raceTime):{distance:0,lateral:entry.lane,speed:0,stopped:true};
-        return {entry,state,p:C.project(state.distance,state.lateral,this.record,this.track,view)};
-      }).sort((a,b)=>a.p.depth-b.p.depth||a.entry.lane-b.entry.lane);
+      const birds=runners.map(({entry,state,position})=>
+        ({entry,state,p:C.projectPosition(position,state.distance,this.record,this.track,view)}))
+        .sort((a,b)=>a.p.depth-b.p.depth||a.entry.lane-b.entry.lane);
       const showGates=phase==='gate'||phase==='race'&&raceTime<8;
       if(showGates)this.gates(view,phase,raceTime,false);
       const edges=[[],[]];
@@ -114,7 +124,7 @@ export class RaceViewer2D extends RacePlayback {
       this.rail(view,11.5,true);
       this.edges(edges,view);
     }
-    this.minimap(view,order,raceTime,phase);
+    this.minimap(view,runners);
     const selected=C.section(view.distance,this.record,this.track);
     const mode=view.finishLocked?'ゴール定点・後続の入線':{broadcast:'外側から中継',follow:'注目羽を追走',overview:'全羽の位置',finish:'ゴール・真横'}[this.cameraMode];
     this.$('[data-race-camera]').textContent=`${this.course.right?'右回り ←':'左回り →'} / ${mode} / ${C.SECTIONS[selected]}`;
@@ -269,17 +279,16 @@ export class RaceViewer2D extends RacePlayback {
       this.plaque(`${side?'→':'←'} ${bird.entry.lane+1}番`,side?view.width-30:30,view.height*.56+i*24,'#36574ce0','#fff0c0');
     }
   }
-  minimap(view,order,raceTime,phase){
-    const ctx=this.ctx,c=this.course,w=Math.min(182,view.width*.28),h=58,x=(view.width-w)/2,y=19,
+  minimap(view,runners){
+    const ctx=this.ctx,c=this.course,compact=view.width<560,w=Math.min(compact?152:182,view.width*(compact ? .44 : .28)),h=compact?40:58,x=(view.width-w)/2,y=compact?134:19,
       scale=(w-30)/(c.straight+2*(c.radius+c.width)),cx=x+w/2,cy=y+h/2;
     ctx.fillStyle=this.theme.dirt?'#584a3aba':'#244c4bba';ctx.fillRect(x-7,y-8,w+14,h+26);
     ctx.strokeStyle='#d6e4c4';ctx.lineWidth=4;ctx.beginPath();
     for(let i=0;i<=160;i++){const p=R.position(this.record.distance+this.course.lap*i/160,5.5,this.record,this.track),
       px=cx+(p.x+(c.right?-1:1)*c.finishOffset)*scale,py=cy+p.z*scale*.57;
       if(!i)ctx.moveTo(px,py);else ctx.lineTo(px,py);}ctx.stroke();
-    for(const r of order){const s=phase==='race'||phase==='result'?R.visualSample(r,raceTime):{distance:0,lateral:r.lane},
-      p=R.position(s.distance,s.lateral,this.record,this.track);
-      ctx.fillStyle=r.player?'#ffdc72':'#f7f4de';ctx.beginPath();ctx.arc(cx+(p.x+(c.right?-1:1)*c.finishOffset)*scale,cy+p.z*scale*.57,r.player?3:1.8,0,Math.PI*2);ctx.fill();}
+    for(const {entry,position:p} of runners){
+      ctx.fillStyle=entry.player?'#ffdc72':'#f7f4de';ctx.beginPath();ctx.arc(cx+(p.x+(c.right?-1:1)*c.finishOffset)*scale,cy+p.z*scale*.57,entry.player?3:1.8,0,Math.PI*2);ctx.fill();}
     ctx.fillStyle='#f5eed3';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(`${this.track.name||'競走場'} / ${c.right?'右回り':'左回り'}`,cx,y+h+10);
   }
   podium(view,raceTime){
