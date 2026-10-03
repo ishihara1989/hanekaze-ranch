@@ -26,7 +26,7 @@ test('hatch reports snapshot actual genetic effects and pre-hatch ranges, includ
     const rng=s.rng;R.breedingPreview(s,sire,dam);assert.equal(s.rng,rng);
     R.advance(s);R.advance(restored);assert.deepEqual(s,restored);
     const report=s.reports.find(r=>r.type==='birth'),child=R.bird(s,report.birdId),rows=report.geneticLottery;
-    assert.equal(Object.keys(rows).length,23);assert.ok(R.validState(s));
+    assert.equal(Object.keys(rows).length,26);assert.ok(R.validState(s));
     const values=R.geneticScores(child);
     for(const group of ['aptitude','development'])for(const [key,pair] of Object.entries(child.genome.traits[group]))values[key]=50+100*R.Genetics.mean(pair);
     for(const [key,row] of Object.entries(rows)){
@@ -53,12 +53,59 @@ test('range position shows endpoints and fixed inheritance without implying prob
   report.geneticLottery.cardio={value:105,min:70,max:105};
   report.geneticLottery.legs={value:90,min:90,max:90};
   const html=Observation.birthGenetics(s,report),row=key=>html.match(new RegExp(`data-birth-trait="${key}"([\\s\\S]*?)</div>`))[1];
-  assert.match(row('speed'),/◯ <span class="birth-range">\/ △～◎/);
+  assert.match(row('speed'),/<span class="birth-result">◯<\/span> <span class="birth-range">\/ △～◎/);
   assert.match(row('speed'),/90 \/ 70～105/);assert.match(row('speed'),/下限から57%/);
   assert.match(row('power'),/<meter min="0" max="100" value="0"/);
   assert.match(row('cardio'),/<meter min="0" max="100" value="100"/);
   assert.match(row('legs'),/固定（抽選幅なし）/);assert.doesNotMatch(row('legs'),/<meter|NaN|Infinity/);
   assert.match(html,/抽選の確率や順位を表すものではありません/);
+});
+
+function colourFixture() {
+  const labels={...Object.fromEntries(R.Mapping.ABILITIES.map(a=>[a.key,a.label])),...R.MANAGEMENT,...R.PERSONALITY,...R.Genetics.APTITUDES,...R.Genetics.DEVELOPMENT};
+  return {s:{facilities:{lab:1,museum:1,statue:1}},report:{type:'birth',geneticLottery:Object.fromEntries(Object.keys(labels).map(key=>[key,{min:50,max:150,value:100}]))}};
+}
+const birthRow=(html,key)=>html.match(new RegExp(`data-birth-trait="${key}"([\\s\\S]*?)</div>`))[1];
+
+test('result symbols colour the exact range position, including 30%, 70% and 90% boundaries',()=>{
+  const {s,report}=colourFixture();
+  for(const [percent,tone] of [[0,'red'],[29.999,'red'],[30,''],[50,''],[69.999,''],[70,'blue'],[89.999,'blue'],[90,'rainbow'],[100,'rainbow']]){
+    report.geneticLottery.speed.value=50+percent;
+    const row=birthRow(Observation.birthGenetics(s,report),'speed');
+    assert.ok(row.includes(`class="birth-result${tone?` birth-result-${tone}`:''}"`),`${percent}%`);
+    assert.match(row,/<span class="birth-range">\/ X～☆<\/span>/,'the possible-range symbols retain their usual colour');
+  }
+  // Colour uses the unrounded value even when the visible percentage rounds across a boundary.
+  report.geneticLottery.speed.value=139.999;
+  const row=birthRow(Observation.birthGenetics(s,report),'speed');
+  assert.match(row,/birth-result-blue/);assert.match(row,/下限から90%/);assert.doesNotMatch(row,/birth-result-rainbow/);
+  report.geneticLottery.speed={min:125,max:125,value:125};
+  assert.match(birthRow(Observation.birthGenetics(s,report),'speed'),/class="birth-result">☆/);
+});
+
+test('aptitudes and growth colour only the highest and lowest actual values, leaving fixed traits unchanged',()=>{
+  const {s,report}=colourFixture();
+  for(const key of [...Object.keys(R.Genetics.APTITUDES),...Object.keys(R.Genetics.DEVELOPMENT)]){
+    for(const [value,tone] of [[50,'red'],[75,''],[100,''],[125,''],[140,''],[150,'blue']]){
+      report.geneticLottery[key]={min:50,max:150,value};
+      const row=birthRow(Observation.birthGenetics(s,report),key);
+      assert.ok(row.includes(`class="birth-result${tone?` birth-result-${tone}`:''}"`),`${key}: ${value}`);
+      assert.doesNotMatch(row,/birth-result-rainbow/);
+    }
+    report.geneticLottery[key]={min:150,max:150,value:150};
+    assert.match(birthRow(Observation.birthGenetics(s,report),key),/class="birth-result">☆/);
+  }
+});
+
+test('colour rendering preserves research gates and never consumes randomness or modifies saved snapshots',()=>{
+  const {s,report}=colourFixture();report.geneticLottery.speed.value=150;
+  for(const facilities of [{lab:0,museum:0,statue:0},{lab:1,museum:0,statue:0},{lab:1,museum:1,statue:0},{lab:1,museum:1,statue:1}]){
+    s.facilities=facilities;s.rng=20261003;const before=JSON.stringify({s,report}),html=Observation.birthGenetics(s,report);
+    assert.equal(JSON.stringify({s,report}),before);
+    assert.match(birthRow(html,'speed'),/birth-result-rainbow/);
+    assert.equal((html.match(/data-birth-trait=/g)||[]).length,facilities.lab?26:16);
+    assert.equal((html.match(/data-birth-score=/g)||[]).length,R.labLevel(s)>=2?26:0);
+  }
 });
 
 test('legacy birth reports still load and malformed lottery snapshots cannot load',()=>{

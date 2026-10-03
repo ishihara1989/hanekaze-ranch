@@ -17,6 +17,7 @@
       bend=Math.PI*c.radius,boundaries=[c.straight,c.straight+bend,2*c.straight+bend,c.lap],
       index=boundaries.findIndex(end=>progress<end),end=boundaries[index];
     return {progress,corner:index===1||index===3,toBoundary:end-progress,
+      fromCorner:index===0?progress:index===2?progress-c.straight-bend:null,
       toCorner:index===1||index===3?0:end-progress,
       finalApproach:raceDistance-distance<=c.finalStraight+bend+100};
   }

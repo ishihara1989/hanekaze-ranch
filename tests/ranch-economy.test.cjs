@@ -81,6 +81,7 @@ test('two player runners share the same G1 field and produce only one winner',()
   const s=R.initial(),b=R.own(s)[0];s.stage='running';s.week=21;s.money=1000000;
   Object.assign(b,{birthYear:-2,sex:'M',wins:2,races:2,policy:'challenge',lastRace:-100});
   b.genome.distance=[.5,.5];
+  b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
   const second=copy(b);second.id=`bird-${s.serial++}`;second.name='ハネカゼノツバサ';s.birds.push(second);
   assert.equal(R.nextRace(s,b).name,'チョコボダービー');
   const restored=copy(s);R.advance(s);R.advance(restored);assert.deepEqual(s,restored);

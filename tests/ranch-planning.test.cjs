@@ -56,12 +56,14 @@ test('aptitude and development forecasts include segregation and possible or gua
   const keys=[...Object.keys(R.Genetics.APTITUDES),...Object.keys(R.Genetics.DEVELOPMENT)];
   for(const group of ['aptitude','development'])for(const key of Object.keys(root.genome.traits[group])){
     root.genome.traits[group][key]=[1,1];
-    sire.genome.traits[group][key]=[0,.5];dam.genome.traits[group][key]=[.25,.75];
+    sire.genome.traits[group][key]=key==='straight'?[.5,.75]:[0,.5];
+    dam.genome.traits[group][key]=key==='straight'?[.5,.75]:[.25,.75];
   }
   const check=expected=>{
     const before=JSON.stringify(s),ranges=R.breedingPreview(s,sire,dam);
     assert.equal(JSON.stringify(s),before);
-    for(const key of keys)assert.deepEqual(ranges[key],expected,key);
+    for(const key of keys)assert.deepEqual(ranges[key],key==='straight'&&expected.min<100?
+      {min:100,max:expected.max===112.5?125:150}:expected,key);
   };
   check({min:62.5,max:112.5});
   sire.parents=[root.id,null];middle.parents=[root.id,null];dam.parents=[middle.id,null];

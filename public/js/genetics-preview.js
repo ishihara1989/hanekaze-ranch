@@ -10,7 +10,7 @@
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const STAGES=Object.freeze([
     {label:'研究所なし',description:'ステータスへの遺伝効果を合算した5段階評価。',lab:0,museum:0,statue:0},
-    {label:'研究所',description:'羽場・成長・羽色の遺伝と、得意羽場などの詳しい競走情報。',lab:1,museum:0,statue:0},
+    {label:'研究所',description:'羽場・コーナー・直線・成長・羽色の遺伝と、詳しい競走情報。',lab:1,museum:0,statue:0},
     {label:'研究所＋記念館または銅像',description:'全遺伝の数値と座位。各座位は折りたたみを開いて確認できます。',lab:1,museum:1,statue:0},
     {label:'研究所＋記念館＋銅像',description:'全情報を公開。現在ステータスの表示も確認すると、数値と伸びしろが見えます。',lab:1,museum:1,statue:1},
   ]);

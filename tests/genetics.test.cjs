@@ -66,7 +66,7 @@ test('non-gold parents can have a rare de novo gold allele that subsequently bre
 });
 
 test('non-hatching pregnancy releases its stall and cannot produce a phantom child or duplicate event',()=>{
-  const s=R.initial(9),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
+  const s=R.initial(3),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
   mother.genome.traits.gold=['G','g'];mother.color='golden';
   R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
   for(let i=0;i<3;i++){read(s);R.advance(s);}read(s);
@@ -80,7 +80,7 @@ test('non-hatching pregnancy releases its stall and cannot produce a phantom chi
 });
 
 test('birth derives body and forehead from inherited genes and saves them unchanged on reload',()=>{
-  const s=R.initial(2),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
+  const s=R.initial(1),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
   mother.genome.traits.gold=['G','g'];mother.color='golden';R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
   for(let i=0;i<4;i++){read(s);R.advance(s);}
   const child=R.own(s).find(b=>b.role==='young');assert.equal(child.color,'golden');
@@ -106,7 +106,7 @@ test('three growth genes independently control maturity, decline onset and decli
 test('all new breeding options and feather factors are supplied by the 32 source birds',()=>{
   const sources=R.initial().birds.filter(b=>b.kind==='root');
   assert.equal(sources.length,32);
-  for(const key of Object.keys(G.APTITUDES))assert.equal(sources.filter(b=>G.mean(b.genome.traits.aptitude[key])===1).length,16);
+  for(const key of Object.keys(G.SURFACE_APTITUDES))assert.equal(sources.filter(b=>G.mean(b.genome.traits.aptitude[key])===1).length,16);
   for(const key of Object.keys(G.DEVELOPMENT))assert.equal(sources.filter(b=>G.mean(b.genome.traits.development[key])===1).length,8);
   for(const surface of ['turf','dirt'])for(const cushion of ['lowCushion','highCushion'])assert.equal(sources.filter(b=>G.mean(b.genome.traits.aptitude[surface])===1&&G.mean(b.genome.traits.aptitude[cushion])===1).length,8);
   for(const color of Object.keys(G.DOMINANCE))assert.ok(sources.some(b=>b.genome.traits.body.includes(color)));

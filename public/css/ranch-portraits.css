@@ -1,14 +1,17 @@
-.chocobo-portrait{position:relative;isolation:isolate;display:inline-block;overflow:visible}
-.chocobo-portrait-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 91%;animation:chocobo-breathe 3.8s ease-in-out infinite;filter:drop-shadow(0 3px 2px #463b2612)}
-.chocobo-portrait-shadow{position:absolute;z-index:-1;left:24%;right:18%;bottom:4%;height:5%;background:#3e52341a;border-radius:50%;filter:blur(2px);animation:chocobo-shadow 3.8s ease-in-out infinite}
+.chocobo-portrait{position:relative;isolation:isolate;display:inline-block;overflow:visible;container-type:size;--idle-duration:3.8s}
+.chocobo-portrait-frame{position:absolute;left:50%;top:50%;width:min(100cqw,100cqh);aspect-ratio:1;transform:translate(-50%,-50%) scaleX(-1);overflow:hidden}
+.chocobo-portrait-image{position:absolute;left:0;top:0;width:200%;height:200%;max-width:none;animation:chocobo-idle-frames var(--idle-duration) steps(1,end) infinite;filter:drop-shadow(0 3px 2px #463b2612)}
+.chocobo-portrait-shadow{position:absolute;z-index:-1;left:24%;right:24%;bottom:8%;height:5%;background:#3e52341a;border-radius:50%;filter:blur(2px);animation:chocobo-shadow var(--idle-duration) ease-in-out infinite}
 .chocobo-portrait-loading{position:absolute;inset:0;display:grid;place-items:center;font-size:10px;color:var(--muted);text-align:center}
 .chocobo-portrait [hidden]{display:none}
-.chocobo-portrait[data-portrait-stage="chick"] .chocobo-portrait-image{inset:17% 10% 0;width:80%;height:83%;transform-origin:50% 87%;animation-duration:3s}
-.chocobo-portrait[data-portrait-stage="yearling"] .chocobo-portrait-image{inset:7% 4% 0;width:92%;height:93%;animation-duration:3.4s}
+.chocobo-portrait[data-portrait-stage="chick"]{--idle-duration:3s}
+.chocobo-portrait[data-portrait-stage="chick"] .chocobo-portrait-frame{top:58.5%;width:min(80cqw,83cqh)}
+.chocobo-portrait[data-portrait-stage="yearling"]{--idle-duration:3.4s}
+.chocobo-portrait[data-portrait-stage="yearling"] .chocobo-portrait-frame{top:53.5%;width:min(92cqw,93cqh)}
 .bird-illustration .chocobo-portrait{width:210px;height:180px;margin-top:0}
 .detail-cover .chocobo-portrait{width:190px;height:180px}
 .purchase-bird .chocobo-portrait{width:215px;height:205px}
-@keyframes chocobo-breathe{0%,100%{transform:scale(1,1) rotate(-.35deg)}50%{transform:scale(1.014,1.025) rotate(.35deg)}}
+@keyframes chocobo-idle-frames{0%,100%{transform:translate(0,0)}25%{transform:translate(-50%,0)}50%{transform:translate(0,-50%)}75%{transform:translate(-50%,-50%)}}
 @keyframes chocobo-shadow{0%,100%{transform:scaleX(1);opacity:.8}50%{transform:scaleX(.96);opacity:.65}}
 @media(max-width:650px){.bird-illustration .chocobo-portrait{width:225px;height:185px}.detail-cover .chocobo-portrait{width:125px;height:135px}}
 @media(prefers-reduced-motion:reduce){.chocobo-portrait-image,.chocobo-portrait-shadow{animation:none}}

@@ -7,6 +7,19 @@
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const TRAITS=['grit','drive','wisdom','control','crowd','fight'];
   const CLEARANCE=4,LATERAL_CLEARANCE=.8,LATERAL_RATE=.7;
+  function courseEffect(runner,distance,c){
+    const section=Course.section(runner.state.distance,distance,c),aptitude=runner.aptitude||{};
+    if(section.corner){
+      const fit=aptitude[c.right?'rightTurn':'leftTurn']??.5,
+        severity=clamp(160/(c.radius+((runner.state.lateral??runner.lane??0)+.5)*c.laneWidth),.65,1.35);
+      // Even a specialist slows on bends. A tighter bend demands more control.
+      return {speedFactor:1-(.10-.08*fit)*severity,forceFactor:1,effortCost:1+.04*(1-fit)};
+    }
+    const fit=2*((aptitude.straight??.5)-.5),
+      // Only a bend actually traversed after the gate grants the exit bonus.
+      exit=runner.state.distance-section.fromCorner>1e-8?clamp(1-section.fromCorner/60,0,1):0;
+    return {speedFactor:1+.02*fit,forceFactor:1+.04*fit*exit,effortCost:1};
+  }
   function surroundings(index,states,distance){
     const me=states[index];
     const proximity=[];
@@ -34,7 +47,7 @@
     return {crowding:clamp((density-1)/3,0,1)*active,duel:duel*active,
       leading:!ahead&&opponents>0,lead:nearestBehind,pursuerSpeed};
   }
-  function decision(runner,context,distance){
+  function decision(runner,context,distance,effect={speedFactor:1,effortCost:1}){
     const {state,p,traits,cruise}=runner,u=k=>(traits[k]-50)/100;
     const remaining=distance-state.distance;
     const burden=clamp(.6*state.fatigue+.4*(1-state.reserve/p.reserveCapacity),0,1);
@@ -59,7 +72,7 @@
       saving=safeSpeed<target?u('wisdom')*clamp((context.lead-12)/24,0,1):0;
       target-=Math.max(0,target-safeSpeed)*saving;
     }
-    return {target:clamp(target,0,p.maxSpeed),effortCost,crowding:context.crowding,
+    return {target:clamp(target,0,p.maxSpeed)*effect.speedFactor,effortCost:effortCost*effect.effortCost,crowding:context.crowding,
       duel:context.duel,saving,mode:saving>.05?'余力温存':context.crowding>.1?'羽混み':
         context.duel>.1?'競り合い':lowReserve?'粘り':remaining<=400?'スパート':'巡航'};
   }
@@ -130,11 +143,14 @@
       runners=entries.map(entry=>{
       const p=Physics.parameters(entry.p),traits={...entry.traits};
       if(!TRAITS.every(k=>Number.isFinite(traits[k])&&traits[k]>=50&&traits[k]<=150))throw new RangeError('Invalid personality');
+      const aptitude={rightTurn:.5,leftTurn:.5,straight:.5,...entry.aptitude};
+      if(!['rightTurn','leftTurn','straight'].every(k=>Number.isFinite(aptitude[k])&&aptitude[k]>=(k==='straight'?.5:0)&&aptitude[k]<=1))
+        throw new RangeError('Invalid course aptitude');
       const lane=entry.lane??gateOrder.indexOf(entry.id),lateral=entry.state.lateral??lane;
       if(!Number.isInteger(lane)||lane<0||lane>=Course.METRES.lanes||!Number.isFinite(lateral)||lateral<0||lateral>Course.METRES.lanes-1)
         throw new RangeError('Invalid race lane');
       const state={...entry.state,lateral,travelled:entry.state.travelled??0};
-      return {...entry,lane,p,traits,state,routeTarget:lateral,lateralVelocity:0,samples:trace?[{...state,mode:'発走'}]:[],nextSample:sampleEvery,
+      return {...entry,lane,p,traits,aptitude,state,routeTarget:lateral,lateralVelocity:0,samples:trace?[{...state,mode:'発走'}]:[],nextSample:sampleEvery,
         interactions:{crowdedSeconds:0,duelSeconds:0,savingSeconds:0,extraEnergy:0,blockedSeconds:0,laneChanges:0,distanceLoss:0}};
     });
     if(new Set(runners.map(r=>r.lane)).size!==runners.length)throw new RangeError('Duplicate race lanes');
@@ -147,10 +163,14 @@
         const r=runners[i],before=states[i];
         if(before.distance>=event.distance)continue;
         active=true;
-        const action=actions[i]=decision(r,surroundings(i,states,event.distance),event.distance),
+        const effect=courseEffect(r,event.distance,c),
+          action=actions[i]=decision(r,surroundings(i,states,event.distance),event.distance,effect),
           route=routes[i]=routing(i,runners,states,event,c,action.target,stepTime);
         const slope=event.hill>.35?Physics.courseSlope('hills',before.distance)*.32:0;
-        const after=Physics.step(before,r.p,stepTime,route.limit,slope,r.ground.traction,action.effortCost),
+        // Section targets brake gradually; changing sections cannot snap velocity.
+        const sectionParameters={...r.p,maxSpeed:Math.max(r.p.maxSpeed*Math.max(1,effect.speedFactor),before.speed-4*stepTime),
+          maxForce:r.p.maxForce*effect.forceFactor};
+        const after=Physics.step(before,sectionParameters,stepTime,route.limit,slope,r.ground.traction,action.effortCost),
           metres=after.distance-before.distance,
           sideways=(route.lateral-before.lateral)*c.laneWidth;
         after.lateral=before.lateral+Math.sign(sideways)*Math.min(Math.abs(sideways),metres)/c.laneWidth;
@@ -223,5 +243,5 @@
         state:r.state,parameters:r.parameters??r.p,ground:r.ground,samples:r.samples,interactions:r.interactions};
     });
   }
-  return {CLEARANCE,LATERAL_CLEARANCE,LATERAL_RATE,surroundings,decision,routing,simulate};
+  return {CLEARANCE,LATERAL_CLEARANCE,LATERAL_RATE,courseEffect,surroundings,decision,routing,simulate};
 });

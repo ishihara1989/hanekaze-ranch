@@ -56,13 +56,14 @@
       record.finished===record.field[record.rank-1]?.finished;
   }
   function sample(runner,time){
-    const samples=runner.samples,t=clamp(time,0,runner.time);
+    // Subtracting the broadcast intro can place the exact finish a few ulps early.
+    const atFinish=time>=runner.time-1e-9,samples=runner.samples,t=atFinish?runner.time:clamp(time,0,runner.time);
     let lo=0,hi=samples.length-1;
     while(lo<hi){const m=(lo+hi)>>1;if(samples[m][0]<t)lo=m+1;else hi=m;}
     const b=samples[lo],a=samples[Math.max(0,lo-1)],f=b[0]===a[0]?0:(t-a[0])/(b[0]-a[0]);
     return {distance:a[1]+(b[1]-a[1])*f,speed:a[2]+(b[2]-a[2])*f,
       lateral:(a[4]??runner.lane??0)+((b[4]??runner.lane??0)-(a[4]??runner.lane??0))*f,
-      mode:MODES[a[3]],finished:runner.finished&&time>=runner.time,stopped:time>=runner.time};
+      mode:MODES[a[3]],finished:runner.finished&&atFinish,stopped:atFinish};
   }
   function standings(replay,time){
     return replay.runners.map(r=>({...r,...sample(r,time)})).sort((a,b)=>
