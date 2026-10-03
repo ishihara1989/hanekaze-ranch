@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const Replay=require('../public/js/race-replay.js');
 
 test('gender pools contain hundreds of distinct kana stems and favor short meaningful words',()=>{

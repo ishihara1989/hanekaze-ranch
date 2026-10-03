@@ -143,9 +143,8 @@ export class RaceViewer2D extends RacePlayback {
     }
     if(phase!=='paddock'&&phase!=='award')this.minimap(view,runners);
     const selected=C.section(view.distance,this.record,this.track);
-    const mode=view.finishLocked?'ゴール定点・後続の入線':view.startLocked?'スタート定点':{broadcast:'外側から中継',follow:'注目羽を追走',overview:'全羽の位置',finish:'ゴール・真横'}[this.cameraMode];
     const paddock=R.paddockAt(this.record,this.time);
-    this.$('[data-race-camera]').textContent=phase==='paddock'?`${paddock.runner.lane+1}番を紹介 / ${paddock.index+1}・${paddock.total}羽`:`${this.course.right?'右回り ←':'左回り →'} / ${mode} / ${C.SECTIONS[selected]}`;
+    this.$('[data-race-camera]').textContent=phase==='paddock'?`${paddock.runner.lane+1}番 ・ ${paddock.index+1}/${paddock.total}`:`${this.course.right?'右回り':'左回り'} ・ ${C.SECTIONS[selected]}`;
     this.root.querySelectorAll('[data-section]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.section===selected&&phase==='race')));
     this.stage.dataset.section=selected;this.stage.dataset.direction=this.course.right?'left':'right';
     this.stage.dataset.finishLocked=String(!!view.finishLocked);

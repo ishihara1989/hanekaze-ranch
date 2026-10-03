@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const B=R.Breeding,copy=x=>JSON.parse(JSON.stringify(x));
 const scratch=(rng=1)=>({week:9,rng,serial:1,birds:[]});
 function fruitPair(seed=1) {

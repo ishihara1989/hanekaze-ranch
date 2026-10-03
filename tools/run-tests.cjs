@@ -1,0 +1,15 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path');
+const {spawnSync}=require('node:child_process');
+const {performance}=require('node:perf_hooks');
+const {availableParallelism}=require('node:os');
+const root=path.join(__dirname,'..');
+const start=performance.now();
+require('./lib/ranch-fixtures.cjs').prepareWorld();
+console.log(`Shared NPC history ready (${((performance.now()-start)/1000).toFixed(2)}s).`);
+const args=process.argv.slice(2);
+if(!args.length)args.push(...fs.readdirSync(path.join(root,'tests')).filter(f=>f.endsWith('.test.cjs')).sort().map(f=>`tests/${f}`));
+const concurrency=args.some(arg=>arg.startsWith('--test-concurrency'))?[]:[`--test-concurrency=${Math.min(4,availableParallelism())}`];
+const result=spawnSync(process.execPath,['--test',...concurrency,...args],{cwd:root,stdio:'inherit'});
+if(result.error)throw result.error;
+process.exitCode=result.status??1;

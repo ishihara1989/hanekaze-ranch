@@ -56,18 +56,18 @@
   const MANAGEMENT = {robustness:'丈夫さ', recovery:'回復力'};
   const TRAINING = {speed:.15, cardio:.45, power:.35, reserve:.30, legs:.45, economy:.40, start:.50, resilience:.35};
   const FACILITIES = {
-    stalls:{name:'羽房',cost:25000,costs:[0,25000,35000,12000000],max:4,description:'幼羽・競走羽の枠と、種牡羽・繁殖牝羽の枠を増やします。最初の拡張は2.5万G、次は3.5万G。最大32 / 16 / 16羽。'},
-    course:{name:'コース',cost:18000000,max:3,description:'走り込みと動作の練習。段階ごとに調教の効果が上がります。'},
-    hill:{name:'坂路',cost:22000000,max:3,description:'瞬発力とスパート容量を育てる調教施設。'},
+    stalls:{name:'羽房',cost:25000,costs:[0,25000,35000,12000000],max:4,description:'羽房を増やします。最大で幼羽・競走羽32羽、繁殖牝羽・種牡羽各16羽。'},
+    course:{name:'コース',cost:18000000,max:3,description:'調教の効果が上がります。'},
+    hill:{name:'坂路',cost:22000000,max:3,description:'瞬発力とスパート容量を鍛えます。'},
     pool:{name:'プール',cost:20000000,max:3,description:'脚への負担を抑えながら心肺を育てます。'},
     spa:{name:'温泉',cost:15000000,max:3,description:'休養中の体力と脚の回復を早めます。'},
     clinic:{name:'診療所',cost:16000000,max:3,description:'病気や怪我からの回復を早めます。'},
-    meadow:{name:'穏やかな平原',cost:8000000,max:3,description:'自制心と賢さを育てる放牧地。最初から利用できます。'},
-    forest:{name:'過酷な森',cost:8000000,max:3,description:'走る意欲と刺激への慣れを育てる放牧地。'},
-    shop:{name:'グッズ販売所',cost:25000000,max:3,description:'GⅠ勝者のファンから毎月収入。引退後は5年で減衰、殿堂入りは一部継続。'},
-    lab:{name:'研究所',cost:25000,max:1,description:'羽場・コーナー・直線・成長・羽色などの遺伝と、詳しい競走情報を調べられます。孵化報告に適性・成長の抽選結果を追加。配合時に産み分けの実（各1,000ギル）を使えます。',lock:'レース初勝利'},
-    statue:{name:'銅像',cost:50000000,max:1,description:'三冠を記念する銅像。研究所と合わせて全遺伝の座位と孵化時の数値範囲を公開。記念館も完成すると現在能力の数値と孵化時の抽選位置を公開します。',lock:'三冠制覇'},
-    museum:{name:'記念館',cost:100000000,max:1,description:'牧場で8大競走を制覇した記念館。研究所と合わせて全遺伝の座位と孵化時の数値範囲を公開。銅像も完成すると現在能力の数値と孵化時の抽選位置を公開します。',lock:'8大競走制覇'},
+    meadow:{name:'穏やかな平原',cost:8000000,max:3,description:'自制心と賢さが育つ放牧地。'},
+    forest:{name:'過酷な森',cost:8000000,max:3,description:'走る意欲と刺激への慣れが育つ放牧地。'},
+    shop:{name:'グッズ販売所',cost:25000000,max:3,description:'GⅠ勝者のファンから毎月グッズ収入が入ります。'},
+    lab:{name:'研究所',cost:25000,max:1,description:'適性・成長・羽色の遺伝と、詳しい競走情報がわかります。産み分けの実も使えます。',lock:'レース初勝利'},
+    statue:{name:'銅像',cost:50000000,max:1,description:'三冠の記念像。研究所とあわせて遺伝の数値がわかります。記念館もそろうと能力も数値で見られます。',lock:'三冠制覇'},
+    museum:{name:'記念館',cost:100000000,max:1,description:'8大競走制覇の記念館。研究所とあわせて遺伝の数値がわかります。銅像もそろうと能力も数値で見られます。',lock:'8大競走制覇'},
   };
   const TITLES = {
     triple:['神竜賞','チョコボダービー','オメガ賞'],
@@ -165,10 +165,10 @@
     s.journal = s.journal.slice(-160);
     return item;
   }
-  function milestone(s, key, title, text) {
+  function milestone(s, key, title, text, extra = {}) {
     if (s.milestones[key]) return;
     s.milestones[key] = s.week;
-    report(s, 'event', title, text, {expression:'overjoyed'});
+    report(s, 'event', title, text, {expression:'overjoyed', ...extra});
   }
   function genome(s, parents, distance, release, frequency=.25) {
     const genes = {};
@@ -192,7 +192,7 @@
   const crossRisk=(s,sire,dam)=>breedingCrosses(s,sire,dam).find(c=>c.blood>Breeding.MAX_CROSS_BLOOD)||null;
   function crossReason(s,sire,dam) {
     const risk=crossRisk(s,sire,dam);
-    return risk?`${risk.name}の${risk.positions.join('×')}クロスは血量${+(risk.blood*100).toFixed(3)}%で危険なため、配合できません。許される濃さは2×3（37.5%）までです。2×2など上限を超える配合は禁止されています。`:'';
+    return risk?`${risk.name}の${risk.positions.join('×')}クロス（血量${+(risk.blood*100).toFixed(3)}%）は危険なため、配合できません。クロスは2×3（37.5%）までです。`:'';
   }
   const crossPlan=(s,sire,dam)=>Breeding.mutationPlan(breedingCrosses(s,sire,dam),id=>bird(s,id),crossStrengths);
   function constitution(b) {
@@ -376,6 +376,9 @@
             distance,surface,label,trackId:track.id,track,hill:track.hill,wind:track.wind,heat:month>=6&&month<=9?track.heat:0});
         }
       }
+      // Keep established farm fields and IDs; novice routes also have a general-only field.
+      if(['new','maiden'].includes(e.level))variants.push(...variants.map(r=>({...r,
+        id:`${r.id}:general`,name:`${r.name}（一般参加）`,opponents:'general'})));
       return variants;
     }).map(economyEvent);
   }
@@ -471,6 +474,7 @@
     });
   }
   function worldRoster(s,e,{slots=11}={}) {
+    if(e.opponents==='general')return fillerRoster(s,e,[],slots);
     const year=date(s.week).year,group=worldGroup(e);
     let runners=s.birds.filter(b=>b.owner==='npc'&&b.season===year&&b.worldGroup===group);
     if(!runners.length) {
@@ -519,8 +523,7 @@
     s.birds=s.birds.filter(b=>!(b.owner==='archive'&&b.farm&&!b.graded&&year-b.birthYear>23&&!ancestors.has(b.id)));
   }
   let historyTemplate=null;
-  function ensureWorld(s) {
-    if(s.worldVersion===1)return;
+  function worldHistory() {
     if(!historyTemplate) {
       const scratch={week:1,rng:0x574f524c,serial:1,birds:[]};
       for(let year=1;year<=5;year++) {
@@ -532,9 +535,18 @@
       }
       historyTemplate=JSON.stringify(scratch.birds);
     }
+    return historyTemplate;
+  }
+  function ensureWorld(s,history) {
+    if(s.worldVersion===1)return;
+    // A caller can reuse the same genuinely simulated history across isolated runs.
+    if(history!==undefined&&historyTemplate===null){
+      if(typeof history!=='string'||!Array.isArray(JSON.parse(history)))throw Error('Invalid world history');
+      historyTemplate=history;
+    }
     // Keep old lineage records, retire the former placeholder market entries.
     s.birds.filter(b=>b.owner==='public'&&!b.farm).forEach(b=>b.role='archived');
-    const imported=JSON.parse(historyTemplate),ids=new Map(imported.map(b=>[b.id,`bird-${s.serial++}`]));
+    const imported=JSON.parse(worldHistory()),ids=new Map(imported.map(b=>[b.id,`bird-${s.serial++}`]));
     const shift=date(s.week).year-6;
     for(const b of imported) {
       b.id=ids.get(b.id);b.parents=b.parents.map(id=>ids.get(id)||id);b.birthYear+=shift;b.bornWeek+=shift*YEAR;if(b.season!==undefined)b.season+=shift;
@@ -633,12 +645,12 @@
     for(const b of graduates){b.owner='sale';b.role='mare';b.price=marePrice(b);b.comment='他牧場で走り、重賞の実績を残した繁殖牝羽です。';s.sale.push(b.id);}
   }
 
-  function initial(seed = 20260930,settings={}) {
+  function initial(seed = 20260930,settings={},history) {
     if(typeof seed==='object'){settings=seed;seed=20260930;}
     const s = {version:VERSION,naming:namingSettings(settings),geneticsVersion:Genetics.VERSION,breedingVersion:Breeding.VERSION,week:9,money:20000,debt:0,rng:seed>>>0,serial:1,birds:[],sale:[],marketYear:0,stage:'buy',reports:[],journal:[],ledger:[],milestones:{},awards:[],founderOffers:[],
       facilities:Object.fromEntries(Object.keys(FACILITIES).map(k => [k,['stalls','meadow'].includes(k)?1:0])),difficulty:'normal',lastAnnual:0};
     refreshRoots(s);
-    ensureWorld(s);
+    ensureWorld(s,history);
     refreshMarket(s);
     const starter=createBird(s,{name:generatedName(s,undefined,'ノヒカリ','F'),sex:'F',role:'racing',registered:true,trainer:'moogle',policy:'steady',birthYear:-1,distance:-.7,release:.7,lineage:ROOTS[1].lineage,
       potential:{speed:103,cardio:78,power:116,reserve:108,legs:73,economy:82,start:76,resilience:78},comment:'瞬発力のある2歳牝羽。モーグリが調教・休養・出走を担当します。'});
@@ -666,7 +678,7 @@
     if (own(s).filter(b=>b.role==='mare').length>=capacity(s).mare) throw Error('繁殖牝羽の羽房がいっぱいです。');
     pay(s,-b.price,`${b.name}を購入`); b.owner='player';
     if (s.stage==='buy') s.stage='breed';
-    milestone(s,'purchase','最初の仲間を迎えました',`${b.name}、ようこそ${s.naming?.ranchName||DEFAULT_NAMING.ranchName}へ。次はこの子の相手を選びましょう。配合できるのは3月第1週から4月第4週です。`);
+    milestone(s,'purchase','最初の仲間を迎えました',`${b.name}、ようこそ${s.naming?.ranchName||DEFAULT_NAMING.ranchName}へ！ 次はこの子のお相手を選びましょう。`);
     return b;
   }
   function sellMareReason(s,b) {
@@ -716,13 +728,14 @@
     dam.pregnancy={sireId,due:s.week+GESTATION}; dam.bredYear=date(s.week).year;
     if(fruit!=='none')dam.pregnancy.fruit=fruit;
     if (s.stage==='breed') s.stage='grow';
-    milestone(s,'breeding','新しい命を、いっしょに待ちましょう',`配合が終わりました。${when(dam.pregnancy.due)}に生まれる予定です。お世話は私に任せて、まずは次の週へ進みましょう。放牧地を選ばなければ、穏やかな平原で育てます。`);
+    milestone(s,'breeding','新しい命を、いっしょに待ちましょう',`${when(dam.pregnancy.due)}に生まれる予定です。楽しみですね！`);
   }
-  function observe(s,b) {
-    const d=mean(b.genome.distance),r=mean(b.genome.release);
-    const body=d>.35?'長く走ることが得意になりそう':d<-.35?'短い距離を軽やかに走れそう':'いろいろな距離を試してみたい';
-    const character=b.personality.control>85?'落ち着いて自分のペースを保てます':b.personality.drive>85?'走ることが大好きな、元気な子です':'少しずつ、周りに慌てず走ることを覚えています';
-    return `${body}ですね。${r>.3?'力をためてから走り出すのが好きみたい。':''}${character}。`;
+  function observe(s,b,speaker='shiroma') {
+    const d=mean(b.genome.distance),r=mean(b.genome.release),kupo=speaker==='moogle';
+    const body=d>.35?(kupo?'長い距離が向いてそうクポ':'長く走ることが得意になりそうですね'):d<-.35?(kupo?'短い距離でスピードを活かせそうクポ':'短い距離を軽やかに走れそうですね'):(kupo?'いろんな距離を試してみたいクポ':'いろいろな距離を試してみたいですね');
+    const late=r>.3?(kupo?'ためてから一気に伸びるタイプクポ。':'力をためてから走り出すのが好きみたい。'):'';
+    const character=b.personality.control>85?(kupo?'いつも落ち着いてて頼もしいクポ':'落ち着いて自分のペースを保てます'):b.personality.drive>85?(kupo?'走るのが大好きで元気いっぱいクポ':'走ることが大好きな、元気な子です'):(kupo?'まわりに慌てず走れるようになってきたクポ':'少しずつ、周りに慌てず走ることを覚えています');
+    return `${body}。${late}${character}${kupo?'！':'。'}`;
   }
   function abilityProgress(s,b) {
     const genes=Genetics.growth(b.genome.traits),birthWeek=(b.birthYear-1)*YEAR+date(Math.max(1,b.bornWeek)).week;
@@ -817,7 +830,7 @@
         if(e.distance<minDistance||e.distance>maxDistance||mean(b.genome.traits.aptitude[e.surface])<bestSurface-.15)continue;
         const graded=/^G/.test(e.level);
         const footing=Ground.efficiency(b.genome.traits,e);
-        candidates.push({event:e,score:Math.abs(e.distance-preferred)/800+(week-s.week)*.13+8*(1-footing.traction)-(b.policy==='challenge'&&graded?3:0)});
+        candidates.push({event:e,score:Math.abs(e.distance-preferred)/800+(week-s.week)*.13+8*(1-footing.traction)-(b.policy==='challenge'&&graded?3:0)-(e.opponents==='general'?.1:0)});
       }
     }
     if(b.policy==='steady') {
@@ -924,11 +937,10 @@
     e=economyEvent(e);
     if(!b||!e||e.week!==s.week||b.lastRace===s.week||!eligible(s,b,e))throw Error('この週には出走できません。');
     if(s.money<e.fee)return null;
-    if(!sharedRuns&&/^G/.test(e.level)){
+    if(!sharedRuns){
       if(s.birds.some(x=>x.farm&&x.records.some(r=>r.week===s.week&&r.name===e.name)))throw Error('この競走は確定済みです。');
       sharedRuns=runWorldEvent(s,e,[b]);
     }
-    if(!sharedRuns)sharedRuns=runWorldEvent(s,e,[b]);
     pay(s,-e.fee,`${b.name} 出走経費`);
     const runs=sharedRuns.slice().sort((a,b)=>Number(b.finished)-Number(a.finished)||
       (a.finished?a.time-b.time:b.state.distance-a.state.distance));
@@ -943,10 +955,10 @@
     if(e.level==='GI') b.fans+=rank===1?1200:150;
     if(rank===1&&run.finished) {
       b.wins++;if(/^G/.test(e.level))b.graded++;
-      milestone(s,'win','はじめての勝利！',`${b.name}、やったね！ 小さかったあの子が、一番で帰ってきました。研究所が解放されました。資金を貯めて、遺伝の研究を始めましょう。`);
+      milestone(s,'win','はじめての勝利！',`${b.name}、やったね！ 牧場の初勝利です！`,{notes:['研究所を建設できるようになりました。']});
       if(e.level==='GI') {
         b.g1++;
-        milestone(s,'g1','ついに、GⅠの頂点へ',`${b.name}がGⅠ初勝利です！ 私たちの牧場から、こんな子が育つなんて。これからの配合にも、この実績が受け継がれます。`);
+        milestone(s,'g1','ついに、GⅠの頂点へ',`${b.name}がGⅠ初勝利です！ 私たちの牧場から、こんな子が育つなんて……！`);
         if(e.name==='チョコボダービー')milestone(s,'derby','ダービーを、いっしょに勝ちました',`${b.name}がダービーを制しました。あの日、最初の一羽を迎えたときから、ここまで来たんですね。これからも、あなたとこの牧場を育てていきたいです。`);
         const multiplier={easy:1.5,normal:1,hard:.7}[s.difficulty];
         const bonus=title=>{if(!b.titles.includes(title)){b.titles.push(title);b.fans+=Math.round(1200*multiplier);milestone(s,`${b.id}:${title}`,`${b.name}の新しい記録`,`${title.replace(/:\d+$/,'')}の達成で、この子を応援する人が増えていますよ。`);}};
@@ -992,10 +1004,11 @@
       if(winner&&score(winner)>0){const a={year,title,birdId:winner.id,name:winner.name,farm:farmName(winner,s),points:score(winner)};awards.push(a);s.awards.push(a);}
     }
     const yearBook=s.ledger.filter(l=>date(l.week).year===year),income=yearBook.filter(l=>l.amount>0).reduce((n,l)=>n+l.amount,0),expense=-yearBook.filter(l=>l.amount<0).reduce((n,l)=>n+l.amount,0);
-    report(s,'annual',`${year}年の、私たちの牧場`,`${year}年もおつかれさまでした。収入は${income.toLocaleString()}ギル、支出は${expense.toLocaleString()}ギル。${awards.length?awards.map(a=>`${a.title}に${a.farm}の${a.name}（${a.points}点）`).join('、')+'が選ばれました！':'今年の表彰はありませんでした。育てた時間も、来年への大切な財産です。'}また来年も、一緒にがんばりましょう。`,{expression:'happy',income,expense,awards});
+    const mine=awards.filter(a=>bird(s,a.birdId)?.owner==='player');
+    report(s,'annual',`${year}年の、私たちの牧場`,`${year}年もおつかれさまでした！ ${mine.length?`${mine.map(a=>`${a.title}に${a.name}`).join('、')}が選ばれました！ `:''}来年も一緒にがんばりましょう。`,{expression:'happy',income,expense,awards});
     for(const b of s.birds.filter(b=>founderEligible(s,b)))if(!s.founderOffers.includes(b.id)) {
       s.founderOffers.push(b.id);
-      report(s,'founder','始祖入りのオファーが届きました',`${b.name}の産駒が3羽以上でGⅠ勝利、合計7勝以上を達成しました。源流を継ぐ始祖に推薦されています。`,{birdId:b.id,expression:'overjoyed'});
+      report(s,'founder','始祖入りのオファーが届きました',`${b.name}が、源流を継ぐ始祖に推薦されました！`,{birdId:b.id,expression:'overjoyed'});
     }
   }
   function acknowledge(s, options={}) {
@@ -1028,6 +1041,16 @@
       for(const b of players){const result=race(s,b,e,runs);if(result)results.push({...result,birdId:b.id,birdName:b.name});}
       if(e.level==='GI'){const winner=runs[0];notes.push(`GⅠ ${e.name}：${winner.farm}の${winner.name}が優勝。`);}
     }
+    // Ordinary races also share one field, so a farm career is settled only once
+    // when several player birds are scheduled for the same event.
+    const ordinaryEvents=new Map([...plannedRaces.values()].filter(e=>e?.week===s.week&&!/^G/.test(e.level)).map(e=>[e.id,e]));
+    for(const e of ordinaryEvents.values()){
+      let funds=s.money;
+      const players=own(s).filter(b=>{const ok=plannedRaces.get(b.id)?.id===e.id&&b.condition>=75&&b.strain<25&&!b.health&&funds>=e.fee;if(ok)funds-=e.fee;return ok;});
+      if(!players.length)continue;
+      const runs=runWorldEvent(s,e,players);
+      for(const b of players){const result=race(s,b,e,runs);if(result)results.push({...result,birdId:b.id,birdName:b.name});}
+    }
     for(const b of own(s)) {
       if(b.role==='racing'&&age(s,b)>=10) {
         if(own(s).filter(x=>x.role===(b.sex==='M'?'stud':'mare')).length<capacity(s)[b.sex==='M'?'stud':'mare'])retire(s,b.id);
@@ -1041,7 +1064,6 @@
       }
       if(b.role==='racing'&&b.registered) {
         const e=plannedRaces.get(b.id);
-        if(b.lastRace!==s.week&&e?.week===s.week&&!/^G/.test(e.level)&&b.condition>=75&&b.strain<25&&!b.health) {const result=race(s,b,e);if(result)results.push({...result,birdId:b.id,birdName:b.name});}
         if(b.lastRace!==s.week) {
           const plan=weeklyPlan(s,b,e),rest=plan.mode==='rest';
           if(!rest)for(const key in b.training) {
@@ -1060,7 +1082,7 @@
     for(const b of s.birds)if(b.schedule)for(const week of Object.keys(b.schedule))if(Number(week)<=s.week)delete b.schedule[week];
     const cost=12+own(s).reduce((n,b)=>n+(b.role==='racing'?20:b.role==='young'?4:8),0)+Object.values(s.facilities).reduce((n,x)=>n+x,0)*2;
     if(s.money>=cost)pay(s,-cost,'今週の飼料・お世話・施設維持');
-    else {s.debt+=cost-s.money;pay(s,-s.money,'今週の維持費（不足分は未払）');notes.push('維持費の不足分は未払金にしました。賞金などの収入から順に精算します。');}
+    else {s.debt+=cost-s.money;pay(s,-s.money,'今週の維持費（不足分は未払）');notes.push('維持費が足りず、不足分を未払金にしました。');}
     if(d.monthWeek===4) {
       for(const b of s.birds.filter(b=>b.owner==='player'&&b.g1>0)) {
         if(s.facilities.shop) {
@@ -1071,7 +1093,7 @@
       }
       if(s.debt&&s.money){const repaid=Math.min(s.debt,s.money);pay(s,-repaid,'未払金の精算');s.debt-=repaid;}
       const book=s.ledger.filter(l=>Math.floor((l.week-1)/4)===Math.floor((oldWeek-1)/4)),income=book.filter(l=>l.amount>0).reduce((n,l)=>n+l.amount,0),expense=-book.filter(l=>l.amount<0).reduce((n,l)=>n+l.amount,0);
-      report(s,'monthly',`${d.month}月の牧場だより`,`${d.month}月も、おつかれさまでした。今月の収入は${income.toLocaleString()}ギル、支出は${expense.toLocaleString()}ギルです。${own(s).some(b=>b.role==='young')?'子どもたちも、毎日少しずつ成長していますよ。':'来月の調教と出走はモーグリに任せています。'}`,{income,expense,expression:'happy'});
+      report(s,'monthly',`${d.month}月の牧場だより`,`${d.month}月もおつかれさまでした！${own(s).some(b=>b.role==='young')?' 子どもたちも少しずつ大きくなっています。':''}`,{income,expense,expression:'happy'});
     }
     if(d.week===48){annual(s,d.year);retireWorld(s,d.year);}
     s.week++;
@@ -1080,23 +1102,26 @@
       const child=createBird(s,fruit.sex?{sex:fruit.sex}:{},[father,mother]);
       mother.pregnancy=null;
       if(!child){
-        report(s,'event','卵は、かえりませんでした',`${mother.name}の卵は、今回はかえりませんでした。予約していた羽房を空け、お母さんを見守ります。今年の配合は終了しています。`,{expression:'sad'});
+        report(s,'event','卵は、かえりませんでした',`${mother.name}の卵は、今回はかえりませんでした。また来年、がんばりましょう。`,{expression:'sad'});
         s.stage='running';continue;
       }
-      report(s,'birth','小さな羽音が、聞こえます',`${mother.name}の子が生まれました！ ${observe(s,child)}まずは穏やかな平原で、のびのび育てますね。2歳になる年の1月に、競走羽として名前を登録しましょう。`,{birdId:child.id,expression:'overjoyed',geneticLottery:geneticLottery(child,ranges)});
+      report(s,'birth',`${mother.name}の子が生まれました`,observe(s,child),{birdId:child.id,expression:'overjoyed',geneticLottery:geneticLottery(child,ranges)});
       if(!s.milestones.birth)s.milestones.birth=s.week;
       s.stage='running';
     }
     if(date(s.week).week===1) {
       refreshMarket(s);
       const ids=own(s).filter(b=>b.role==='young'&&age(s,b)===2).map(b=>b.id);
-      if(ids.length)report(s,'registration','いよいよ、競走羽登録です',`今年2歳になる${ids.length}羽を、モーグリに預けましょう。名前と出走方針を決めたら、調教もレース選びも任せられます。`,{birdIds:ids,expression:'happy'});
+      if(ids.length)report(s,'registration','競走羽登録',`今年2歳になる${ids.length}羽の名前を決めましょう！`,{birdIds:ids,expression:'happy'});
     }
-    if(date(s.week).week===5&&own(s).some(b=>b.role==='mare'))notes.push('2月〜3月の繁殖牝羽セールが始まります。トップページのセールへのリンクから、新しい仲間に会いに行けます。');
-    const text=results.length?results.map(r=>`${r.birdName}は${r.name}で${r.rank}着。${r.reward.toLocaleString()}ギルを獲得しました。`).join(' '):
-      own(s).some(b=>b.pregnancy)?'お母さんは落ち着いて過ごしています。新しい命に会える日を、楽しみに待ちましょう。':
-      own(s).some(b=>b.role==='young')?'平原で元気な羽音が聞こえました。食べて、遊んで、よく眠って。今はその積み重ねが大切ですね。':'今週の調教と休養は順調です。次のレースへ、モーグリと準備を進めています。';
-    report(s,'weekly',`${d.month}月 第${d.monthWeek}週のご報告`,text,{week:oldWeek,results,notes,change:s.money-balance,expression:results.some(r=>r.rank===1)?'happy':'talk'});
+    if(date(s.week).week===5&&own(s).some(b=>b.role==='mare'))notes.push('繁殖牝羽セールが始まりました（3月第4週まで）。');
+    // Short reactions only: race rows already show placings and prize money.
+    const best=results.slice().sort((a,b)=>a.rank-b.rank)[0],mother=own(s).find(b=>b.pregnancy);
+    const nursery=['子どもたちは平原を元気に走り回っています。','子どもたちは今日もよく食べて、よく眠っています。','子どもたちがギサールの野菜を取り合っていました。'],idle=['調教は順調です。','今週もしっかり調教しました。','みんな元気に過ごしています。'];
+    const text=best?(best.rank===1?`${best.birdName}、勝ちました！`:best.rank<=3?`${best.birdName}は${best.rank}着。あと少しでしたね。`:`${best.birdName}は${best.rank}着でした。次に期待しましょう。`):
+      mother?`${mother.name}の子に会えるまで、あと${mother.pregnancy.due-s.week}週です。`:
+      own(s).some(b=>b.role==='young')?nursery[s.week%nursery.length]:idle[s.week%idle.length];
+    report(s,'weekly',`${d.month}月 第${d.monthWeek}週`,text,{week:oldWeek,results,notes,change:s.money-balance,expression:results.some(r=>r.rank===1)?'happy':'talk'});
     return {week:oldWeek,results,change:s.money-balance};
   }
   function validState(s) {
@@ -1185,5 +1210,5 @@
     for(const report of [...(s.reports||[]),...(s.journal||[])])for(const r of report.results||[])unpackRecord(r);
     delete s.packedGenomes;delete s.raceFields;delete s.raceReplays;return s;
   }
-  return {raceOutlook,geneticTraitRating,paternalRoot,lineageFounder,BREEDING_FRUITS,breedingCost,Names,DEFAULT_NAMING,namingSettings,unavailableNames,breedingPreview,breedingOpen,abilityProgress,TRAINING_MENUS,raceOptions,setSchedule,weeklyPlan,upcomingSchedule,validBirdName,generatedName,crossRisk,crossReason,constitution,serializeState,deserializeState,Breeding,DEFECTS,DEFECT_LABELS,pedigree,breedingCrosses,crossPlan,createBird,worldRoster,calendar,g1Points,pedigreeBonus,rating,geneticRating,geneticEffectRating,geneticBreakdown,geneticScores,profile,farmName,MAJOR_FARMS,searchSires,marePrice,VERSION,SAVE_KEY,YEAR,GESTATION,PERSONALITY,MANAGEMENT,FACILITIES,ROOTS,TITLES,EIGHT,Mapping,Genetics,Ground,date,when,initial,refreshRoots,upgradeState,own,bird,age,capacity,racingCount,labLevel,quality,saleOpen,sires,studFee,breedFee,buy,sellMareReason,sellMare,releaseStudReason,releaseStud,breedingReason,breed,observe,currentAbilities,facilityCost,facilityReason,build,setPasture,setPolicy,rename,retire,classFor,nextRace,eligible,simulateBird,simulateField,race,founderEligible,promote,acknowledge,advance,validState};
+  return {worldHistory,raceOutlook,geneticTraitRating,paternalRoot,lineageFounder,BREEDING_FRUITS,breedingCost,Names,DEFAULT_NAMING,namingSettings,unavailableNames,breedingPreview,breedingOpen,abilityProgress,TRAINING_MENUS,raceOptions,setSchedule,weeklyPlan,upcomingSchedule,validBirdName,generatedName,crossRisk,crossReason,constitution,serializeState,deserializeState,Breeding,DEFECTS,DEFECT_LABELS,pedigree,breedingCrosses,crossPlan,createBird,worldRoster,calendar,g1Points,pedigreeBonus,rating,geneticRating,geneticEffectRating,geneticBreakdown,geneticScores,profile,farmName,MAJOR_FARMS,searchSires,marePrice,VERSION,SAVE_KEY,YEAR,GESTATION,PERSONALITY,MANAGEMENT,FACILITIES,ROOTS,TITLES,EIGHT,Mapping,Genetics,Ground,date,when,initial,refreshRoots,upgradeState,own,bird,age,capacity,racingCount,labLevel,quality,saleOpen,sires,studFee,breedFee,buy,sellMareReason,sellMare,releaseStudReason,releaseStud,breedingReason,breed,observe,currentAbilities,facilityCost,facilityReason,build,setPasture,setPolicy,rename,retire,classFor,nextRace,eligible,simulateBird,simulateField,race,founderEligible,promote,acknowledge,advance,validState};
 });

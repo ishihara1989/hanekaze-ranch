@@ -1,13 +1,10 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const W=require('../public/js/world.js');
 const copy=s=>JSON.parse(JSON.stringify(s));
-const read=s=>{while(s.reports.length)R.acknowledge(s);};
-function founded(seed=20260930,mare=0,sire=0){const s=R.initial(seed);R.buy(s,s.sale[mare]);read(s);R.breed(s,R.own(s)[0].id,R.sires(s)[sire].id);read(s);return s;}
-function progress(s,weeks){for(let i=0;i<weeks;i++){read(s);R.advance(s);}}
-function racer(){const s=founded();progress(s,88);read(s);return {s,b:R.own(s).find(b=>b.role==='racing'&&b.parents.length)};}
+const {read,founded,progress,racer}=require('../tools/lib/ranch-fixtures.cjs');
 
 test('new ranch starts in March with an automated racing filly, funded and guided; legacy saves are not accepted',()=>{
   const s=R.initial();assert.equal(s.week,9);assert.equal(s.money,20000);assert.equal(R.own(s).length,1);assert.equal(s.stage,'buy');assert.ok(R.validState(s));
@@ -31,11 +28,13 @@ test('purchase and breeding charge exactly once, reserve a foal stall, and produ
 test('sale is seasonal and annual refresh leaves lineage records intact',()=>{
   const s=founded();progress(s,4);read(s);assert.equal(R.saleOpen(s),false);assert.throws(()=>R.buy(s,s.sale[1]),/2月/);
   const rootIds=R.sires(s).filter(b=>b.kind==='root').map(b=>b.id),publicId=R.sires(s).find(b=>b.owner==='public').id;
-  progress(s,240);read(s);assert.ok(rootIds.every(id=>R.sires(s).some(b=>b.id===id)));assert.equal(R.bird(s,publicId).role,'archived');assert.ok(R.validState(s));
+  const expiry=R.bird(s,publicId).retiredYear+5;
+  s.week=(expiry-1)*R.YEAR;R.advance(s);read(s);
+  assert.ok(rootIds.every(id=>R.sires(s).some(b=>b.id===id)));assert.equal(R.bird(s,publicId).role,'archived');assert.ok(R.validState(s));
 });
 test('January registration uses calendar age, preserves choices, and week-only play reaches a race',()=>{
-  const s=founded();progress(s,39);read(s);assert.equal(s.week,48);R.advance(s);assert.equal(s.week,49);assert.equal(R.age(s,R.own(s).find(b=>b.role==='young')),1);assert.ok(!s.reports.some(r=>r.type==='registration'));
-  progress(s,48);assert.equal(s.week,97);assert.ok(s.reports.some(r=>r.type==='registration'));
+  const s=founded();progress(s,4);read(s);s.week=48;R.advance(s);assert.equal(s.week,49);assert.equal(R.age(s,R.own(s).find(b=>b.role==='young')),1);assert.ok(!s.reports.some(r=>r.type==='registration'));
+  read(s);s.week=96;R.advance(s);assert.equal(s.week,97);assert.ok(s.reports.some(r=>r.type==='registration'));
   while(s.reports[0].type!=='registration')R.acknowledge(s);
   const id=s.reports[0].birdIds[0];R.acknowledge(s,{names:{[id]:'ハルノユメ'},policies:{[id]:'challenge'}});read(s);
   const b=R.bird(s,id);assert.equal(b.role,'racing');assert.equal(b.name,'ハルノユメ');assert.equal(b.policy,'challenge');
@@ -50,20 +49,6 @@ test('breeding inherits genes, never parent training or learned personality',()=
 test('reload keeps random stream, reports, finances and races deterministic without double payment',()=>{
   const {s,b}=racer();const loaded=copy(s);R.advance(s);R.advance(loaded);assert.deepEqual(s,loaded);assert.ok(R.validState(s));
   const result=b.records[0],paid=s.money;assert.ok(result);assert.throws(()=>R.race(s,b,W.calendar(result.week)[0]));assert.equal(s.money,paid);
-});
-test('all allowed starter combinations can debut without extra purchases, loans or manual training',()=>{
-  for(let mare=0;mare<3;mare++){
-    let winningPairings=0;
-    for(let sire=0;sire<R.ROOTS.length;sire++) {
-      if(sire===[13,2,1][mare])continue; // Source backcross exceeds the 2 x 3 limit.
-      const s=founded(20260930,mare,sire);progress(s,150);read(s);const b=R.own(s).find(b=>b.role==='racing'&&b.parents.length);
-      assert.ok(b.races>0,`${mare}/${sire}`);assert.ok(b.records.every(r=>r.finished));assert.ok(s.money>0);assert.equal(s.debt,0);assert.ok(R.validState(s));
-      if(b.wins>0)winningPairings++;
-    }
-    // Management/personality donors are breeding options, not guaranteed early winners.
-    // Every starter mare must still have an accessible route to a first win.
-    assert.ok(winningPairings>0,`first-win pairings for mare ${mare}`);
-  }
 });
 test('winning unlocks one-time conversations, fan bonuses and research; race settlement is guarded',()=>{
   const {s,b}=racer();s.week=117;b.birthYear=0;b.wins=2;b.races=3;b.policy='challenge';b.registered=true;

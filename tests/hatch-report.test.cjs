@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const Observation=require('../public/js/ranch-observation.js');
 const copy=value=>JSON.parse(JSON.stringify(value));
 const read=s=>{while(s.reports.length)R.acknowledge(s);};
@@ -58,7 +58,7 @@ test('range position shows endpoints and fixed inheritance without implying prob
   assert.match(row('power'),/<meter min="0" max="100" value="0"/);
   assert.match(row('cardio'),/<meter min="0" max="100" value="100"/);
   assert.match(row('legs'),/固定（抽選幅なし）/);assert.doesNotMatch(row('legs'),/<meter|NaN|Infinity/);
-  assert.match(html,/抽選の確率や順位を表すものではありません/);
+  assert.match(html,/下限0%、上限100%/);assert.doesNotMatch(html,/確率/);
 });
 
 function colourFixture() {

@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const Observation=require('../public/js/ranch-observation.js');
 const copy=x=>JSON.parse(JSON.stringify(x));
 const read=s=>{while(s.reports.length)R.acknowledge(s);};
@@ -104,7 +104,7 @@ test('eight-week plans preserve state and randomness; edits round-trip and inval
 
 test('ability gauge caps share the absolute 150 scale and age loss occupies the same scale',()=>{
   const {s,b}=ranch();b.potential.speed=75;b.potential.power=150;
-  const gauge=(html,key)=>html.match(new RegExp(`data-trait="${key}"([\\s\\S]*?)class="ability-progress-note"`))[1];
+  const gauge=(html,key)=>html.match(new RegExp(`data-trait="${key}"([\\s\\S]*?)</div></div></div>`))[1];
   const html=Observation.status(s,b);assert.match(gauge(html,'speed'),/class="ability-capacity" style="width:50%"/);
   assert.match(gauge(html,'power'),/class="ability-capacity" style="width:100%"/);assert.match(html,/aria-valuemax="150"/);
   s.week=450;const p=R.abilityProgress(s,b).speed,older=gauge(Observation.status(s,b),'speed');

@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {IDBFactory}=require('fake-indexeddb');
 const Storage=require('../public/js/ranch-storage.js');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const keys=[R.SAVE_KEY,...Array.from({length:5},(_,i)=>`${R.SAVE_KEY}-slot-${i+1}`)];
 function environment(legacy=new Map()) {
   const factory=new IDBFactory();let failKey=null;

@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const G=require('../public/js/ranch-genetics.js');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const F=require('../public/js/ranch-race.js');
 const P=require('../public/js/race-physics.js');
 const C=require('../public/js/race-course.js');

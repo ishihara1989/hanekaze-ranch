@@ -1,8 +1,33 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const scratch=(seed=123)=>({week:9,rng:seed,serial:1,birds:[]});
+
+test('general-only novice routes recur on every surface and distance without generating farm birds',()=>{
+  const s=scratch();
+  for(let week=1;week<=48;week++)for(const level of ['new','maiden']){
+    const events=R.calendar(week).filter(e=>e.level===level&&e.opponents==='general');
+    for(const surface of ['turf','dirt'])for(const distance of surface==='turf'?[1400,1800,2200,2400,3000]:[1400,1800,2200,2400])
+      assert.ok(events.some(e=>e.surface===surface&&e.distance===distance),`${week}/${level}/${surface}/${distance}`);
+    s.week=week;const before=structuredClone(s),field=R.worldRoster(s,events[0]);
+    assert.equal(field.length,11);assert.ok(field.every(b=>b.filler));
+    assert.deepEqual(s,before);
+  }
+});
+
+test('automatic beginner entry settles a general-only field and preserves its booking across saves',()=>{
+  const s=R.initial(),b=R.own(s)[0];s.stage='running';s.money=1000000;
+  const e=R.nextRace(s,b);assert.equal(e.opponents,'general');
+  R.setSchedule(s,b.id,e.week,{mode:'race',eventId:e.id});
+  const loaded=R.deserializeState(R.serializeState(s));
+  assert.equal(R.nextRace(loaded,R.bird(loaded,b.id)).id,e.id);
+  const before=s.birds.map(b=>b.id),result=R.race(s,b,e);
+  assert.deepEqual(s.birds.map(b=>b.id),before);
+  assert.equal(result.field.length,12);assert.ok(result.field.filter(r=>r.id!==b.id).every(r=>r.filler));
+  assert.ok(R.validState(s));
+  assert.deepEqual(R.deserializeState(R.serializeState(s)),s);
+});
 
 test('general entrants fill vacancies without persistent identities, pedigrees or breeding RNG',()=>{
   const s=scratch(),e=R.calendar(s.week).find(e=>e.level==='new');
@@ -87,4 +112,20 @@ test('settlement stores only result snapshots for general entrants and real care
   assert.equal(result.replay.runners.length,12);
   // Market stock continues to be selected from fully simulated farm champions.
   for(const sire of R.sires(s).filter(b=>b.farm))assert.ok(sire.records.some(r=>r.rank===1&&r.level==='GI'&&!r.field[0].filler));
+});
+
+test('two player birds share one ordinary field and settle farm careers once',()=>{
+  const s=R.initial(),first=R.own(s)[0];Object.assign(s,{stage:'running',money:1000000,reports:[]});
+  const second=structuredClone(first);second.id=`bird-${s.serial++}`;second.name='ハネカゼノツバサ';s.birds.push(second);
+  const e=R.calendar(s.week).find(e=>e.level==='new'&&e.surface==='turf'&&e.distance===1400);
+  for(const b of [first,second])R.setSchedule(s,b.id,s.week,{mode:'race',eventId:e.id});
+  const majors=R.worldRoster(s,e).filter(b=>!b.filler),loaded=structuredClone(s);
+  R.advance(s);R.advance(loaded);assert.deepEqual(s,loaded);
+  assert.equal(first.records.length,1);assert.equal(second.records.length,1);
+  assert.deepEqual(first.records[0].field,second.records[0].field);
+  assert.deepEqual(first.records[0].replay,second.records[0].replay);
+  assert.notEqual(first.records[0].rank,second.records[0].rank);
+  assert.equal(first.records[0].field.length,12);
+  for(const b of majors){assert.equal(b.races,1);assert.equal(b.records.length,1);assert.equal(b.records[0].name,e.name);}
+  assert.ok(R.validState(s));
 });

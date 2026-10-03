@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const W=require('../public/js/world.js');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const annual=()=>Array.from({length:48},(_,i)=>R.calendar(i+1)).flat().filter(e=>/^G/.test(e.level));
 
 test('annual stakes match the 2026 central and regional scale with short and dirt routes',()=>{

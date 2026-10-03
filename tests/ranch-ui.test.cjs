@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
-const R=require('../public/js/ranch-engine.js'),W=require('../public/js/world.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R,W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 async function boot(saved,failSave=false,failRead=false,autoStart=true){
@@ -28,7 +28,7 @@ test('notebook shows annual grades and filters short and regional dirt programs 
   assert.equal([...html(g).matchAll(/data-program-event=/g)].length,179);
   await g.change('calendar-grade','GIII');await g.change('calendar-route','dirt-sprint');
   assert.ok([...html(g).matchAll(/data-program-event=/g)].length>0);
-  assert.match(html(g),/地方交流参考/);assert.match(html(g),/王宮スプリント/);
+  assert.match(html(g),/地方交流/);assert.doesNotMatch(html(g),/地方交流参考/);assert.match(html(g),/王宮スプリント/);
   assert.doesNotMatch(html(g),/王宮帝王賞|天空大賞典|芝 1200m/);
   await g.change('calendar-route','sprint');
   assert.match(html(g),/シルクロードカーバンクル杯/);assert.doesNotMatch(html(g),/ダート 1200m/);
@@ -82,14 +82,14 @@ test('research unlocks optional sex-selection fruit, updates the total and revie
     assert.match(html(g),/カラブの実 ・ オス確定 ・ 1,000ギル/);assert.match(html(g),/ゼイオの実 ・ メス確定 ・ 1,000ギル/);
     const money=g.h.state.money,rng=g.h.state.rng;
     await g.change('breeding-fruit',fruit);
-    assert.match(html(g),/配合をお願いする <span>1,600 G/);
+    assert.match(html(g),/配合する <span>1,600 G/);
     assert.equal(g.h.state.money,money);assert.equal(g.h.state.rng,rng);
     await g.click('breed-dialog');assert.match(html(g),new RegExp(label));
     assert.match(html(g),/合計<\/span><b>1,600 G/);assert.match(html(g),sex==='M'?/オス（100%）/:/メス（100%）/);
     await g.click('close');assert.equal(g.h.state.money,money);
     g.h.state.money=1599;g.h.render();assert.match(html(g),/配合料金と実の代金に必要なギルが足りません/);
     await g.click('breed-dialog');assert.equal(g.h.modal,null);
-    await g.change('breeding-fruit','none');assert.match(html(g),/配合をお願いする <span>600 G/);
+    await g.change('breeding-fruit','none');assert.match(html(g),/配合する <span>600 G/);
     g.h.state.money=money;await g.change('breeding-fruit',fruit);await g.click('breed-dialog');await g.click('breed-confirm');
     assert.equal(g.h.state.money,money-1600);
     const dam=R.own(g.h.state).find(b=>b.pregnancy);assert.equal(dam.pregnancy.fruit,fruit);
@@ -183,7 +183,7 @@ test('invalid setup keeps its input and resetting collects fresh settings withou
   await g.click('close');assert.equal(JSON.stringify(g.h.state),before);
   await g.click('reset-dialog');await g.change('new-ranch-name','朝日牧場');await g.change('new-affix','アサヒ');await g.change('new-affix-position','prefix');await g.click('reset-confirm');
   assert.equal(g.h.state.naming.ranchName,'朝日牧場');assert.ok(R.own(g.h.state)[0].name.startsWith('アサヒ'));
-  await g.click('buy-dialog',{id:g.h.state.sale[0]});assert.match(html(g),/繁殖牝羽として朝日牧場に迎えます/);
+  await g.click('buy-dialog',{id:g.h.state.sale[0]});assert.equal(g.h.modal.type,'buy');assert.match(html(g),/<span>朝日牧場<small>/);
 });
 
 test('settings offer exactly five independent manual saves and disable empty loads',async()=>{
@@ -367,11 +367,11 @@ test('race results explain observed pack behavior, retain old records and distin
     field:[{id:b.id,name:b.name,time:100,finished:true},{id:'rival',name:'相手',time:900,finished:false}],
     interactions:{crowdedSeconds:5,duelSeconds:12,savingSeconds:3,extraEnergy:30,laneChanges:3,blockedSeconds:2}};
   b.records.push(r);await g.click('result',{id:b.id,week:'9'});
-  assert.match(html(g),/羽混みの中を走る場面/);assert.match(html(g),/近くの相手と競り合い/);
-  assert.match(html(g),/余力を温存しました/);assert.match(html(g),/未完走/);assert.match(html(g),/1:40.00/);
-  assert.match(html(g),/周囲を見ながら進路を変えました/);assert.match(html(g),/前の羽に進路を塞がれ/);
+  assert.match(html(g),/羽混みでもまれたクポ/);assert.match(html(g),/最後まで競り合ったクポ/);
+  assert.match(html(g),/先頭で余力を残して走れたクポ/);assert.match(html(g),/未完走/);assert.match(html(g),/1:40.00/);
+  assert.match(html(g),/うまく進路を見つけたクポ/);assert.match(html(g),/前が詰まって苦しかったクポ/);
   delete r.interactions;g.h.render();
-  assert.doesNotMatch(html(g),/羽混みの中を走る場面|余力を温存しました/);assert.match(html(g),/1:40.00/);
+  assert.doesNotMatch(html(g),/羽混みでもまれたクポ|先頭で余力を残して走れたクポ/);assert.match(html(g),/1:40.00/);
 });
 
 test('bird details offer no renaming controls and registration explains immutable names',async()=>{
@@ -387,31 +387,33 @@ test('weekly reports, career results and old letters open a replay without chang
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');await g.click('breed-confirm');await g.click('ack');await g.h.advance(1);
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);
   while(g.h.state.reports[0]?.type!=='weekly')await g.click('ack');
-  assert.match(html(g),/[23]Dでレースを見る/);const before=JSON.stringify(g.h.state);
+  assert.match(html(g),/観戦する/);const before=JSON.stringify(g.h.state);
   await g.click('watch-race',{id:b.id,week:String(r.week)});
-  assert.equal(g.h.modal.type,'replay');assert.match(html(g),/パドック/);assert.match(html(g),/実況のラミア/);assert.match(html(g),/解説のサハギン/);assert.match(html(g),/1× リアルタイム/);
-  assert.match(html(g),/data-phase="award"/);assert.equal(JSON.stringify(g.h.state),before);
+  assert.equal(g.h.modal.type,'replay');assert.match(html(g),/パドック/);assert.match(html(g),/実況のラミア/);assert.match(html(g),/解説のサハギン/);assert.match(html(g),/value="1" selected>1×</);
+  if(r.rank===1&&r.finished!==false)assert.match(html(g),/data-phase="award"/);
+  else assert.doesNotMatch(html(g),/data-phase="award"/);
+  assert.equal(JSON.stringify(g.h.state),before);
   await g.click('close');assert.equal(g.h.modal.type,'reports');assert.equal(JSON.stringify(g.h.state),before);
-  await g.click('detail',{id:b.id});assert.match(html(g),/結果・観戦/);await g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/[23]Dでレースを見る/);
-  await g.click('close');await g.click('ack');await g.click('nav',{page:'notebook'});await g.click('notebook-tab',{tab:'letters'});assert.match(html(g),/[23]Dでレースを見る/);
+  await g.click('detail',{id:b.id});assert.match(html(g),/結果・観戦/);await g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/観戦する/);
+  await g.click('close');await g.click('ack');await g.click('nav',{page:'notebook'});await g.click('notebook-tab',{tab:'letters'});assert.match(html(g),/観戦する/);
   const restored=await boot(g.storage.get(R.SAVE_KEY));await restored.click('watch-race',{id:b.id,week:String(r.week)});assert.equal(restored.h.modal.type,'replay');
 });
 
-test('losing races omit the podium chapter and pre-feature records explain unavailable playback',async()=>{
+test('losing races omit the podium chapter and pre-feature records still play or report unavailable playback',async()=>{
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');await g.click('breed-confirm');await g.click('ack');await g.h.advance(1);
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);r.rank=2;
   await g.click('watch-race',{id:b.id,week:String(r.week)});assert.doesNotMatch(html(g),/data-phase="award"/);
   assert.doesNotMatch(html(g),/横方向の進路が保存されていない/);
   await g.click('close');r.replay.version=1;r.replay.runners.forEach(runner=>runner.samples=runner.samples.map(sample=>sample.slice(0,4)));
   const legacy=JSON.stringify(g.h.state);await g.click('watch-race',{id:b.id,week:String(r.week)});
-  assert.match(html(g),/横方向の進路が保存されていない/);assert.equal(JSON.stringify(g.h.state),legacy);
-  await g.click('close');delete r.replay;await g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/走行データがありません/);assert.doesNotMatch(html(g),/data-action="watch-race"/);
+  assert.equal(g.h.modal.type,'replay');assert.doesNotMatch(html(g),/横方向の進路が保存されていない/);assert.equal(JSON.stringify(g.h.state),legacy);
+  await g.click('close');delete r.replay;await g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/観戦できません/);assert.doesNotMatch(html(g),/data-action="watch-race"/);
 });
 
 test('all venue records open 2D and can switch renderer without changing a saved race',async()=>{
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');await g.click('breed-confirm');await g.click('ack');await g.h.advance(1);
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);r.trackId='tenku';
-  await g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/2Dでレースを見る/);
+  await g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/観戦する/);
   const before=JSON.stringify(g.h.state);await g.click('watch-race',{id:b.id,week:String(r.week)});
   assert.doesNotMatch(html(g),/2D 試作|data-viewer="section"/);assert.match(html(g),/data-renderer="2d" aria-pressed="true"/);
   assert.match(html(g),/data-viewer-pitch/);assert.match(html(g),/value="2" selected/);
@@ -451,7 +453,7 @@ test('renderer changes and page navigation retain playback choices, dispose the 
   assert.equal(JSON.stringify(g.h.state),before);assert.equal(g.storage.get(R.SAVE_KEY),saved);
 });
 test('new UI exposes one tutorial action, hides numeric traits and renders every deliberate destination',async()=>{
-  const g=await boot();assert.match(html(g),/牧場の、はじめの日/);assert.match(html(g),/繁殖牝羽セールへ/);assert.doesNotMatch(html(g),/最高速|遺伝品質/);
+  const g=await boot();assert.match(html(g),/ようこそ、羽風牧場へ/);assert.match(html(g),/繁殖牝羽セールへ/);assert.doesNotMatch(html(g),/最高速|遺伝品質/);
   for(const page of ['birds','market','breed','facilities','notebook','settings']){await g.click('nav',{page});assert.equal(g.h.page,page);assert.match(html(g),/<h1>/);assert.doesNotMatch(html(g),/class="notice"/);}
 });
 test('facility art follows initial, constructed and upgraded levels while empty sites stay plain',async()=>{
@@ -492,7 +494,7 @@ test('reset cancellation preserves everything; confirmation returns to March wit
 test('details disclose ratings, racing traits, all genetic loci and current numbers at four facility stages',async()=>{
   const g=await boot(),b=R.own(g.h.state)[0];await g.click('detail',{id:b.id});
   const status=()=>html(g).match(/<section class="research status-record">([\s\S]*?)<\/section>/)[1];
-  assert.match(status(),/現在の身体能力|走る意欲|最高速/);assert.match(html(g),/ステータスへの遺伝効果/);
+  assert.match(status(),/現在の身体能力|走る意欲|最高速/);assert.match(html(g),/能力の遺伝/);
   assert.doesNotMatch(status(),/data-score|<meter/);assert.doesNotMatch(html(g),/得意羽場：|遺伝の座位情報|金因子/);
   g.h.state.facilities.lab=1;g.h.render();
   assert.match(html(g),/得意羽場：|成長と加齢の遺伝/);assert.doesNotMatch(html(g),/data-score|<meter|<summary>遺伝の座位情報|金因子/);
@@ -518,15 +520,15 @@ test('zero and one year olds show development speed ratings; two year olds show 
 });
 test('both breeding parents show aggregate genetic ratings before building research',async()=>{
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});
-  assert.equal((html(g).match(/<summary>繁殖担当の遺伝情報/g)||[]).length,2);
-  assert.match(html(g),/ステータスへの遺伝効果/);assert.doesNotMatch(html(g),/data-score|<meter|遺伝の座位情報/);
+  assert.equal((html(g).match(/<summary>遺伝<\/summary>/g)||[]).length,2);
+  assert.match(html(g),/能力の遺伝/);assert.doesNotMatch(html(g),/data-score|<meter|遺伝の座位情報/);
   g.h.state.facilities.lab=1;g.h.state.facilities.museum=1;g.h.render();
   assert.equal((html(g).match(/遺伝の座位情報（全因子）/g)||[]).length,2);
 });
 test('details, sale and parents show only aggregate genetics and retain the numeric gate',async()=>{
   const g=await boot(),b=R.own(g.h.state)[0];
   const check=()=>{
-    assert.match(html(g),/ステータスへの遺伝効果/);
+    assert.match(html(g),/能力の遺伝/);
     assert.doesNotMatch(html(g),/基礎遺伝|遺伝補正|data-genetic-part|data-genetic-value/);
     assert.doesNotMatch(html(g),/data-score/);
   };
@@ -577,8 +579,8 @@ test('when every mare has bred this year the breeding page explains waiting unti
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');await g.click('breed-confirm');
   while(g.h.state.reports.length)await g.click('ack');
   await g.click('nav',{page:'breed'});
-  assert.match(html(g),/今年の配合はすべて済んでいます。/);assert.match(html(g),/来年、また相手を選びましょう。/);
-  assert.doesNotMatch(html(g),/id="dam-choice"|data-action="breed-dialog"|まずは、お母さんを迎えましょう。/);
+  assert.match(html(g),/今年の配合はすべて済んでいます。/);
+  assert.doesNotMatch(html(g),/id="dam-choice"|data-action="breed-dialog"|繁殖牝羽がいません/);
   const before=JSON.stringify(g.h.state);await g.click('breed-dialog');assert.equal(g.h.modal,null);assert.equal(JSON.stringify(g.h.state),before);
 });
 
@@ -590,9 +592,9 @@ test('breeding prioritizes the action and parent genetics while omitting inactiv
   assert.doesNotMatch(html(g),/cross-preview|対象となるクロス|公開段階|研究所を建てると|記念館か銅像を建てると|遺伝評価：|評価：X|（合算）/);
   assert.ok(html(g).indexOf('data-action="breed-dialog"')<html(g).indexOf('class="breeding-layout"'));
   for(const parent of html(g).split('<section class="paper breeding-parent">').slice(1)){
-    assert.ok(parent.indexOf('ステータスへの遺伝効果')<parent.indexOf('class="parent-pair"'));
-    assert.ok(parent.indexOf('class="parent-pair"')<parent.indexOf('重賞成績'));
-    assert.ok(parent.indexOf('重賞成績')<parent.indexOf('持ち味・競走情報'));
+    assert.ok(parent.indexOf('能力の遺伝')<parent.indexOf('class="parent-pair"'));
+    assert.ok(parent.indexOf('class="parent-pair"')<parent.indexOf('持ち味・競走情報'));
+    assert.ok(!parent.includes('重賞成績'));
   }
   await g.click('breed-dialog');assert.equal(g.h.modal.type,'breed');
   assert.doesNotMatch(html(g),/cross-preview/);
@@ -630,7 +632,7 @@ test('public sire search combines text, winning route and ability order with vis
   const candidates=listedSires(g);assert.ok(candidates.length);
   assert.ok(candidates.every(b=>b.farm===farm));
   assert.ok(candidates.every((b,i)=>!i||candidates[i-1].potential.power>=b.potential.power));
-  assert.match(html(g),/長所/);assert.match(html(g),/短所/);assert.match(html(g),/重賞成績/);assert.match(html(g),/乱数の下限/);
+  assert.match(html(g),/長所/);assert.match(html(g),/短所/);assert.match(html(g),/重賞成績/);assert.match(html(g),/血統のGⅠ実績による補正/);assert.match(html(g),/下限 \+/);
   g.node('#sire-query').value='見つからない名前';await g.click('search-sires');
   assert.equal(listedSires(g).length,0);assert.match(html(g),/data-action="breed-dialog" disabled/);
 });
@@ -755,7 +757,7 @@ test('pedigree and cross preview show a source backcross but prohibit it without
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});
   const s=g.h.state,dam=R.bird(s,s.sale[0]),sire=R.bird(s,dam.parents[0]),money=s.money,rng=s.rng;
   await g.click('select-sire',{id:sire.id});
-  assert.match(html(g),/父と母、その先の5代血統/);assert.match(html(g),/母：不明/);
+  assert.match(html(g),/5代血統/);assert.match(html(g),/母：不明/);
   assert.match(html(g),/1 × 2/);assert.match(html(g),/75%/);assert.match(html(g),/37.5%/);
   assert.match(html(g),/危険なため、配合できません/);assert.match(html(g),/2×3（37.5%）まで/);
   assert.match(html(g),/data-action="breed-dialog" disabled/);
@@ -764,9 +766,12 @@ test('pedigree and cross preview show a source backcross but prohibit it without
   s.facilities.lab=1;s.facilities.statue=1;g.h.render();assert.match(html(g),/潜性の欠点因子/);assert.match(html(g),/aa 4座/);assert.match(html(g),/Aa 4座/);
 });
 
-test('home always links to the mare sale; off-season breeding is greyed out while its forecast stays visible',async()=>{
-  const g=await boot();await purchase(g);g.h.state.week=17;await g.click('nav',{page:'home'});
-  assert.match(html(g),/class="home-quick-links"[\s\S]*data-page="market"/);assert.match(html(g),/次の開催は2月〜3月/);
+test('home links to the mare sale only while it is open; off-season breeding is greyed out while its forecast stays visible',async()=>{
+  const g=await boot();await purchase(g);const s=g.h.state;s.week=17;await g.click('nav',{page:'home'});
+  assert.doesNotMatch(html(g),/data-page="market"/);
+  s.stage='running';s.week=R.YEAR+5;g.h.render();
+  assert.match(html(g),/繁殖牝羽セールが開かれています/);assert.match(html(g),/class="home-scene"[\s\S]*data-page="market"/);
+  s.stage='breed';s.week=17;g.h.render();
   await g.click('nav',{page:'breed'});assert.match(html(g),/breeding-season closed|breeding-confirm unavailable/);
   assert.match(html(g),/data-action="breed-dialog" disabled/);assert.match(html(g),/生まれる子の遺伝効果|data-preview-trait="power"/);
   const before=JSON.stringify(g.h.state);await g.click('breed-dialog');assert.equal(g.h.modal,null);assert.equal(JSON.stringify(g.h.state),before);
@@ -818,7 +823,7 @@ test('hatch comparisons appear in reports and saved letters, with details gated 
     assert.equal((output.match(/data-birth-trait=/g)||[]).length,lab?26:16);
     assert.equal((output.match(/data-birth-score=/g)||[]).length,level>=2?26:0);
     assert.equal((output.match(/class="birth-position"/g)||[]).length,level===3?26:0);
-    assert.match(output,/結果 \/ 可能範囲/);
+    assert.match(output,/結果 \/ 範囲/);
     for(const [key,row] of Object.entries(report.geneticLottery)){
       if(level>=2)assert.ok(output.includes(`<small data-birth-score="${key}">${Math.floor(row.value)} / ${Math.floor(row.min)}～${Math.floor(row.max)}</small>`),key);
     }
@@ -842,7 +847,7 @@ test('report overlays keep the chosen page, preserve all four weekly letters and
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');await g.click('breed-confirm');await g.click('close');await g.click('nav',{page:'birds'});
   await g.h.advance(4);assert.equal(g.h.page,'birds');assert.equal(g.h.modal.type,'reports');assert.equal(g.h.state.week,13);
   assert.match(html(g),/4週のダイジェスト|3月の牧場だより|レース初勝利|小さな羽音/);
-  assert.equal(g.h.state.reports.filter(r=>r.type==='weekly').length,4);assert.match(html(g),/一羽ずつ、違う物語/);
+  assert.equal(g.h.state.reports.filter(r=>r.type==='weekly').length,4);assert.match(html(g),/<h1>チョコボ<\/h1>/);
   const journal=JSON.stringify(g.h.state.journal);await g.backdrop();assert.equal(g.h.modal,null);assert.equal(g.h.state.reports.length,0);assert.equal(JSON.stringify(g.h.state.journal),journal);
   await g.h.advance(1);assert.equal(g.h.page,'birds');assert.equal(g.h.modal.type,'reports');assert.equal(g.h.state.week,14);
   await g.h.advance(4);assert.equal(g.h.state.week,18);assert.equal(g.h.state.reports.filter(r=>r.type==='weekly').length,4);

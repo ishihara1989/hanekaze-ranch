@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const P=require('../public/js/race-physics.js');
 const M=require('../public/js/trait-mapping.js');
 const F=require('../public/js/ranch-race.js');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const traits=Object.fromEntries(Object.keys(R.PERSONALITY).map(k=>[k,100]));
 function entry(id,personality={},state={},physical={}){
   const p=P.parameters({...M.toPhysics(M.generate({deviation:0})),...physical});
@@ -152,13 +152,13 @@ test('halving the field timestep preserves personality effects and close finish 
 
 test('browser script order loads the field engine and runs a real race simulation',()=>{
   const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-  const root=path.join(__dirname,'../public'),ctx=vm.createContext({console});
+  const root=path.join(__dirname,'../public'),ctx=vm.createContext({console,worldHistory:require('../tools/lib/ranch-fixtures.cjs').prepareWorld()});
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   for(const [,src]of html.matchAll(/<script src="([^"]+)"/g)){
     if(src==='js/ranch-ui.js')break;
     vm.runInContext(fs.readFileSync(path.join(root,src),'utf8'),ctx,{filename:src});
   }
-  assert.equal(vm.runInContext(`(()=>{const s=Ranch.initial();return Ranch.simulateField(s,Ranch.sires(s).slice(0,12),{distance:1600,surface:'turf'}).every(r=>r.finished)})()`,ctx),true);
+  assert.equal(vm.runInContext(`(()=>{const s=Ranch.initial(undefined,{},worldHistory);return Ranch.simulateField(s,Ranch.sires(s).slice(0,12),{distance:1600,surface:'turf'}).every(r=>r.finished)})()`,ctx),true);
 });
 
 test('race-local opponents cannot collide with persistent IDs in a long-running save',()=>{

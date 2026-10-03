@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const Observation=require('../public/js/ranch-observation.js');
 const Preview=require('../public/js/genetics-preview.js');
 

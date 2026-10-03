@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const Replay=require('../public/js/race-replay.js');
 const W=require('../public/js/world.js');
 function recorded(){const state=R.initial();const mother=R.buy(state,state.sale[0]);R.breed(state,mother.id,R.sires(state)[0].id);while(state.reports.length)R.acknowledge(state);R.advance(state);const bird=R.own(state).find(b=>b.records.length);return {state,bird,record:bird.records.at(-1)};}

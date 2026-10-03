@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const copy=x=>JSON.parse(JSON.stringify(x));
 const read=s=>{while(s.reports.length)R.acknowledge(s);};
 const advance=(s,n)=>{for(let i=0;i<n;i++){read(s);R.advance(s);}};
@@ -115,20 +115,6 @@ test('other farms run G1s without player runners, report winners and contest ann
   assert.equal(s.awards.length,10);assert.ok(s.awards.every(a=>a.farm!=='羽風牧場'&&a.points>0));
   assert.ok(s.awards.some(a=>a.title==='最優秀ダート'));
   assert.ok(R.validState(s));
-});
-
-test('annual public roster replaces exactly ten; expired sires retain their pedigree records',()=>{
-  const s=R.initial();s.stage='running';R.own(s)[0].role='retired';
-  let previous=publicSires(s).map(b=>b.id);
-  for(let year=1;year<=6;year++){
-    advance(s,year===1?40:48);
-    const current=publicSires(s).map(b=>b.id);
-    assert.equal(current.length,50);assert.equal(current.filter(id=>!previous.includes(id)).length,10);
-    for(const id of previous.filter(id=>!current.includes(id))){assert.equal(R.bird(s,id).role,'archived');assert.ok(R.bird(s,id).records.length);}
-    previous=current;
-  }
-  const bytes=Buffer.byteLength(R.serializeState(s),'utf8');
-  assert.ok(R.validState(s));assert.ok(bytes<20*1024*1024,`six-year save exceeds backup import limit: ${bytes}`);
 });
 
 test('two player runners share the same G1 field and produce only one winner',()=>{

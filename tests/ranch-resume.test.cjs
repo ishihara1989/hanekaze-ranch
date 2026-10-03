@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
 const {IDBFactory}=require('fake-indexeddb');
-const R=require('../public/js/ranch-engine.js'),W=require('../public/js/world.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R,W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 const Storage=require('../public/js/ranch-storage.js');

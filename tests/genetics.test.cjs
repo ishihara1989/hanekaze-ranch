@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const G=require('../public/js/ranch-genetics.js');
 const Ground=require('../public/js/ranch-ground.js');
-const R=require('../public/js/ranch-engine.js');
+const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const P=require('../public/js/race-physics.js');
 const copy=x=>JSON.parse(JSON.stringify(x));
 const read=s=>{while(s.reports.length)R.acknowledge(s);};
@@ -89,7 +89,8 @@ test('non-hatching pregnancy releases its stall and cannot produce a phantom chi
 
 test('birth derives body and forehead from inherited genes and saves them unchanged on reload',()=>{
   const s=R.initial(1),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
-  mother.genome.traits.gold=['G','g'];mother.color='golden';R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
+  // One golden parent tests inheritance without depending on a non-lethal double-gold draw.
+  R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
   for(let i=0;i<4;i++){read(s);R.advance(s);}
   const child=R.own(s).find(b=>b.role==='young');assert.ok(child);
   assert.ok(father.genome.traits.gold.includes(child.genome.traits.gold[0]));
