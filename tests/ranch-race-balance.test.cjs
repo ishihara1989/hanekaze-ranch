@@ -57,6 +57,56 @@ test('future plans apply next calendar year age restrictions and keep the four-w
   b.birthYear=-8;assert.equal(R.nextRace(s,b),null);
 });
 
+test('steady policy targets winnable stakes with two wins, falls back against stronger rivals and preserves previews',()=>{
+  const s=R.initial(),b=R.own(s)[0];
+  Object.assign(s,{week:13,money:1000000});
+  Object.assign(b,{birthYear:-3,wins:2,races:2,policy:'steady',lastRace:9});
+  b.genome.distance=[0,0];b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
+  for(const key in b.potential){b.potential[key]=150;b.training[key]=1;}
+  const before=JSON.stringify(s),event=R.nextRace(s,b);
+  assert.ok(/^G/.test(event.level),event.name);assert.equal(event.week,s.week);
+  const outlook=R.raceOutlook(s,b,event);
+  assert.equal(outlook.contender,true);
+  assert.equal(outlook.time,R.simulateBird(s,b,event).time,'outlook uses the shared race physics');
+  assert.equal(R.weeklyPlan(s,b).mode,'race');
+  assert.equal(JSON.stringify(s),before,'planning generates neither persistent birds nor RNG changes');
+  assert.equal(R.nextRace(s,b).id,event.id,'cached preview is deterministic');
+  const loaded=R.deserializeState(R.serializeState(s));
+  assert.equal(R.nextRace(loaded,R.bird(loaded,b.id)).id,event.id);
+  for(const key in b.potential)b.potential[key]=50;
+  assert.equal(R.raceOutlook(s,b,event).contender,false);
+  assert.ok(!/^G/.test(R.nextRace(s,b).level),'weak bird returns to its ordinary class');
+  for(const key in b.potential)b.potential[key]=150;
+  b.wins=1;assert.ok(!/^G/.test(R.nextRace(s,b).level),'two wins remain necessary');
+  b.wins=2;s.money=1000;assert.ok(!/^G/.test(R.nextRace(s,b).level),'unaffordable stakes do not block ordinary races');
+});
+
+test('steady stakes forecasts respect the live field, distance, surface, race spacing and health',()=>{
+  const s=R.initial(),b=R.own(s)[0];
+  Object.assign(s,{week:13,money:1000000,stage:'running',reports:[]});
+  Object.assign(b,{birthYear:-3,wins:2,races:2,lastRace:9});
+  b.genome.distance=[0,0];b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
+  for(const key in b.potential){b.potential[key]=150;b.training[key]=1;}
+  const e=R.nextRace(s,b);assert.ok(/^G/.test(e.level));
+  const rivals=R.worldRoster(s,e);
+  for(const r of rivals){for(const key in r.potential){r.potential[key]=50;r.training[key]=1;}}
+  const easy=R.raceOutlook(s,b,e);assert.equal(easy.contender,true);
+  for(const r of rivals){for(const key in r.potential)r.potential[key]=150;}
+  const hard=R.raceOutlook(s,b,e);assert.ok(hard.bestRivalTime<easy.bestRivalTime,'live rival changes invalidate time estimates');
+  assert.equal(hard.bestRivalTime,Math.min(...rivals.map(r=>R.simulateBird({...s,week:e.week},r,e).time)));
+  assert.equal(e.surface,'turf');assert.ok(e.distance>=1600&&e.distance<=2200);
+  b.lastRace=12;assert.ok(R.nextRace(s,b).week>=16);
+  b.lastRace=9;
+  for(const patch of [{condition:74,strain:0,health:0},{condition:100,strain:25,health:0},{condition:100,strain:0,health:1}]){
+    Object.assign(b,patch);assert.equal(R.weeklyPlan(s,b).mode,'rest');
+  }
+  Object.assign(b,{condition:100,strain:0,health:0});
+  // The real weekly advance must enter the selected shared stakes field.
+  const selected=R.nextRace(s,b);R.advance(s);
+  assert.equal(selected.week,13);assert.ok(/^G/.test(selected.level));
+  assert.equal(b.records.at(-1).name,selected.name);assert.equal(b.lastRace,13);
+});
+
 test('prize tiers, top-five payouts, allowances and distance/surface slopes hold across the year',()=>{
   const events=Array.from({length:48},(_,i)=>R.calendar(i+1)).flat();
   for(const e of events){
@@ -83,7 +133,7 @@ test('prize tiers, top-five payouts, allowances and distance/surface slopes hold
   assert.equal(events.find(e=>e.name==='チョコボダービー').purse[0],300000000);
   assert.equal(events.find(e=>e.name==='CRAワールドカップ').purse[0],500000000);
   assert.equal(events.find(e=>e.name==='バハムート記念').purse[0],500000000);
-  assert.equal(events.find(e=>e.level==='GII').purse[0],27600000);
+  assert.equal(events.find(e=>e.name==='王宮大賞典').purse[0],27600000);
   assert.equal(events.find(e=>e.name==='コスタ・デル・ソル杯').purse[0],3200000);
 });
 

@@ -30,6 +30,7 @@ for (const file of ['chocobo-preview.html','js/chocobo-preview.js','js/chocobo-a
   'race-2d-preview.html','race-2d-backgrounds.html',...['manifest-v1.json','prompts-v1.json',...['tenku','oukyu','mitsurin','sunahama','iseki','haikou'].map(id=>id+'-v1.png')].map(file=>'assets/race-2d-backgrounds/'+file),'js/race-2d-course.js','js/race-2d-graphics.js','js/race-viewer-2d.js','js/race-2d-preview.js','css/race-2d-preview.css',
   'assets/commentators/lamia.png','assets/commentators/sahagin.png',
   'assets/moogle/trainer.png',
+  ...Object.entries(require('./public/js/ranch-engine.js').FACILITIES).flatMap(([key,f])=>Array.from({length:f.max},(_,i)=>`assets/facilities/${key}-lv${i+1}-v1.webp`)),
   ...['neutral','talk','happy','motivated','sad','disappointed','overjoyed','ambiguous-smile'].map(expression=>`assets/shiroma/shiroma-${expression}.png`),
   'balance-lab.html','css/balance-lab.css','js/race-physics.js','js/balance-presets.js','js/balance-runner.js','js/balance-worker.js','js/balance-lab.js',
   'vendor/three/three.module.js','vendor/three/GLTFLoader.js','vendor/three/OrbitControls.js','vendor/three/BufferGeometryUtils.js',
@@ -38,7 +39,7 @@ for (const file of ['chocobo-preview.html','js/chocobo-preview.js','js/chocobo-a
   ...['chocobo-v3.glb','chocobo-v3.blend','manifest.json',...['idle','cruise','corner','spurt','front','side','back','colors'].map(view=>`preview-${view}.png`)]
     .map(file=>`assets/chocobo-v3/${file}`)]) files['/'+file]=file;
 const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8',
-  '.glb':'model/gltf-binary','.blend':'application/octet-stream','.json':'application/json; charset=utf-8','.png':'image/png'};
+  '.glb':'model/gltf-binary','.blend':'application/octet-stream','.json':'application/json; charset=utf-8','.png':'image/png','.webp':'image/webp'};
 const port = Number(process.env.PORT || 4173);
 http.createServer((req,res)=>{
   const file=files[new URL(req.url,'http://localhost').pathname];

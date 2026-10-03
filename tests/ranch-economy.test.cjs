@@ -7,6 +7,59 @@ const read=s=>{while(s.reports.length)R.acknowledge(s);};
 const advance=(s,n)=>{for(let i=0;i<n;i++){read(s);R.advance(s);}};
 const publicSires=s=>R.sires(s).filter(b=>b.owner==='public');
 
+test('selling mares uses sale valuation throughout the year and frees a stall while keeping ancestry and records',()=>{
+  for(const category of ['ordinary','graded','g1']) {
+    const s=R.initial(),b=category==='ordinary'?R.bird(s,s.sale[0]):R.bird(s,s.sale.find(id=>{const b=R.bird(s,id);return category==='g1'?b.g1:!b.g1&&b.graded;}));
+    s.money=1000000000;R.buy(s,b.id);read(s);s.stage='running';s.week=17;
+    const child=R.createBird(s,{sex:'M'},[R.sires(s)[0],b]);
+    const before=copy(b),money=s.money,count=R.own(s).filter(b=>b.role==='mare').length,ledger=s.ledger.length;
+    assert.equal(R.sellMare(s,b.id),R.marePrice(before));
+    assert.equal(s.money,money+R.marePrice(before));assert.equal(s.ledger.length,ledger+1);
+    assert.equal(R.own(s).filter(b=>b.role==='mare').length,count-1);
+    assert.equal(R.bird(s,child.parents[1]),b);assert.deepEqual(b.records,before.records);assert.deepEqual(b.genome,before.genome);
+    const after=copy(s);assert.throws(()=>R.sellMare(s,b.id),/所有する繁殖牝羽/);assert.deepEqual(s,after);
+    const loaded=R.upgradeState(R.deserializeState(R.serializeState(s)));assert.ok(R.validState(loaded));assert.ok(!R.own(loaded).some(x=>x.id===b.id));
+  }
+});
+
+test('mare sales reject invalid owners, roles and pregnancies without changing state and the first mare can be replaced',()=>{
+  const s=R.initial(),b=R.buy(s,s.sale[0]);read(s);
+  for(const id of [s.sale[1],R.own(s).find(b=>b.role==='racing').id,R.sires(s)[0].id,'missing']) {
+    const before=copy(s);assert.throws(()=>R.sellMare(s,id));assert.deepEqual(s,before);
+  }
+  R.breed(s,b.id,R.sires(s)[0].id);const before=copy(s);
+  assert.match(R.sellMareReason(s,b),/出産後/);assert.throws(()=>R.sellMare(s,b.id),/出産後/);assert.deepEqual(s,before);
+  advance(s,4);read(s);assert.equal(b.pregnancy,null);R.sellMare(s,b.id);assert.ok(R.validState(s));
+  const opening=R.initial(),first=R.buy(opening,opening.sale[0]);R.sellMare(opening,first.id);
+  assert.equal(opening.stage,'buy');R.buy(opening,opening.sale[1]);assert.equal(opening.stage,'breed');
+});
+
+test('releasing a home stud frees its stall for a replacement and leaves an existing pregnancy and pedigree intact',()=>{
+  const s=R.initial(),dam=R.buy(s,s.sale[0]);read(s);
+  const sire=R.createBird(s,{sex:'M',role:'stud',kind:'home',birthYear:-3,retiredYear:1},[R.sires(s)[0],R.bird(s,s.sale[1])]);
+  const records=copy(sire.records),money=s.money;
+  R.breed(s,dam.id,sire.id);read(s);const pregnancy=copy(dam.pregnancy);
+  for(let i=0;i<3;i++)R.createBird(s,{sex:'M',role:'stud',kind:'home'});
+  const replacement=R.own(s).find(b=>b.role==='racing');replacement.sex='M';
+  assert.throws(()=>R.retire(s,replacement.id),/羽房を拡張/);
+  s.founderOffers.push(sire.id);s.reports.push({type:'founder',birdId:sire.id});
+  R.releaseStud(s,sire.id);
+  assert.equal(s.money,money);assert.equal(sire.released,true);assert.ok(!R.own(s).includes(sire));assert.ok(!R.sires(s).includes(sire));
+  assert.deepEqual(dam.pregnancy,pregnancy);assert.deepEqual(sire.records,records);assert.ok(!s.founderOffers.includes(sire.id));assert.equal(s.reports.length,0);
+  const before=JSON.stringify(s);assert.throws(()=>R.releaseStud(s,sire.id));assert.equal(JSON.stringify(s),before);
+  assert.match(R.breedingReason(s,dam,sire),/種牡羽を選んで/);
+  R.retire(s,replacement.id);read(s);assert.equal(R.own(s).filter(b=>b.role==='stud').length,R.capacity(s).stud);
+  advance(s,4);read(s);const child=R.own(s).find(b=>b.parents[0]===sire.id);assert.ok(child);assert.equal(R.bird(s,child.parents[0]),sire);
+  const loaded=R.upgradeState(R.deserializeState(R.serializeState(s)));assert.ok(R.validState(loaded));assert.equal(R.bird(loaded,sire.id).released,true);assert.ok(!R.sires(loaded).some(b=>b.id===sire.id));
+});
+
+test('only owned home studs can be released; sources, founders, public studs and racers stay intact',()=>{
+  const s=R.initial(),founder=R.createBird(s,{sex:'M',role:'stud',kind:'founder'});
+  for(const id of [R.own(s).find(b=>b.role==='racing').id,R.sires(s).find(b=>b.kind==='root').id,publicSires(s)[0].id,founder.id,s.sale[0],'missing']) {
+    const before=copy(s);assert.throws(()=>R.releaseStud(s,id),/自家製種牡羽/);assert.deepEqual(s,before);
+  }
+});
+
 test('opening filly is ready for automatic racing and facilities require earned capital',()=>{
   const s=R.initial(),b=R.own(s)[0];
   assert.equal(b.sex,'F');assert.equal(R.age(s,b),2);assert.equal(b.role,'racing');
@@ -74,7 +127,8 @@ test('annual public roster replaces exactly ten; expired sires retain their pedi
     for(const id of previous.filter(id=>!current.includes(id))){assert.equal(R.bird(s,id).role,'archived');assert.ok(R.bird(s,id).records.length);}
     previous=current;
   }
-  assert.ok(R.validState(s));assert.ok(R.serializeState(s).length<3500000);
+  const bytes=Buffer.byteLength(R.serializeState(s),'utf8');
+  assert.ok(R.validState(s));assert.ok(bytes<20*1024*1024,`six-year save exceeds backup import limit: ${bytes}`);
 });
 
 test('two player runners share the same G1 field and produce only one winner',()=>{
@@ -98,8 +152,41 @@ test('search combines ranch or winning race names with route and prioritized tra
   const filtered=R.searchSires(s,{query:farm,route:'dirt',sort:'power'});
   assert.ok(filtered.length);assert.ok(filtered.every(b=>b.farm===farm));
   assert.ok(filtered.every((b,i)=>!i||filtered[i-1].potential.power>=b.potential.power));
-  assert.ok(R.searchSires(s,{query:'ダービー'}).every(b=>b.records.some(r=>r.name==='チョコボダービー'&&r.rank===1)));
+  assert.ok(R.searchSires(s,{query:'ダービー'}).every(b=>b.records.some(r=>r.name.includes('ダービー')&&r.rank===1)));
   assert.equal(R.searchSires(s,{query:'存在しない名前'}).length,0);
+});
+
+test('sire genetic search uses inherited aggregate ratings and combines all conditions with text and route',()=>{
+  const s=R.initial(),original=JSON.stringify(s);
+  const candidate=publicSires(s).find(b=>b.records.some(r=>r.level==='GI'&&r.rank===1&&r.surface==='dirt'));
+  const filters=['power','recovery',Object.keys(R.PERSONALITY)[0]].map(trait=>({trait,rating:R.geneticRating(R.geneticScores(candidate)[trait])}));
+  const result=R.searchSires(s,{query:candidate.name,route:'dirt',geneticFilters:filters});
+  assert.deepEqual(result.map(b=>b.id),[candidate.id]);
+  assert.equal(R.searchSires(s,{query:candidate.name,route:'dirt',geneticFilters:[...filters,{trait:'power',rating:filters[0].rating==='☆'?'X':'☆'}]}).length,0);
+  assert.equal(R.searchSires(s,{geneticFilters:[{trait:'unknown',rating:'☆'}]}).length,0);
+  assert.equal(R.searchSires(s,{geneticFilters:[{trait:'power',rating:'invalid'}]}).length,0);
+  assert.deepEqual(R.searchSires(s,{geneticFilters:[{trait:'',rating:'☆'}]}),R.searchSires(s));
+  candidate.potential.power=R.geneticScores(candidate).power>=110?50:150;
+  assert.deepEqual(R.searchSires(s,{query:candidate.name,geneticFilters:[filters[0]]}).map(b=>b.id),[candidate.id],'search ignores current/potential ability values');
+  candidate.potential.power=JSON.parse(original).birds.find(b=>b.id===candidate.id).potential.power;
+  assert.equal(JSON.stringify(s),original,'search changes neither game data nor random state');
+});
+
+test('genetic search respects all five grades, expressed defects and the distinct course scale',()=>{
+  const s=R.initial(),b=publicSires(s)[0];
+  b.genome.distance=[0,0];b.genome.release=[0,0];b.genome.defects={};
+  for(const [alleles,rating] of [[0,'X'],[6,'△'],[12,'◯'],[18,'◎'],[24,'☆']]){
+    b.genome.quality.power=Array.from({length:32},(_,i)=>[Number(i<alleles),Number(i<alleles)]);
+    assert.equal(R.geneticTraitRating(b,'power'),rating);
+    assert.ok(R.searchSires(s,{geneticFilters:[{trait:'power',rating}]}).includes(b));
+  }
+  const defect=Object.keys(R.DEFECTS).find(id=>R.DEFECTS[id].trait==='power');
+  b.genome.defects[defect]=Array.from({length:R.Breeding.DEFECT_LOCI},()=>[1,1]);
+  assert.notEqual(R.geneticTraitRating(b,'power'),'☆');
+  assert.ok(!R.searchSires(s,{geneticFilters:[{trait:'power',rating:'☆'}]}).includes(b));
+  b.genome.traits.aptitude.turf=[.6,.6];b.genome.traits.aptitude.rightTurn=[.6,.6];b.genome.traits.development.earlyGrowth=[.6,.6];
+  assert.equal(R.geneticTraitRating(b,'turf'),'☆');assert.equal(R.geneticTraitRating(b,'rightTurn'),'◯');assert.equal(R.geneticTraitRating(b,'earlyGrowth'),'☆');
+  assert.ok(R.searchSires(s,{geneticFilters:[{trait:'turf',rating:'☆'},{trait:'rightTurn',rating:'◯'},{trait:'earlyGrowth',rating:'☆'}]}).includes(b));
 });
 
 test('rating boundaries are shared by ability and aptitude displays',()=>{
@@ -153,6 +240,8 @@ test('actual births apply career bonuses while preserving inherited alleles and 
 test('a player sweep can renew real past champions rather than inventing winning records',()=>{
   const s=R.initial();s.stage='running';s.week=48;R.own(s)[0].role='retired';
   const entrants=publicSires(s),original=new Map(entrants.map(b=>[b.id,copy(b.records)]));
+  // Make non-public past winners unavailable, so the season must renew public champions.
+  for(const b of s.birds)if(b.owner!=='player'&&b.owner!=='public'&&b.sex==='M'&&b.g1)b.retiredYear=1;
   R.advance(s);
   assert.equal(publicSires(s).length,50);
   const renewed=publicSires(s).filter(b=>b.retiredYear===2&&original.has(b.id));

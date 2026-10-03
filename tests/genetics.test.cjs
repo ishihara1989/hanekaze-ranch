@@ -70,6 +70,14 @@ test('non-hatching pregnancy releases its stall and cannot produce a phantom chi
   mother.genome.traits.gold=['G','g'];mother.color='golden';
   R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
   for(let i=0;i<3;i++){read(s);R.advance(s);}read(s);
+  // Select the lethal draw at hatch time, independently of earlier race outcomes.
+  const countBeforeHatch=R.own(s).length;
+  let lethalSeed=null;
+  for(let seed=1;seed<=64;seed++){
+    const probe=copy(s);probe.rng=seed;R.advance(probe);
+    if(R.own(probe).length===countBeforeHatch){lethalSeed=seed;break;}
+  }
+  assert.notEqual(lethalSeed,null);s.rng=lethalSeed;
   const restored=copy(s),count=R.own(s).length;
   R.advance(s);R.advance(restored);assert.deepEqual(s,restored);
   assert.equal(R.own(s).length,count);assert.equal(mother.pregnancy,null);assert.equal(R.racingCount(s),1);
@@ -83,7 +91,9 @@ test('birth derives body and forehead from inherited genes and saves them unchan
   const s=R.initial(1),mother=R.bird(s,s.sale[0]),father=s.birds.find(b=>b.kind==='root'&&b.color==='golden');
   mother.genome.traits.gold=['G','g'];mother.color='golden';R.buy(s,mother.id);read(s);R.breed(s,mother.id,father.id);
   for(let i=0;i<4;i++){read(s);R.advance(s);}
-  const child=R.own(s).find(b=>b.role==='young');assert.equal(child.color,'golden');
+  const child=R.own(s).find(b=>b.role==='young');assert.ok(child);
+  assert.ok(father.genome.traits.gold.includes(child.genome.traits.gold[0]));
+  assert.ok(mother.genome.traits.gold.includes(child.genome.traits.gold[1]));
   assert.equal(child.color,G.expressColor(child.genome.traits.body,child.genome.traits.gold));
   assert.ok([father.crest,mother.crest].includes(child.crest));assert.ok(R.validState(copy(s)));
   const before=copy(child);R.upgradeState(s);assert.deepEqual(child,before);

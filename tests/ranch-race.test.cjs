@@ -171,3 +171,50 @@ test('race-local opponents cannot collide with persistent IDs in a long-running 
   assert.equal(new Set(result.field.map(r=>r.id)).size,12);
   assert.ok(result.interactions.duelSeconds>0);
 });
+
+test('ordinary and graded races draw varied gates and preserve them in saved replays',()=>{
+  const W=require('../public/js/world.js'),Replay=require('../public/js/race-replay.js');
+  for(const graded of [false,true]){
+    const base=R.initial(),bird=R.bird(base,base.sale[0]);
+    Object.assign(bird,{owner:'player',role:'racing',registered:true,birthYear:graded?0:1,races:graded?2:0,wins:graded?2:0});
+    base.week=graded?117:97;base.money=1000000;
+    const event=W.calendar(base.week).find(e=>R.eligible(base,bird,e)&&/^G/.test(e.level)===graded);
+    assert.ok(event);R.worldRoster(base,event);
+    const gates=new Set();
+    for(let seed=1;seed<=16;seed++){
+      const s=structuredClone(base);s.rng=seed;
+      const loaded=R.deserializeState(R.serializeState(s)),b=R.bird(s,bird.id);
+      const result=R.race(s,b,event);
+      const player=result.replay.runners.find(r=>r.id===b.id);
+      gates.add(player.lane);
+      assert.equal(player.player,true);
+      assert.equal(player.samples[0][4],player.lane);
+      assert.deepEqual(result.replay.runners.map(r=>r.lane).sort((a,b)=>a-b),Array.from({length:result.field.length},(_,i)=>i));
+      assert.equal(Replay.valid(result.replay,result),true);
+      const saved=R.deserializeState(R.serializeState(s));
+      assert.deepEqual(R.bird(saved,b.id).records.at(-1).replay,result.replay);
+      if(seed===1){
+        assert.deepEqual(R.race(loaded,R.bird(loaded,b.id),event),result);
+        assert.equal(loaded.rng,s.rng);
+      }
+    }
+    assert.ok(gates.size>=5,`${graded?'graded':'ordinary'} races must vary the player's gate`);
+    assert.ok([...gates].some(lane=>lane>=Math.floor((R.worldRoster(base,event).length+1)/2)),'the player can draw an outer gate');
+  }
+});
+
+test('multiple player entrants share one gate draw in the same graded race',()=>{
+  const s=R.initial(),first=R.own(s)[0];
+  Object.assign(s,{stage:'running',week:21,money:1000000,reports:[]});
+  Object.assign(first,{birthYear:-2,sex:'M',wins:2,races:2,policy:'challenge',lastRace:-100});
+  first.genome.distance=[.5,.5];
+  first.genome.traits.aptitude.turf=[1,1];first.genome.traits.aptitude.dirt=[0,0];
+  const second={...structuredClone(first),id:`bird-${s.serial++}`,name:'ハネカゼノツバサ'};s.birds.push(second);
+  R.advance(s);
+  const a=first.records.at(-1),b=second.records.at(-1);
+  assert.equal(a.name,'チョコボダービー');assert.equal(b.name,a.name);
+  assert.deepEqual(a.replay,b.replay);
+  const players=a.replay.runners.filter(r=>r.player);
+  assert.equal(players.length,2);assert.notEqual(players[0].lane,players[1].lane);
+  assert.ok(players.every(r=>r.samples[0][4]===r.lane));
+});

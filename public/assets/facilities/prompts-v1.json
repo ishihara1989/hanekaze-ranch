@@ -1,0 +1,226 @@
+{
+  "generator": "Built-in image_gen.imagegen",
+  "version": 1,
+  "format": "WebP, 960x640 maximum, quality 86",
+  "commonPrompt": "Use case: stylized-concept. Asset type: background illustration for a Japanese cozy fantasy ranch management game facility card. Wide landscape composition, detailed softly painted anime game environment, warm morning sunlight, muted sage greens, cream and honey timber, charming pastoral fantasy architecture, matching a refined cream-paper and forest-green UI. Main facility clearly identifiable, three-quarter elevated view, fill the canvas edge to edge with the environment. Main subject in upper two thirds and middle-right, softer uncluttered foreground lower third for a UI text overlay. No text, lettering, numbers, labels, borders, watermark, people, logos, or collage. Chocobo facilities should use bird-size doors and ramps, not horse imagery.",
+  "promptAssembly": "commonPrompt + '\\nSubject: ' + asset.subject + asset.levelInstruction",
+  "assets": [
+    {
+      "key": "stalls",
+      "level": 1,
+      "file": "stalls-lv1-v1.webp",
+      "subject": "A modest single wooden chocobo stable with straw bedding, a few stalls, simple pitched terracotta roof, rustic fenced yard.",
+      "levelInstruction": "\nThis is level 1, the humble initial facility."
+    },
+    {
+      "key": "stalls",
+      "level": 2,
+      "file": "stalls-lv2-v1.webp",
+      "subject": "An expanded wooden chocobo stable with two connected wings, more bird stalls, orderly fenced yard and feed storage.",
+      "levelInstruction": "\nFacility level: 2 of 4. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "stalls",
+      "level": 3,
+      "file": "stalls-lv3-v1.webp",
+      "subject": "A spacious well maintained chocobo stable complex with three wings around a courtyard, covered bird stalls and neat landscaping.",
+      "levelInstruction": "\nFacility level: 3 of 4. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "stalls",
+      "level": 4,
+      "file": "stalls-lv4-v1.webp",
+      "subject": "An impressive premium chocobo stud ranch stable estate, many wings around a broad courtyard, elegant timber and stonework, grand roof, ample paddocks.",
+      "levelInstruction": "\nFacility level: 4 of 4. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "course",
+      "level": 1,
+      "file": "course-lv1-v1.webp",
+      "subject": "A simple short oval dirt running track with wooden railings in grassland.",
+      "levelInstruction": "\nFacility level: 1 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "course",
+      "level": 2,
+      "file": "course-lv2-v1.webp",
+      "subject": "A larger groomed oval racing training course, double wooden rails and a small trackside pavilion.",
+      "levelInstruction": "\nFacility level: 2 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "course",
+      "level": 3,
+      "file": "course-lv3-v1.webp",
+      "subject": "A professional expansive racing training oval, manicured lanes, observation tower, grand timber training pavilion.",
+      "levelInstruction": "\nFacility level: 3 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "hill",
+      "level": 1,
+      "file": "hill-lv1-v1.webp",
+      "subject": "A simple narrow uphill dirt training lane on a gentle grassy hill with rustic wood rails.",
+      "levelInstruction": "\nFacility level: 1 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "hill",
+      "level": 2,
+      "file": "hill-lv2-v1.webp",
+      "subject": "A longer steeper winding hill training path, reinforced stone retaining walls, sturdy rails and a small observation shelter.",
+      "levelInstruction": "\nFacility level: 2 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "hill",
+      "level": 3,
+      "file": "hill-lv3-v1.webp",
+      "subject": "An advanced long uphill training course with several steep sections, broad groomed lanes, elegant viewing pavilion and well built retaining terraces.",
+      "levelInstruction": "\nFacility level: 3 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "pool",
+      "level": 1,
+      "file": "pool-lv1-v1.webp",
+      "subject": "A small rectangular outdoor rehabilitation swimming pool with simple stone edging and a gentle wide ramp for large birds.",
+      "levelInstruction": "\nFacility level: 1 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "pool",
+      "level": 2,
+      "file": "pool-lv2-v1.webp",
+      "subject": "A larger dedicated swimming training pool with divided lanes, stone surround and covered timber rest shelter.",
+      "levelInstruction": "\nFacility level: 2 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "pool",
+      "level": 3,
+      "file": "pool-lv3-v1.webp",
+      "subject": "A premium spacious aquatic training center, long multiple swimming lanes, elegant timber roofed galleries, excellent stonework and broad ramps.",
+      "levelInstruction": "\nFacility level: 3 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "spa",
+      "level": 1,
+      "file": "spa-lv1-v1.webp",
+      "subject": "A modest natural hot spring with one small stone bathing pool, gentle steam and bamboo fence.",
+      "levelInstruction": "\nFacility level: 1 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "spa",
+      "level": 2,
+      "file": "spa-lv2-v1.webp",
+      "subject": "An expanded hot spring garden with two landscaped stone pools, wooden bathhouse and gentle steam.",
+      "levelInstruction": "\nFacility level: 2 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "spa",
+      "level": 3,
+      "file": "spa-lv3-v1.webp",
+      "subject": "A luxurious fantasy onsen retreat with several terraced stone hot spring pools, elegant timber bathhouses, lush garden and gentle steam.",
+      "levelInstruction": "\nFacility level: 3 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "clinic",
+      "level": 1,
+      "file": "clinic-lv1-v1.webp",
+      "subject": "A small rustic veterinary cottage for large racing birds, green roof, simple treatment room visible through open door, medicinal herb garden.",
+      "levelInstruction": "\nFacility level: 1 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "clinic",
+      "level": 2,
+      "file": "clinic-lv2-v1.webp",
+      "subject": "An expanded veterinary clinic with two wings, treatment veranda, well stocked medicine shelves visible through a window, landscaped herb beds.",
+      "levelInstruction": "\nFacility level: 2 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "clinic",
+      "level": 3,
+      "file": "clinic-lv3-v1.webp",
+      "subject": "A fully equipped grand fantasy veterinary hospital for racing birds, several elegant wings, recovery courtyard, covered rehabilitation area and medicinal gardens.",
+      "levelInstruction": "\nFacility level: 3 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "meadow",
+      "level": 1,
+      "file": "meadow-lv1-v1.webp",
+      "subject": "A simple peaceful grassy meadow pasture, low rustic wooden fence, a single shade tree, wildflowers and a small water trough.",
+      "levelInstruction": "\nThis is level 1, the humble initial facility."
+    },
+    {
+      "key": "meadow",
+      "level": 2,
+      "file": "meadow-lv2-v1.webp",
+      "subject": "An expanded lush well tended meadow pasture, several shade trees, neatly divided timber paddocks, comfortable open shelter and water troughs.",
+      "levelInstruction": "\nFacility level: 2 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "meadow",
+      "level": 3,
+      "file": "meadow-lv3-v1.webp",
+      "subject": "An expansive premium pastoral sanctuary, broad lush rolling paddocks, elegant shaded shelters, landscaped trees, small sparkling stream and abundant wildflowers.",
+      "levelInstruction": "\nFacility level: 3 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "forest",
+      "level": 1,
+      "file": "forest-lv1-v1.webp",
+      "subject": "A rugged woodland pasture with uneven ground, tall trees, roots and rustic wooden boundary fence.",
+      "levelInstruction": "\nFacility level: 1 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "forest",
+      "level": 2,
+      "file": "forest-lv2-v1.webp",
+      "subject": "An expanded challenging woodland training pasture, varied forest terrain, cleared winding trails, log obstacles and sturdy fences.",
+      "levelInstruction": "\nFacility level: 2 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "forest",
+      "level": 3,
+      "file": "forest-lv3-v1.webp",
+      "subject": "A vast professionally maintained challenging forest pasture, deep diverse woodland, trails with terrain obstacles, ravines, rustic stone bridge and observation shelter.",
+      "levelInstruction": "\nFacility level: 3 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "shop",
+      "level": 1,
+      "file": "shop-lv1-v1.webp",
+      "subject": "A small wooden ranch souvenir kiosk with an awning, shelves of little yellow racing bird plush toys and feather keepsakes.",
+      "levelInstruction": "\nFacility level: 1 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "shop",
+      "level": 2,
+      "file": "shop-lv2-v1.webp",
+      "subject": "A charming medium timber souvenir shop, generous covered display stands, bird plush toys and feather souvenirs, cozy inviting entry.",
+      "levelInstruction": "\nFacility level: 2 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "shop",
+      "level": 3,
+      "file": "shop-lv3-v1.webp",
+      "subject": "An elegant large ranch souvenir emporium with ornate timber facade, broad covered shopping terrace, beautiful displays of yellow bird plush toys and keepsakes.",
+      "levelInstruction": "\nFacility level: 3 of 3. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "lab",
+      "level": 1,
+      "file": "lab-lv1-v1.webp",
+      "subject": "A cozy fantasy genetics research laboratory in an elegant stone and timber cottage, glass greenhouse wing, books and glowing blue crystal instruments visible through large windows.",
+      "levelInstruction": "\nFacility level: 1 of 1. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "statue",
+      "level": 1,
+      "file": "statue-lv1-v1.webp",
+      "subject": "A bronze monument of a proud crested chocobo racing bird on an ornate stone pedestal in a celebratory flower garden, warm metallic bronze, three small victory wreath motifs decorating the pedestal.",
+      "levelInstruction": "\nFacility level: 1 of 1. Make the stated equipment and scale visually clear."
+    },
+    {
+      "key": "museum",
+      "level": 1,
+      "file": "museum-lv1-v1.webp",
+      "subject": "A grand fantasy ranch hall of fame museum with elegant stone and timber architecture, impressive arched entry, eight decorative golden trophies visible through tall windows, manicured garden and a fountain.",
+      "levelInstruction": "\nFacility level: 1 of 1. Make the stated equipment and scale visually clear."
+    }
+  ]
+}

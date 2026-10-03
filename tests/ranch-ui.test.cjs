@@ -16,12 +16,135 @@ async function boot(saved,failSave=false,failRead=false,autoStart=true){
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
   await vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},setViewer(value){raceViewer=value},advance,render};})();`),ctx);
   if(autoStart&&ctx.hooks.modal?.type==='new-game')await handlers.click({target:{closest:()=>({dataset:{action:'start-confirm'},disabled:false})}});
-  return {h:ctx.hooks,node,storage,store,setQuery(selector,values){queryLists[selector]=values;},backdrop(){return handlers.click({target:{classList:{contains:name=>name==='modal-backdrop'},closest:()=>null}});},inside(){return handlers.click({target:{classList:{contains:()=>false},closest:()=>null}});},windowEvent(type,event={}){return windowHandlers[type]?.(event);},click(action,data={}){return handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key){return handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})}});}};
+  return {h:ctx.hooks,node,storage,store,setQuery(selector,values){queryLists[selector]=values;},backdrop(){return handlers.click({target:{classList:{contains:name=>name==='modal-backdrop'},closest:()=>null}});},inside(){return handlers.click({target:{classList:{contains:()=>false},closest:()=>null}});},windowEvent(type,event={}){return windowHandlers[type]?.(event);},click(action,data={}){return handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key,options={}){return handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})},...options});}};
 }
 const html=g=>g.node('#app').innerHTML;
 const slotKey=slot=>`${R.SAVE_KEY}-slot-${slot}`;
 const ranchSnapshot=s=>JSON.stringify({...s,rng:0});
+test('notebook shows annual grades and filters short and regional dirt programs without altering the save',async()=>{
+  const g=await boot(),before=JSON.stringify(g.h.state);
+  await g.click('nav',{page:'notebook'});
+  assert.match(html(g),/年間重賞番組表/);assert.match(html(g),/年間179競走/);
+  assert.equal([...html(g).matchAll(/data-program-event=/g)].length,179);
+  await g.change('calendar-grade','GIII');await g.change('calendar-route','dirt-sprint');
+  assert.ok([...html(g).matchAll(/data-program-event=/g)].length>0);
+  assert.match(html(g),/地方交流参考/);assert.match(html(g),/王宮スプリント/);
+  assert.doesNotMatch(html(g),/王宮帝王賞|天空大賞典|芝 1200m/);
+  await g.change('calendar-route','sprint');
+  assert.match(html(g),/シルクロードカーバンクル杯/);assert.doesNotMatch(html(g),/ダート 1200m/);
+  assert.equal(JSON.stringify(g.h.state),before);
+});
 async function purchase(g){await g.click('buy-dialog',{id:g.h.state.sale[0]});await g.click('buy-confirm',{id:g.h.state.sale[0]});await g.click('ack');}
+
+test('paternal source is always visible on owned cards, details, sale cards and every sire tab without research',async()=>{
+  const g=await boot(),s=g.h.state,starter=R.own(s)[0];
+  const source=R.paternalRoot(s,starter),rng=s.rng;
+  await g.click('nav',{page:'birds'});
+  assert.match(html(g),new RegExp(`data-lineage="${source.lineage}"`));assert.match(html(g),/源流（父系）/);
+  await g.click('detail',{id:starter.id});
+  assert.match(html(g),new RegExp(`${source.name}系`));assert.equal(s.rng,rng);
+  await g.click('close');await g.click('nav',{page:'market'});
+  for(const id of s.sale)assert.match(html(g),new RegExp(`${R.paternalRoot(s,R.bird(s,id)).name}系`));
+  await purchase(g);await g.click('nav',{page:'breed'});
+  assert.match(html(g),/源流（父系）/);
+  await g.click('sire-tab',{tab:'public'});
+  const options=[...html(g).matchAll(/<button class="sire-option[\s\S]*?<\/button>/g)].map(m=>m[0]);
+  assert.ok(options.length);
+  for(const option of options){assert.match(option,/源流（父系）/);assert.match(option,/data-lineage="root-\d+"/);assert.doesNotMatch(option,/源流（父系）<\/span><strong>不明/);}
+  assert.equal(s.facilities.lab,0);
+});
+
+test('founder offers show their source and the predecessor being replaced in the report and notebook',async()=>{
+  const g=await boot(),s=g.h.state,source=R.sires(s).find(b=>b.kind==='root');
+  const add=options=>{const b={...JSON.parse(JSON.stringify(source)),id:`bird-${s.serial++}`,owner:'player',...options};s.birds.push(b);return b;};
+  const previous=add({kind:'founder',name:'センパイ'}),candidate=add({kind:'home',name:'コウケイ',parents:[source.id]});
+  for(let i=0;i<3;i++)add({kind:'home',role:'retired',parents:[candidate.id],g1:i===0?5:1});
+  s.founderOffers.push(candidate.id);
+  const report={id:`report-${s.serial++}`,week:s.week,type:'founder',title:'始祖入りのオファー',text:'推薦されました。',birdId:candidate.id,expression:'overjoyed'};
+  s.reports.push(report);s.journal.push({...report});
+  await g.click('nav',{page:'notebook'});await g.click('notebook-tab',{tab:'records'});
+  assert.match(html(g),new RegExp(`${source.name}系`));assert.match(html(g),/始祖は各源流につき1羽/);
+  assert.match(html(g),/コウケイが始祖入りすると、センパイと交代し、先代は供用を終えます/);
+  await g.click('nav',{page:'home'});await g.click('reports');
+  assert.match(html(g),/この源流の始祖：センパイ/);assert.match(html(g),/センパイと交代/);
+  await g.click('promote',{id:candidate.id});
+  assert.equal(previous.role,'archived');assert.equal(candidate.kind,'founder');
+  await g.click('close');await g.click('detail',{id:candidate.id});
+  assert.match(html(g),/この源流の始祖：コウケイ/);
+});
+
+test('research unlocks optional sex-selection fruit, updates the total and reviews it before payment',async()=>{
+  for(const [fruit,label,sex] of [['karabu','カラブの実','M'],['zeio','ゼイオの実','F']]) {
+    const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});
+    assert.doesNotMatch(html(g),/id="breeding-fruit"/);
+    g.h.state.facilities.lab=1;g.h.render();
+    assert.match(html(g),/id="breeding-fruit"/);assert.match(html(g),/value="none" selected/);
+    assert.match(html(g),/カラブの実 ・ オス確定 ・ 1,000ギル/);assert.match(html(g),/ゼイオの実 ・ メス確定 ・ 1,000ギル/);
+    const money=g.h.state.money,rng=g.h.state.rng;
+    await g.change('breeding-fruit',fruit);
+    assert.match(html(g),/配合をお願いする <span>1,600 G/);
+    assert.equal(g.h.state.money,money);assert.equal(g.h.state.rng,rng);
+    await g.click('breed-dialog');assert.match(html(g),new RegExp(label));
+    assert.match(html(g),/合計<\/span><b>1,600 G/);assert.match(html(g),sex==='M'?/オス（100%）/:/メス（100%）/);
+    await g.click('close');assert.equal(g.h.state.money,money);
+    g.h.state.money=1599;g.h.render();assert.match(html(g),/配合料金と実の代金に必要なギルが足りません/);
+    await g.click('breed-dialog');assert.equal(g.h.modal,null);
+    await g.change('breeding-fruit','none');assert.match(html(g),/配合をお願いする <span>600 G/);
+    g.h.state.money=money;await g.change('breeding-fruit',fruit);await g.click('breed-dialog');await g.click('breed-confirm');
+    assert.equal(g.h.state.money,money-1600);
+    const dam=R.own(g.h.state).find(b=>b.pregnancy);assert.equal(dam.pregnancy.fruit,fruit);
+    const saved=R.deserializeState(g.storage.get(R.SAVE_KEY));assert.equal(R.bird(saved,dam.id).pregnancy.fruit,fruit);
+    await g.click('ack');await g.click('nav',{page:'breed'});assert.doesNotMatch(html(g),/id="breeding-fruit"/);
+  }
+});
+
+test('mare sale requires the matching confirmation, supports cancellation and persists the proceeds and vacant stall',async()=>{
+  const g=await boot();await purchase(g);const b=R.own(g.h.state).find(b=>b.role==='mare');
+  await g.click('nav',{page:'birds'});await g.click('detail',{id:b.id});
+  assert.match(html(g),/data-action="sell-mare-dialog"/);assert.match(html(g),/2,800 G/);
+  const before=JSON.stringify(g.h.state),saved=g.storage.get(R.SAVE_KEY),money=g.h.state.money;
+  await g.click('sell-mare-confirm',{id:b.id});assert.equal(JSON.stringify(g.h.state),before);
+  await g.click('sell-mare-dialog',{id:b.id});assert.equal(g.h.modal.type,'sell-mare');
+  assert.match(html(g),/売却後のギル/);assert.match(html(g),/血統と戦績/);assert.match(html(g),/data-action="close" data-autofocus/);
+  assert.equal(JSON.stringify(g.h.state),before);assert.equal(g.storage.get(R.SAVE_KEY),saved);
+  await g.key('Escape');assert.equal(g.h.modal.type,'detail');assert.equal(JSON.stringify(g.h.state),before);
+  await g.click('sell-mare-dialog',{id:b.id});await g.click('close');assert.equal(g.h.modal.type,'detail');
+  await g.click('sell-mare-dialog',{id:b.id});await g.click('sell-mare-confirm',{id:g.h.state.sale[1]});assert.equal(JSON.stringify(g.h.state),before);
+  await g.click('sell-mare-confirm',{id:b.id});assert.equal(g.h.modal,null);assert.equal(g.h.page,'birds');
+  assert.equal(g.h.state.money,money+2800);assert.ok(!R.own(g.h.state).includes(b));assert.match(html(g),/羽房が1枠空きました/);
+  const loaded=await boot(g.storage);assert.equal(loaded.h.state.money,money+2800);assert.ok(!R.own(loaded.h.state).some(x=>x.id===b.id));
+  const after=JSON.stringify(g.h.state);await g.click('sell-mare-confirm',{id:b.id});assert.equal(JSON.stringify(g.h.state),after);
+});
+
+test('pregnant mares explain why selling is disabled and other birds have no sale action',async()=>{
+  const g=await boot();await purchase(g);const b=R.own(g.h.state).find(b=>b.role==='mare');
+  R.breed(g.h.state,b.id,R.sires(g.h.state)[0].id);await g.click('detail',{id:b.id});
+  assert.match(html(g),/data-action="sell-mare-dialog"[^>]*disabled/);assert.match(html(g),/出産後に売却/);
+  const before=JSON.stringify(g.h.state);await g.click('sell-mare-dialog',{id:b.id});assert.equal(g.h.modal.type,'detail');assert.equal(JSON.stringify(g.h.state),before);
+  for(const bird of [R.own(g.h.state).find(b=>b.role==='racing'),R.bird(g.h.state,g.h.state.sale[1])]) {
+    await g.click('detail',{id:bird.id});assert.doesNotMatch(html(g),/data-action="sell-mare-dialog"/);
+  }
+});
+
+test('releasing a home stud requires confirmation, cancels without changes and survives reload',async()=>{
+  const g=await boot(),s=g.h.state,b=R.createBird(s,{sex:'M',role:'stud',kind:'home'});
+  await g.click('nav',{page:'birds'});await g.click('detail',{id:b.id});assert.match(html(g),/data-action="release-stud-dialog"/);
+  const before=JSON.stringify(s),money=s.money;
+  await g.click('release-stud-confirm',{id:b.id});assert.equal(JSON.stringify(s),before);
+  await g.click('release-stud-dialog',{id:b.id});assert.equal(g.h.modal.type,'release-stud');assert.match(html(g),/配合相手にも選べなく/);
+  assert.equal(JSON.stringify(s),before);await g.backdrop();assert.equal(g.h.modal.type,'detail');assert.equal(JSON.stringify(s),before);
+  await g.click('release-stud-dialog',{id:b.id});await g.click('release-stud-confirm',{id:s.sale[0]});assert.equal(JSON.stringify(s),before);
+  await g.click('release-stud-confirm',{id:b.id});assert.equal(g.h.modal,null);assert.equal(s.money,money);assert.ok(!R.sires(s).includes(b));assert.ok(!R.own(s).includes(b));
+  const loaded=await boot(g.storage);assert.equal(R.bird(loaded.h.state,b.id).released,true);assert.ok(!R.sires(loaded.h.state).some(x=>x.id===b.id));
+  await g.click('detail',{id:b.id});assert.match(html(g),/野生 ・ 牡/);assert.doesNotMatch(html(g),/data-action="release-stud-dialog"/);
+});
+
+test('public studs, sources and owned founders have no release action',async()=>{
+  const g=await boot(),s=g.h.state,founder=R.createBird(s,{sex:'M',role:'stud',kind:'founder'});
+  for(const b of [founder,R.sires(s).find(b=>b.kind==='root'),R.sires(s).find(b=>b.owner==='public'),R.own(s).find(b=>b.role==='racing')]) {
+    await g.click('detail',{id:b.id});assert.doesNotMatch(html(g),/data-action="release-stud-dialog"/);
+  }
+});
 
 test('pending save blocks repeated actions and reports success only after the write commits',async()=>{
   const g=await boot();await g.click('nav',{page:'settings'});
@@ -79,6 +202,73 @@ test('settings offer exactly five independent manual saves and disable empty loa
   const restored=await boot(g.storage);await restored.click('nav',{page:'settings'});
   assert.equal((html(restored).match(/data-action="slot-load"[^>]*disabled/g)||[]).length,0);
   assert.match(html(restored),/20,001 G/);assert.match(html(restored),/20,005 G/);
+});
+
+test('number keys open the matching load dialog from any page, Enter restores and Escape cancels',async()=>{
+  const g=await boot();
+  for(let slot=1;slot<=5;slot++){
+    g.h.state.money=21000+slot;await g.click('slot-save',{slot:String(slot)});
+  }
+  for(const [index,page] of ['home','birds','breed','facilities','notebook'].entries()){
+    const slot=index+1;await g.click('nav',{page});g.h.state.money=12345;
+    const current=JSON.stringify(g.h.state),autosave=g.storage.get(R.SAVE_KEY);
+    await g.key(String(slot));assert.equal(g.h.modal.type,'slot-load');assert.equal(g.h.modal.slot,slot);
+    assert.match(html(g),/data-action="slot-load-confirm" data-autofocus/);
+    assert.equal(JSON.stringify(g.h.state),current);assert.equal(g.storage.get(R.SAVE_KEY),autosave);
+    await g.key('Escape');await g.key('Enter');
+    assert.equal(g.h.modal,null);assert.equal(JSON.stringify(g.h.state),current);
+    await g.key(String(slot));await g.key('Enter');
+    assert.equal(g.h.modal,null);assert.equal(g.h.page,'home');assert.equal(g.h.state.money,21000+slot);
+    assert.equal(R.deserializeState(g.storage.get(R.SAVE_KEY)).money,21000+slot);
+  }
+});
+
+test('load shortcuts ignore editing, modifiers, composition, repeats and other dialogs',async()=>{
+  const g=await boot();await g.click('slot-save',{slot:'1'});
+  const ignored=[{ctrlKey:true},{altKey:true},{metaKey:true},{shiftKey:true},{isComposing:true},{repeat:true},{defaultPrevented:true},
+    ...['input','textarea','select'].map(tag=>({target:{matches:selector=>selector.split(', ').includes(tag)}})),
+    {target:{isContentEditable:true}}];
+  for(const options of ignored){await g.key('1',options);assert.equal(g.h.modal,null);}
+  for(const key of ['0','6','9']){await g.key(key);assert.equal(g.h.modal,null);}
+  await g.click('reset-dialog');const reset=g.h.modal;await g.key('1');await g.key('Enter');assert.equal(g.h.modal,reset);
+  await g.key('Escape');await g.key('1');const load=g.h.modal;
+  for(const options of ignored){await g.key('Enter',options);assert.equal(g.h.modal,load);}
+  for(const options of ignored.filter(options=>!options.target)){
+    let prevented=false;await g.key('Enter',{...options,preventDefault(){prevented=true;}});
+    assert.equal(prevented,true,'suppress native Enter activation for held keys and modified shortcuts');
+  }
+  await g.key('2');assert.equal(g.h.modal,load);
+  await g.key('Enter',{target:{closest:()=>({dataset:{action:'close'}})}});assert.equal(g.h.modal,load,'focused cancel retains native button handling');
+  await g.key('Escape');assert.equal(g.h.modal,null);
+});
+
+test('keyboard load preserves progress for empty, corrupt, changed or unwritable saves',async()=>{
+  const g=await boot();await g.click('slot-save',{slot:'1'});
+  const current=JSON.stringify(g.h.state),autosave=g.storage.get(R.SAVE_KEY);
+  await g.key('2');assert.equal(g.h.modal,null);assert.match(html(g),/セーブデータがありません/);
+  g.storage.set(slotKey(2),'{bad');await g.key('2');assert.equal(g.h.modal,null);assert.match(html(g),/データは読み込めません/);
+  await g.key('1');g.storage.delete(slotKey(1));await g.key('Enter');
+  assert.equal(g.h.modal.type,'slot-load');assert.match(html(g),/別のタブで更新されました/);
+  assert.equal(JSON.stringify(g.h.state),current);assert.equal(g.storage.get(R.SAVE_KEY),autosave);
+  await g.key('Escape');await g.click('slot-save',{slot:'1'});
+  const denied=await boot(g.storage,key=>key===R.SAVE_KEY),before=JSON.stringify(denied.h.state);
+  await denied.key('1');await denied.key('Enter');
+  assert.equal(denied.h.modal.type,'slot-load');assert.match(html(denied),/ロードを中止/);
+  assert.equal(JSON.stringify(denied.h.state),before);assert.equal(denied.storage.get(R.SAVE_KEY),autosave);
+});
+
+test('keyboard shortcuts cannot start another operation while a slot read or restore is pending',async()=>{
+  const g=await boot();await g.click('slot-save',{slot:'1'});
+  const read=g.store.read;let release,started;
+  const reading=new Promise(resolve=>{started=resolve;});
+  g.store.read=(...args)=>new Promise(resolve=>{release=()=>resolve(read(...args));started();});
+  const opening=g.key('1');await reading;await g.key('2');await g.key('Enter');assert.equal(g.h.modal,null);
+  release();await opening;g.store.read=read;assert.equal(g.h.modal.slot,1);
+  const restore=g.store.restore;let calls=0;
+  const restoring=new Promise(resolve=>{started=resolve;});
+  g.store.restore=(...args)=>new Promise(resolve=>{calls++;release=()=>resolve(restore(...args));started();});
+  const loading=g.key('Enter');await restoring;await g.key('Enter');await g.key('Escape');await g.key('2');
+  assert.equal(calls,1);assert.equal(g.h.modal.slot,1);release();await loading;assert.equal(g.h.modal,null);
 });
 
 test('overwriting a slot requires confirmation and cancellation preserves its snapshot',async()=>{
@@ -264,6 +454,29 @@ test('new UI exposes one tutorial action, hides numeric traits and renders every
   const g=await boot();assert.match(html(g),/牧場の、はじめの日/);assert.match(html(g),/繁殖牝羽セールへ/);assert.doesNotMatch(html(g),/最高速|遺伝品質/);
   for(const page of ['birds','market','breed','facilities','notebook','settings']){await g.click('nav',{page});assert.equal(g.h.page,page);assert.match(html(g),/<h1>/);assert.doesNotMatch(html(g),/class="notice"/);}
 });
+test('facility art follows initial, constructed and upgraded levels while empty sites stay plain',async()=>{
+  const g=await boot();await g.click('nav',{page:'facilities'});
+  const cards=()=>[...html(g).matchAll(/<article class="paper facility [\s\S]*?<\/article>/g)].map(m=>m[0]);
+  assert.equal(cards().length,12);
+  assert.equal(cards().filter(c=>c.includes('has-art')).length,2);
+  for(const key of ['stalls','meadow'])assert.ok(html(g).includes(`/assets/facilities/${key}-lv1-v1.webp`));
+  for(const c of cards().filter(c=>/未建設|未解放/.test(c)))assert.doesNotMatch(c,/has-art|facility-image/);
+  g.h.state.money=1e12;
+  await g.click('build-dialog',{key:'course'});await g.click('build-confirm',{key:'course'});
+  assert.ok(html(g).includes('/assets/facilities/course-lv1-v1.webp'));
+  await g.click('build-dialog',{key:'stalls'});await g.click('build-confirm',{key:'stalls'});
+  assert.ok(html(g).includes('/assets/facilities/stalls-lv2-v1.webp'));
+  for(const [key,f] of Object.entries(R.FACILITIES)){
+    for(let level=1;level<=f.max;level++){
+      g.h.state.facilities[key]=level;g.h.render();
+      assert.ok(html(g).includes(`/assets/facilities/${key}-lv${level}-v1.webp`),`${key} Lv${level}`);
+    }
+  }
+  g.h.state.facilities.lab=3;g.h.render();
+  assert.ok(html(g).includes('/assets/facilities/lab-lv1-v1.webp'));
+  assert.doesNotMatch(html(g),/lab-lv3/);
+});
+
 test('purchase and breeding are reviewable before payment, with a clear route back to the weekly loop',async()=>{
   const g=await boot(),before=g.h.state.money;await g.click('nav',{page:'market'});await g.click('buy-dialog',{id:g.h.state.sale[0]});assert.equal(g.h.state.money,before);assert.match(html(g),/17,200 G/);await g.click('close');assert.equal(g.h.state.money,before);
   await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');assert.match(html(g),/600 G/);await g.click('breed-confirm');assert.equal(g.h.state.stage,'grow');await g.click('ack');
@@ -420,6 +633,48 @@ test('public sire search combines text, winning route and ability order with vis
   assert.match(html(g),/長所/);assert.match(html(g),/短所/);assert.match(html(g),/重賞成績/);assert.match(html(g),/乱数の下限/);
   g.node('#sire-query').value='見つからない名前';await g.click('search-sires');
   assert.equal(listedSires(g).length,0);assert.match(html(g),/data-action="breed-dialog" disabled/);
+});
+
+test('public sire genetic filters can be added, combined, edited, removed and cleared without saving',async()=>{
+  const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('sire-tab',{tab:'public'});
+  const candidates=listedSires(g),target=candidates.find(b=>R.geneticRating(R.geneticScores(b).power)==='☆');
+  assert.ok(target);
+  const snapshot=JSON.stringify(g.h.state),saved=g.storage.get(R.SAVE_KEY);
+  const change=(index,field,value)=>g.change(`sire-genetic-${field}-${index}`,value,{geneticIndex:String(index),geneticField:field});
+  await change(0,'trait','power');
+  const stars=listedSires(g);assert.ok(stars.length>0&&stars.length<candidates.length);
+  assert.match(html(g),/class="sire-genetic-match">遺伝：瞬発力 ☆/);
+  assert.ok(stars.every(b=>R.geneticRating(R.geneticScores(b).power)==='☆'));
+  await g.click('add-sire-genetic-filter');assert.equal(listedSires(g).length,stars.length,'blank rows are ignored');
+  const rating=R.geneticRating(R.geneticScores(target).recovery);
+  await change(1,'rating',rating);await change(1,'trait','recovery');
+  assert.deepEqual(listedSires(g).map(b=>b.id),stars.filter(b=>R.geneticRating(R.geneticScores(b).recovery)===rating).map(b=>b.id));
+  await g.click('sire-tab',{tab:'root'});assert.equal(listedSires(g).length,32);
+  await g.click('sire-tab',{tab:'public'});assert.match(html(g),/id="sire-genetic-trait-1"/);
+  await g.click('add-sire-genetic-filter');await change(2,'rating','X');await change(2,'trait','power');
+  assert.equal(listedSires(g).length,0);assert.match(html(g),/条件に一致する種牡羽が見つかりません/);assert.match(html(g),/data-action="breed-dialog" disabled/);
+  await g.click('remove-sire-genetic-filter',{index:'2'});assert.ok(listedSires(g).includes(target));
+  await g.click('remove-sire-genetic-filter',{index:'0'});
+  assert.ok(listedSires(g).every(b=>R.geneticRating(R.geneticScores(b).recovery)===rating));
+  await g.click('clear-sire-genetic-filters');assert.deepEqual(listedSires(g).map(b=>b.id),candidates.map(b=>b.id));
+  await g.click('remove-sire-genetic-filter',{index:'0'});assert.match(html(g),/id="sire-genetic-trait-0"/);
+  assert.equal(JSON.stringify(g.h.state),snapshot);assert.equal(g.storage.get(R.SAVE_KEY),saved);
+});
+
+test('genetic filters follow research disclosure and combine with existing public sire search',async()=>{
+  const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('sire-tab',{tab:'public'});
+  const select=()=>html(g).match(/<select id="sire-genetic-trait-0"[\s\S]*?<\/select>/)[0];
+  assert.doesNotMatch(select(),/芝適性|右回り適性|早い成長/);
+  g.h.state.facilities.lab=1;g.h.render();assert.match(select(),/芝適性/);assert.match(select(),/右回り適性/);assert.match(select(),/早い成長/);
+  const candidate=listedSires(g).find(b=>b.records.some(r=>r.level==='GI'&&r.rank===1&&r.surface==='dirt'));
+  g.node('#sire-query').value=candidate.farm;await g.click('search-sires');await g.change('sire-route','dirt');await g.change('sire-sort','power');
+  const rating=R.geneticTraitRating(candidate,'rightTurn');
+  await g.change('sire-genetic-rating-0',rating,{geneticIndex:'0',geneticField:'rating'});
+  await g.change('sire-genetic-trait-0','rightTurn',{geneticIndex:'0',geneticField:'trait'});
+  const result=listedSires(g);assert.ok(result.includes(candidate));assert.ok(result.every(b=>b.farm===candidate.farm&&R.geneticTraitRating(b,'rightTurn')===rating));
+  assert.ok(result.every((b,i)=>!i||result[i-1].potential.power>=b.potential.power));
+  await g.click('reset-dialog');await g.click('reset-confirm');await purchase(g);await g.click('nav',{page:'breed'});await g.click('sire-tab',{tab:'public'});
+  assert.equal(listedSires(g).length,50);assert.doesNotMatch(select(),/右回り適性/);
 });
 
 test('sire tabs separate source, other ranch, founder and home candidates and remember selection',async()=>{

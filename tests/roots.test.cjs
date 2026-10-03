@@ -85,3 +85,64 @@ test('a descendant of the 32nd lineage can become a founder with the correct sou
   s.founderOffers.push(stud.id);R.promote(s,stud.id);
   assert.equal(stud.kind,'founder');assert.match(s.reports.at(-1).text,new RegExp(R.ROOTS.at(-1).name));
 });
+
+test('the paternal source follows more than five generations and overrides stale and maternal lineages',()=>{
+  const s=R.initial(),source=roots(s).at(-1),mother=R.bird(s,s.sale[0]);let father=source;
+  for(let i=0;i<8;i++) {
+    const child={...copy(source),id:`bird-${s.serial++}`,kind:'home',parents:[father.id,mother.id],lineage:mother.lineage};
+    s.birds.push(child);father=child;
+  }
+  const before=R.serializeState(s);
+  assert.equal(R.paternalRoot(s,father),R.ROOTS.at(-1));
+  assert.equal(R.serializeState(s),before,'viewing the source is read-only');
+  const child=R.createBird(s,{sex:'F'},[father,mother]);
+  assert.equal(child.lineage,source.lineage);
+  delete father.lineage;assert.equal(R.paternalRoot(s,father),R.ROOTS.at(-1));
+  father.parents=[father.id,mother.id];assert.equal(R.paternalRoot(s,father),null);
+  father.parents=[null,mother.id];assert.equal(R.paternalRoot(s,father),null,'a maternal source cannot establish the paternal line');
+});
+
+test('starter, sale and NPC birds belong to one of the 32 paternal sources',()=>{
+  const s=R.initial();
+  R.worldRoster(s,R.calendar(s.week).find(e=>e.level==='new'));
+  for(const b of s.birds) {
+    const source=R.paternalRoot(s,b);assert.ok(source,b.name);assert.equal(b.lineage,source.lineage);
+    if(b.npcFoundation)assert.ok(Object.hasOwn(b.genome.defects,`${source.lineage}-weak`));
+    if(b.parents[0])assert.equal(source,R.paternalRoot(s,R.bird(s,b.parents[0])));
+  }
+});
+
+test('legacy imported lineages are restored from recorded source provenance without changing the save beyond lineage metadata',()=>{
+  const s=R.initial(),expected=new Map(s.birds.map(b=>[b.id,b.lineage]));
+  for(const b of s.birds)if(b.farm)b.lineage=`import-${b.farm}-${b.breedingGroup}`;
+  const starter=R.own(s)[0];delete starter.lineage;
+  const publicSire=R.sires(s).find(b=>b.owner==='public');
+  const child=R.createBird(s,{sex:'M',role:'stud'},[publicSire,R.bird(s,s.sale[0])]);
+  delete child.lineage;expected.set(child.id,expected.get(publicSire.id));
+  const withoutLineages=state=>({...copy(state),birds:state.birds.map(({lineage,...b})=>copy(b))});
+  const before=withoutLineages(s);R.upgradeState(s);
+  assert.deepEqual(withoutLineages(s),before);
+  for(const b of s.birds)assert.equal(b.lineage,expected.get(b.id),b.name);
+  assert.ok(R.validState(s));
+  const once=R.serializeState(s);R.upgradeState(s);assert.equal(R.serializeState(s),once);
+  const restored=R.deserializeState(once);
+  assert.equal(R.paternalRoot(restored,R.bird(restored,child.id)).lineage,expected.get(child.id));
+});
+
+test('founder promotion uses the paternal source and replaces only that source even when cached lineages disagree',()=>{
+  const s=R.initial(),source=roots(s).at(-1),other=roots(s)[0];
+  const add=(base,options)=>{const b={...copy(base),id:`bird-${s.serial++}`,owner:'player',...options};s.birds.push(b);return b;};
+  const previous=add(source,{kind:'founder',name:'センパイ',parents:[source.id],lineage:other.lineage});
+  const unrelated=add(other,{kind:'founder',name:'ベツケイ'});
+  const candidate=add(source,{kind:'home',name:'コウケイ',parents:[source.id],lineage:other.lineage});
+  for(let i=0;i<3;i++)add(candidate,{kind:'home',role:'retired',parents:[candidate.id],g1:i===0?5:1});
+  assert.ok(R.founderEligible(s,candidate));assert.equal(R.lineageFounder(s,candidate),previous);
+  s.founderOffers.push(candidate.id);R.promote(s,candidate.id);
+  assert.equal(previous.role,'archived');assert.equal(previous.kind,'home');
+  assert.equal(unrelated.kind,'founder');assert.equal(unrelated.role,'stud');
+  assert.equal(candidate.lineage,source.lineage);assert.equal(R.lineageFounder(s,candidate),candidate);
+  assert.equal(s.birds.filter(b=>b.kind==='founder'&&R.paternalRoot(s,b).lineage===source.lineage).length,1);
+  const unknown=add(source,{kind:'home',lineage:'unrecorded',parents:[]});
+  for(let i=0;i<3;i++)add(unknown,{kind:'home',role:'retired',parents:[unknown.id],g1:3});
+  assert.equal(R.founderEligible(s,unknown),false);
+});

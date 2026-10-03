@@ -23,8 +23,9 @@ test('48-week calendar repeats graded stakes; classics enforce age and sex',()=>
  for(const e of W.calendar(1).concat(W.calendar(5)))assert.equal(e.surface,e.track.surface);
  const old=JSON.parse(JSON.stringify(s));old.results.push({eventId:'1:new',week:1,name:'旧',level:'new',trackId:'cornelia',rows:[]});assert.equal(W.migrate(old).results.at(-1).trackId,'tenku');
  const b=s.birds[0];b.age=3*48;b.races=3;b.wins=1;b.rating=400;
- assert.equal(W.eligibility(s,b,W.calendar(21).at(-1)),'');assert.match(W.eligibility(s,b,W.calendar(20).at(-1)),/牝/);
- b.sex='F';assert.equal(W.eligibility(s,b,W.calendar(20).at(-1)),'');b.age=4*48;assert.match(W.eligibility(s,b,W.calendar(21).at(-1)),/歳/);
+ const derby=W.calendar(21).find(e=>e.name==='チョコボダービー'),oaks=W.calendar(20).find(e=>e.name==='チョコボオークス');
+ assert.equal(W.eligibility(s,b,derby),'');assert.match(W.eligibility(s,b,oaks),/牝/);
+ b.sex='F';assert.equal(W.eligibility(s,b,oaks),'');b.age=4*48;assert.match(W.eligibility(s,b,derby),/歳/);
 });
 test('class ratings are separate from purse and entry eligibility changes with career',()=>{
  const s=makeState(),b=s.birds[0];assert.equal(W.currentClass(b),'new');b.races=1;assert.equal(W.currentClass(b),'maiden');b.wins=1;

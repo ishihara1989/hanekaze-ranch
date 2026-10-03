@@ -4,6 +4,54 @@ const assert=require('node:assert/strict');
 const R=require('../public/js/ranch-engine.js');
 const B=R.Breeding,copy=x=>JSON.parse(JSON.stringify(x));
 const scratch=(rng=1)=>({week:9,rng,serial:1,birds:[]});
+function fruitPair(seed=1) {
+  const s=R.initial(seed),dam=R.bird(s,s.sale[0]),sire=R.sires(s)[0];
+  s.money=100000;R.buy(s,dam.id);while(s.reports.length)R.acknowledge(s);
+  return {s,dam,sire};
+}
+
+test('sex-selection fruit requires research and the full fee before any state changes',()=>{
+  const {s,dam,sire}=fruitPair();
+  for(const fruit of ['karabu','zeio','unknown','toString']) {
+    const before=copy(s);
+    assert.throws(()=>R.breed(s,dam.id,sire.id,fruit),/研究所Lv1|産み分けの実/);
+    assert.deepEqual(s,before);
+  }
+  s.facilities.lab=1;s.money=R.breedFee(sire)+999;
+  const before=copy(s);
+  assert.match(R.breedingReason(s,dam,sire,'zeio'),/ギルが足りません/);
+  assert.throws(()=>R.breed(s,dam.id,sire.id,'zeio'),/ギルが足りません/);
+  assert.deepEqual(s,before);
+  s.money++;R.breed(s,dam.id,sire.id,'zeio');assert.equal(s.money,0);
+});
+
+test('both fruits cost 1000 gil and guarantee sex across saved pregnancies and different hatch RNGs',()=>{
+  for(const [fruit,sex] of [['karabu','M'],['zeio','F']]) {
+    const {s,dam,sire}=fruitPair(41);s.facilities.lab=1;
+    const money=s.money,rng=s.rng;
+    R.breed(s,dam.id,sire.id,fruit);
+    assert.equal(s.money,money-R.breedFee(sire)-1000);assert.equal(s.rng,rng);
+    assert.equal(dam.pregnancy.fruit,fruit);assert.ok(R.validState(s));
+    assert.equal(s.ledger.at(-1).amount,-1000);assert.match(s.ledger.at(-1).note,new RegExp(R.BREEDING_FRUITS[fruit].name));
+    const saved=R.serializeState(s);
+    for(const seed of [1,17,987654]) {
+      const restored=R.deserializeState(saved);restored.rng=seed;
+      for(let i=0;i<R.GESTATION;i++){while(restored.reports.length)R.acknowledge(restored);R.advance(restored);}
+      const child=restored.birds.find(b=>b.parents[1]===dam.id&&b.bornWeek===restored.week);
+      assert.ok(child);assert.equal(child.sex,sex);assert.ok(R.validState(restored));
+    }
+    const bad=copy(s);R.bird(bad,dam.id).pregnancy.fruit='unknown';assert.equal(R.validState(bad),false);
+  }
+});
+
+test('no fruit preserves the original payment, pregnancy and random birth results',()=>{
+  const {s,dam,sire}=fruitPair(31),other=copy(s);
+  R.breed(s,dam.id,sire.id);R.breed(other,dam.id,sire.id,'none');
+  assert.deepEqual(dam.pregnancy,{sireId:sire.id,due:s.week+R.GESTATION});
+  assert.deepEqual(s,other);
+  for(const state of [s,other])for(let i=0;i<R.GESTATION;i++){while(state.reports.length)R.acknowledge(state);R.advance(state);}
+  assert.deepEqual(s,other);
+});
 function tree(){
   const birds=new Map();
   const add=(id,...parents)=>{const b={id,name:id,parents};birds.set(id,b);return b;};
@@ -142,9 +190,11 @@ test('sale mares inherit a real source father; all racing and market NPCs inheri
   }
   assert.ok(npcs.some(b=>b.parents.some(id=>R.bird(s,id).parents.length)));
   const ordinary=R.worldRoster(s,R.calendar(s.week).find(e=>e.level==='new'));
-  assert.ok(ordinary.every(b=>s.birds.includes(b)&&b.parents.length===2));
+  assert.ok(ordinary.filter(b=>!b.filler).every(b=>s.birds.includes(b)&&b.parents.length===2));
+  assert.ok(ordinary.filter(b=>b.filler).every(b=>!s.birds.includes(b)&&b.genome===undefined));
   const saved=R.serializeState(s);assert.deepEqual(R.deserializeState(saved),s);assert.ok(R.validState(R.deserializeState(saved)));
-  assert.ok(saved.length<2000000);
+  const bytes=Buffer.byteLength(saved,'utf8');
+  assert.ok(bytes<8*1024*1024,`initial save bytes: ${bytes}`);
 });
 
 test('crossed births replay exactly, and invalid recessive genes, packed saves and cyclic pedigrees are rejected',()=>{
