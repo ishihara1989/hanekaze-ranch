@@ -135,6 +135,9 @@
     if(input?.version===3){
       const e=input.pendingRace?.event;
       input.entries||=[];input.trainingLog||=[];input.monthly||=[];
+      // Discard obsolete player pacing choices when reading legacy saves.
+      for(const entry of input.entries)delete entry.tactic;
+      if(input.pendingRace)delete input.pendingRace.tactic;
       for(const r of [...(input.results||[]),...(e?[e]:[])])if(OLD_TRACKS[r.trackId])r.trackId=OLD_TRACKS[r.trackId];
       for(const b of input.birds||[])if(b.pregnancy)b.pregnancy.dueWeek=Math.min(b.pregnancy.dueWeek,input.week+GESTATION);
       if(!validState(input))throw Error('Invalid world save');return input;
@@ -197,13 +200,13 @@
     if(field(s,e,b).length<2)return THIN_FIELD;
     return'';
   }
-  function prepareRace(s,eventId,birdId,tactic='steady'){
+  function prepareRace(s,eventId,birdId){
     const e=calendar(s.week).find(x=>x.id===eventId),b=find(s,birdId),reason=canEnter(s,b,e);
     if(reason)throw Error(reason);
     const entrants=field(s,e,b);
     s.entries=s.entries.filter(x=>!(x.birdId===b.id&&x.week===s.week));
     for(const x of entrants){account(s,x.ownerId,-e.fee,'出走料',`${x.name} / ${e.name}`);x.lastRaceWeek=s.week;}
-    s.pendingRace={event:e,ids:entrants.map(x=>x.id),tactic,seed:`${e.id}:${entrants.map(x=>x.id).join('/')}`};
+    s.pendingRace={event:e,ids:entrants.map(x=>x.id),seed:`${e.id}:${entrants.map(x=>x.id).join('/')}`};
     return s.pendingRace;
   }
   function makeRunners(s,pending){const random=rng(pending.seed);return pending.ids.map((id,i)=>M.runner(find(s,id),i,random));}
@@ -229,7 +232,7 @@
   }
   function simulate(s,pending){
     const rs=makeRunners(s,pending);let t=0;
-    while(rs.some(r=>r.finishedAt===null)&&t<1200){t+=.1;M.stepRace(rs,pending.event,t,.1,pending.tactic);}
+    while(rs.some(r=>r.finishedAt===null)&&t<1200){t+=.1;M.stepRace(rs,pending.event,t,.1);}
     if(rs.some(r=>r.finishedAt===null))throw Error('競走シミュレーションの時間上限');
     return finishRace(s,pending,rs);
   }
@@ -302,7 +305,6 @@
   }
   function loan(s){if(s.debt>=20000)throw Error('融資枠の上限です。売却や出走収入で資金を確保してください');const amount=Math.min(5000,20000-s.debt);s.debt+=amount;account(s,'player',amount,'融資','運転資金融資');}
   function repay(s){const n=Math.min(1000,s.debt,s.money);if(!n)throw Error('返済可能な資金・借入がありません');account(s,'player',-n,'返済','運転資金返済');s.debt-=n;}
-  const defaultTactic=b=>b.genes.distance.includes('L')?'late':'steady';
   const raceGap=s=>s.trainerId==='veteran'?4:3;
   // Reservations are checked against the age the bird will have that week; condition and field size are checked on race day.
   function reserveReason(s,b,e){
@@ -321,9 +323,9 @@
     if(s.entries.some(x=>x.eventId===e.id))return'この競走には自牧場の出走予定があります';
     return'';
   }
-  function reserve(s,birdId,eventId,by='player',tactic){
+  function reserve(s,birdId,eventId,by='player'){
     const b=find(s,birdId),e=eventById(eventId),reason=reserveReason(s,b,e);if(reason)throw Error(reason);
-    const entry={week:e.week,eventId:e.id,birdId:b.id,tactic:M.TACTICS[tactic]?tactic:defaultTactic(b),by};
+    const entry={week:e.week,eventId:e.id,birdId:b.id,by};
     s.entries.push(entry);s.entries.sort((a,c)=>a.week-c.week);return entry;
   }
   function cancelEntry(s,birdId,week){const n=s.entries.length;s.entries=s.entries.filter(x=>!(x.birdId===birdId&&x.week===week));return s.entries.length<n;}
@@ -424,7 +426,7 @@
     for(const {entry,event,bird} of dueEntries(s)){
       const reason=canEnter(s,bird,event);
       if(reason){cancelEntry(s,bird.id,entry.week);log(s,`${bird.name}の${event.name}への出走を取り消しました（${reason}）。`);continue;}
-      simulate(s,prepareRace(s,event.id,bird.id,entry.tactic));
+      simulate(s,prepareRace(s,event.id,bird.id));
     }
     // Other owners run the same race model; no temporary rival birds are generated.
     for(const e of events){
@@ -432,7 +434,7 @@
       const entrants=field(s,e).filter(b=>s.week-b.lastRaceWeek>=2&&b.condition>=60);
       if(entrants.length<2)continue;
       for(const b of entrants){account(s,b.ownerId,-e.fee,'出走料',e.name);b.lastRaceWeek=s.week;}
-      const pending={event:e,ids:entrants.map(b=>b.id),tactic:'steady',seed:`npc/${e.id}`};simulate(s,pending);
+      const pending={event:e,ids:entrants.map(b=>b.id),seed:`npc/${e.id}`};simulate(s,pending);
     }
     // Player birds not trained by hand this week get their plan menu from ranch staff, or the trainer's choice in auto mode.
     for(const b of s.birds.filter(b=>b.status!=='wild')){
@@ -471,10 +473,10 @@
     if(occupied(s)>CAPACITY)return false;
     if(!Array.isArray(s.history)||!s.history.every(h=>typeof h.name==='string'&&typeof h.course==='string'&&Number.isFinite(h.reward)&&Number.isInteger(h.rank)&&h.rank>=1&&h.rank<=6&&Number.isInteger(h.week)))return false;
     if(!Array.isArray(s.ledger)||!s.ledger.every(l=>Number.isFinite(l.amount)&&Number.isInteger(l.week)&&typeof l.category==='string'&&typeof l.note==='string')||!Array.isArray(s.news)||!s.news.every(n=>Number.isInteger(n.week)&&typeof n.message==='string')||!Array.isArray(s.results)||!s.results.every(r=>typeof r.eventId==='string'&&typeof r.name==='string'&&Number.isInteger(r.week)&&CLASSES[r.level]&&TRACKS[r.trackId]&&Array.isArray(r.rows)&&r.rows.every(x=>typeof x.name==='string'&&typeof x.ownerId==='string'&&Number.isInteger(x.rank)&&Number.isFinite(x.time))))return false;
-    if(!Array.isArray(s.entries)||!s.entries.every(x=>Number.isInteger(x.week)&&x.week>=s.week&&typeof x.eventId==='string'&&parseInt(x.eventId,10)===x.week&&M.TACTICS[x.tactic]&&['player','trainer'].includes(x.by)&&s.birds.some(b=>b.id===x.birdId&&b.ownerId==='player')))return false;
+    if(!Array.isArray(s.entries)||!s.entries.every(x=>Number.isInteger(x.week)&&x.week>=s.week&&typeof x.eventId==='string'&&parseInt(x.eventId,10)===x.week&&['player','trainer'].includes(x.by)&&s.birds.some(b=>b.id===x.birdId&&b.ownerId==='player')))return false;
     if(!Array.isArray(s.trainingLog)||!s.trainingLog.every(t=>Number.isInteger(t.week)&&typeof t.birdId==='string'&&M.MENUS.some(m=>m.key===t.menu)&&Number.isInteger(t.gain)))return false;
     if(!Array.isArray(s.monthly)||!s.monthly.every(m=>Number.isInteger(m.month)&&m.items&&typeof m.items==='object'&&Object.values(m.items).every(Number.isFinite)))return false;
-    if(s.pendingRace){const p=s.pendingRace,e=calendar(s.week).find(e=>e.id===p.event?.id);if(!e||JSON.stringify(e)!==JSON.stringify(p.event)||!M.TACTICS[p.tactic]||typeof p.seed!=='string'||!Array.isArray(p.ids)||p.ids.length<2||p.ids.length>6||new Set(p.ids).size!==p.ids.length||!p.ids.every(id=>s.birds.some(b=>b.id===id&&b.status==='racing'))||resultFor(s,e.id))return false;}
+    if(s.pendingRace){const p=s.pendingRace,e=calendar(s.week).find(e=>e.id===p.event?.id);if(!e||JSON.stringify(e)!==JSON.stringify(p.event)||typeof p.seed!=='string'||!Array.isArray(p.ids)||p.ids.length<2||p.ids.length>6||new Set(p.ids).size!==p.ids.length||!p.ids.every(id=>s.birds.some(b=>b.id===id&&b.status==='racing'))||resultFor(s,e.id))return false;}
     return true;
   }
   return {YEAR,CAPACITY,GESTATION,PLAN_WEEKS,RESERVE_WEEKS,TRACKS,CLASSES,STAKES,TRAINERS,age,date,owned,owner,find,cash,trainer,currentClass,className,roleName,fertile,initial,migrate,calendar,eligibility,canEnter,field,prepareRace,makeRunners,finishRace,simulate,resultFor,formatTime,retire,price,studFee,occupied,buy,sell,breed,breedingReason,maintenance,hire,setMode,loan,repay,nextWeek,validState,log,monthOf,eventById,reserveReason,reserve,cancelEntry,planRaces,dueEntries,trainBird,monthSummary,rivals};

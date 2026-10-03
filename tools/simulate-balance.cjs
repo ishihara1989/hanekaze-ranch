@@ -18,7 +18,7 @@ const lines = [
     return r.rank === 1 ? `**${value}**` : value;
   }).join(' | ') + ' |'), '',
   '## 最速個体と2位との差', '',
-  '| 距離 | 最速個体 | 2位との差 | 巡航指示倍率 | スパート開始（残りm） |',
+  '| 距離 | 最速個体 | 2位との差 | 巡航目標倍率 | スパート開始（残りm） |',
   '|---:|---|---:|---:|---:|',
   ...columns.map(c => {
     const [first, second] = [...c.results].sort((a, b) => a.time - b.time);
@@ -33,7 +33,7 @@ const lines = [
 const example = B.PRESETS[0];
 const steady = Runner.run(example.parameters, {distance:2800, policy:'steady'});
 const rush = Runner.run(example.parameters, {distance:2800, policy:'rush'});
-lines.push(`${example.name}・2800m。巡航→残り400mスパートに対し、同じ指示に「最初の35秒だけ巡航速度×1.35」を追加。`, '',
+lines.push(`${example.name}・2800m。巡航→残り400mスパートに対し、同じペース配分に「最初の35秒だけ巡航速度×1.35」を追加。`, '',
   '| 作戦 | 最初の400m | 最後の400m | 全体 | ゴール時の脚疲労 |', '|---|---:|---:|---:|---:|',
   ...[['通常', steady], ['序盤を飛ばす', rush]].map(([label, r]) =>
     `| ${label} | ${r.splits[0].duration.toFixed(2)}秒 | ${r.splits.at(-1).duration.toFixed(2)}秒 | ${r.time.toFixed(2)}秒 | ${(r.state.fatigue * 100).toFixed(1)}% |`), '',

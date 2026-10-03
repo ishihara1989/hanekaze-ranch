@@ -42,7 +42,7 @@
     const pace=1+.025*u('drive')*(1-u('control'));
     let target=remaining<=400?p.maxSpeed:cruise*pace;
     target*=1-avoidance*burden*.15;
-    // Grit both follows the rider under fatigue and commits more of the reserve.
+    // Grit sustains the bird's own effort under fatigue and commits more reserve.
     const reserveFloor=.12-.10*u('grit');
     const lowReserve=state.reserve<p.reserveCapacity*reserveFloor;
     if(lowReserve)target=Math.min(target,cruise);

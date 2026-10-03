@@ -452,6 +452,55 @@ test('breeding forecasts use five-level ranges and update when either parent cha
   const first=forecast();await g.change('dam-choice',s.sale[1]);assert.notEqual(forecast(),first);assert.equal(s.rng,rng);
 });
 
+test('breeding forecasts disclose aptitudes and growth with the lab and numeric ranges with either monument',()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});const s=g.h.state;
+  const forecast=()=>html(g).match(/<section class="paper offspring-preview">([\s\S]*?)<\/section>/)[1];
+  const traits={...R.Genetics.APTITUDES,...R.Genetics.DEVELOPMENT};
+  for(const lab of [0,1,3])for(const museum of [0,1])for(const statue of [0,1]){
+    Object.assign(s.facilities,{lab,museum,statue});const before=JSON.stringify(s);g.h.render();
+    assert.equal(JSON.stringify(s),before);
+    const output=forecast();
+    assert.equal((output.match(/data-preview-trait=/g)||[]).length,lab?23:16);
+    for(const [key,label] of Object.entries(traits)){
+      const row=new RegExp(`data-preview-trait="${key}"><span>${label}</span>`);
+      if(lab)assert.match(output,row);else assert.doesNotMatch(output,row);
+    }
+    if(lab&&(museum||statue)){
+      assert.equal((output.match(/data-score=/g)||[]).length,23);
+      const dam=R.own(s).find(b=>b.role==='mare'),sire=R.bird(s,selectedSire(g));
+      const ranges=R.breedingPreview(s,sire,dam);
+      for(const [key,range] of Object.entries(ranges)){
+        const min=Math.floor(range.min),max=Math.floor(range.max);
+        assert.ok(output.includes(`<small data-score="${key}">${min===max?min:`${min}〜${max}`}</small>`),key);
+      }
+    }else assert.doesNotMatch(output,/data-score/);
+  }
+});
+
+test('hatch comparisons appear in reports and saved letters, with details gated by research stages',async()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');g.click('breed-confirm');g.click('ack');
+  await g.h.advance(4);
+  const s=g.h.state,report=s.reports.find(r=>r.type==='birth');assert.ok(report.geneticLottery);
+  const comparison=()=>html(g).match(/<section class="birth-genetics">([\s\S]*?)<\/section>/)[1];
+  for(const lab of [0,1,3])for(const museum of [0,1])for(const statue of [0,1]){
+    Object.assign(s.facilities,{lab,museum,statue});const before=JSON.stringify(s);g.h.render();
+    assert.equal(JSON.stringify(s),before);
+    const output=comparison(),level=R.labLevel(s);
+    assert.equal((output.match(/data-birth-trait=/g)||[]).length,lab?23:16);
+    assert.equal((output.match(/data-birth-score=/g)||[]).length,level>=2?23:0);
+    assert.equal((output.match(/class="birth-position"/g)||[]).length,level===3?23:0);
+    assert.match(output,/結果 \/ 可能範囲/);
+    for(const [key,row] of Object.entries(report.geneticLottery)){
+      if(level>=2)assert.ok(output.includes(`<small data-birth-score="${key}">${Math.floor(row.value)} / ${Math.floor(row.min)}～${Math.floor(row.max)}</small>`),key);
+    }
+  }
+  g.click('close');g.click('nav',{page:'notebook'});g.click('notebook-tab',{tab:'letters'});
+  const original=comparison();
+  const restored=boot(g.storage);restored.click('nav',{page:'notebook'});restored.click('notebook-tab',{tab:'letters'});
+  assert.equal(restored.node('#app').innerHTML.match(/<section class="birth-genetics">([\s\S]*?)<\/section>/)[1],original);
+  assert.deepEqual(restored.h.state.journal.find(r=>r.id===report.id).geneticLottery,report.geneticLottery);
+});
+
 test('bird schedule changes save immediately, preserve the detail modal, and reload with the same chosen menu',async()=>{
   const g=boot(),b=R.own(g.h.state)[0];g.click('detail',{id:b.id});assert.equal((html(g).match(/data-plan-week=/g)||[]).length,8);
   await g.change('', 'training:power',{scheduleId:b.id,week:String(g.h.state.week)});

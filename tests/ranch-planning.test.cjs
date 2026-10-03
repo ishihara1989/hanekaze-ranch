@@ -41,8 +41,33 @@ test('cross mutation forecasts contain the actual inherited effects of crossed c
   const middle=R.createBird(s,{},[root,base]),dam=R.createBird(s,{sex:'F',role:'mare'},[other,middle]);
   assert.equal(R.crossReason(s,sire,dam),'');assert.ok(R.crossPlan(s,sire,dam).length);
   const before=JSON.stringify(s),ranges=R.breedingPreview(s,sire,dam);assert.equal(JSON.stringify(s),before);
-  for(let i=0;i<100;i++)for(const [key,score] of Object.entries(R.geneticScores(R.createBird(s,{},[sire,dam]))))
-    assert.ok(score>=ranges[key].min-1e-9&&score<=ranges[key].max+1e-9,`${key}: ${score}`);
+  for(let i=0;i<100;i++){
+    const child=R.createBird(s,{},[sire,dam]),scores=R.geneticScores(child);
+    for(const group of ['aptitude','development'])for(const [key,pair] of Object.entries(child.genome.traits[group]))
+      scores[key]=50+100*R.Genetics.mean(pair);
+    for(const [key,score] of Object.entries(scores))
+      assert.ok(score>=ranges[key].min-1e-9&&score<=ranges[key].max+1e-9,`${key}: ${score}`);
+  }
+});
+
+test('aptitude and development forecasts include segregation and possible or guaranteed cross mutations',()=>{
+  const s=R.initial(),root=R.sires(s)[0];
+  const sire=R.createBird(s,{sex:'M'}),dam=R.createBird(s,{sex:'F'}),middle=R.createBird(s,{});
+  const keys=[...Object.keys(R.Genetics.APTITUDES),...Object.keys(R.Genetics.DEVELOPMENT)];
+  for(const group of ['aptitude','development'])for(const key of Object.keys(root.genome.traits[group])){
+    root.genome.traits[group][key]=[1,1];
+    sire.genome.traits[group][key]=[0,.5];dam.genome.traits[group][key]=[.25,.75];
+  }
+  const check=expected=>{
+    const before=JSON.stringify(s),ranges=R.breedingPreview(s,sire,dam);
+    assert.equal(JSON.stringify(s),before);
+    for(const key of keys)assert.deepEqual(ranges[key],expected,key);
+  };
+  check({min:62.5,max:112.5});
+  sire.parents=[root.id,null];middle.parents=[root.id,null];dam.parents=[middle.id,null];
+  check({min:62.5,max:150});
+  dam.parents=[root.id,null];
+  check({min:150,max:150});
 });
 
 test('ability progress separates development, age loss and remaining potential and keeps the value calculation',()=>{

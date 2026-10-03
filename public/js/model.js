@@ -12,7 +12,7 @@
     ['stamina', 'スタミナ', 'physical', 'レース中に使える体力の総量。'],
     ['burst', '瞬発力', 'physical', 'スパート中の最大速度を引き上げる。'],
     ['sustain', '持続力', 'physical', 'スパートを維持できる時間。'],
-    ['versatility', '自在', 'physical', '得意なペースの幅。作戦が変わっても消耗しにくい。'],
+    ['versatility', '自在', 'physical', '得意なペースの幅。流れが変わっても消耗しにくい。'],
     ['mud', '悪路', 'physical', '重い羽場での速度低下を軽減。'],
     ['dirt', 'ダート', 'physical', '砂のコースで速度を発揮する適性。'],
     ['turf', '芝', 'physical', '芝のコースで速度を発揮する適性。'],
@@ -27,7 +27,7 @@
     ['hill', '登坂', 'physical', '坂道での速度低下を軽減。'],
     ['wind', '耐風', 'physical', '向かい風による速度低下を軽減。'],
     ['heat', '耐暑', 'physical', '暑い日の追加体力消費を軽減。'],
-    ['temper', '落ち着き', 'mental', 'リーダー気質に流されず、指定したペースを守る力。'],
+    ['temper', '落ち着き', 'mental', '前へ行きたい気持ちを抑え、自分のペースを保つ力。'],
     ['grit', '根性', 'mental', '競り合い中や体力切れの際の粘り。'],
     ['crowd', '羽混み', 'mental', '前後に囲まれた状況での速度低下を抑える。'],
     ['leader', 'リーダー', 'mental', '前に行きたがる気質。高いと先行志向、低いと後方志向。'],
@@ -128,22 +128,20 @@
     dirt:{name:'砂丘ダート杯',distance:1800,label:'万能',surface:'dirt',going:'good',hill:.4,wind:.3,heat:1,purse:[450,270,170,95,65,45]},
     rain:{name:'雨音チャレンジ',distance:2000,label:'長距離',surface:'turf',going:'heavy',hill:.3,wind:.5,heat:0,purse:[480,290,175,100,70,50]},
   };
-  const TACTICS = {steady:'一定ペース',front:'先行',late:'差し'};
   const aptitude = b => b.genes.distance.every(a => a === 'S') ? '短距離' : b.genes.distance.every(a => a === 'L') ? '長距離' : '万能';
   const gateDelay = (s, random = Math.random) => .15 + (100-s.gate)*.016 + (100-s.focus)*.003 + (100-s.courage)*.003 + random()*.12;
   function runner(b, index, random = Math.random) {
     const s = stats(b);
     return {bird:b,index,stats:s,distance:0,energy:100,velocity:0,finishedAt:null,gate:gateDelay(s,random),spurtTime:0,spurtStarted:false,mode:'ゲート待機',form:.97+random()*.06,phaseSeed:random()*Math.PI*2};
   }
-  function factors(r, runners, course, time, tactic = 'steady') {
+  function factors(r, runners, course, time) {
     const s=r.stats, p=r.distance/course.distance;
     const nearby=runners.filter(o=>o!==r&&o.finishedAt===null&&Math.abs(o.distance-r.distance)<24);
     const ahead=nearby.some(o=>o.distance>r.distance), behind=nearby.some(o=>o.distance<=r.distance);
     const crowded=ahead&&behind;
     const preferred=.9+s.leader*.002;
-    const requested=tactic==='front'?(p<.55?1.1:.97):tactic==='late'?(p<.55?.94:1.06):1;
     const control=.2+s.temper*.008;
-    const pace=preferred+(requested-preferred)*control;
+    const pace=preferred+(1-preferred)*control;
     const paceStress=Math.max(0,Math.abs(pace-preferred)-(.015+s.versatility*.0015))*(1-s.adaptability*.006);
     const apt=aptitude(r.bird);
     const suitability=apt==='万能'||course.label==='万能'?1:apt===course.label?1.035:.90+s.adaptability*.00085;
@@ -158,7 +156,7 @@
     const chase=ahead?1+s.competitive*.0003:1;
     const concentration=1-Math.abs(Math.sin(time*1.7+r.phaseSeed))*(100-s.focus)*.0006;
     const duration=5+s.sustain*.24;
-    const spurtThreshold=.82-(tactic==='front'?.08:tactic==='late'?-.04:0)-(s.leader-50)*.0003;
+    const spurtThreshold=.82-(s.leader-50)*.0003;
     const spurt=(p>=spurtThreshold||r.spurtStarted)&&r.spurtTime<duration&&r.energy>3;
     const exhausted=r.energy<20?Math.max(.60,1-(20-r.energy)*.018+s.grit*.0005):1;
     const condition=.78+r.bird.condition*.0022-r.bird.strain*.001;
@@ -181,14 +179,14 @@
     const dx=corner?-Math.sin(angle):Math.cos(angle),dy=corner?Math.cos(angle):0;
     return {x:8+(x+radius)/(straight+2*radius)*84,y:16+(y+radius)/(2*radius)*68,corner,dx,dy,lap:Math.floor((track.lap-(course.distance%track.lap)+distance)/track.lap)+1};
   }
-  function stepRace(runners, course, time, dt, tactic) {
+  function stepRace(runners, course, time, dt) {
     // Snapshot before moving anyone prevents update-order bias in pack interactions.
     const snapshot=runners.map(r=>({...r}));
     runners.forEach((r,i)=>{
       if(r.finishedAt!==null)return;
       const activeDt=Math.min(dt,Math.max(0,time-r.gate));
       if(activeDt<=0){r.mode='ゲート待機';return;}
-      const f=factors(snapshot[i],snapshot,course,time,i===0?tactic:'steady');
+      const f=factors(snapshot[i],snapshot,course,time);
       r.mode=f.spurt?'スパート':f.crowded?'羽混み':f.ahead?'追走':'巡航';
       if(f.spurt){r.spurtStarted=true;r.spurtTime+=activeDt;}
       const previousVelocity=r.velocity;
@@ -248,5 +246,5 @@
     if(!validState(s))throw Error('Migration failed');
     return s;
   }
-  return {DEFINITIONS,KEYS,LABELS,GROUPS,SEX_VARIATION,MENUS,COURSES,TACTICS,geneticBase,baseStats,potential,stats,startingValue,trainingRoom,initialize,inherit,trainingGain,trainingCost,train,peakUntil,nextWeek,afterRace,gateDelay,runner,factors,trackPosition,stepRace,validBird,validState,migrate};
+  return {DEFINITIONS,KEYS,LABELS,GROUPS,SEX_VARIATION,MENUS,COURSES,geneticBase,baseStats,potential,stats,startingValue,trainingRoom,initialize,inherit,trainingGain,trainingCost,train,peakUntil,nextWeek,afterRace,gateDelay,runner,factors,trackPosition,stepRace,validBird,validState,migrate};
 });

@@ -46,5 +46,17 @@
     const preference=(a,c,left,right)=>mean(a)===mean(c)?'どちらも同程度':mean(a)>mean(c)?left:right;
     return `<section class="research status-record"><h3>${young?'成長率':'現在のステータス'}</h3><p class="speaker">${young?'シロマ / 育成担当':'モーグリ / トレーナー'}</p>${young?`<p class="muted">成長の速さ・衰え始め・衰え方の評価。高いほど、早く育ち、長く能力を保てます。</p>${ratingTable(traitScores(traits.development),R.Genetics.DEVELOPMENT,{numeric})}`:`<h3>現在の身体能力</h3>${abilityGauges(state,b,numeric)}<h3>管理の資質</h3>${ratingTable(b.management,R.MANAGEMENT,{numeric})}<h3>現在の性格</h3>${ratingTable(b.personality,R.PERSONALITY,{numeric})}`}${level>=1?`<details class="race-traits" open><summary>詳しい競走情報</summary><p class="muted">${R.profile(b).distance} / ${R.profile(b).style}</p><p>得意羽場：${preference(aptitude.turf,aptitude.dirt,'芝','ダート')} / 得意なクッション：${preference(aptitude.lowCushion,aptitude.highCushion,'柔らかめ','硬め')}</p><h3>羽場適性</h3>${ratingTable(traitScores(aptitude),R.Genetics.APTITUDES,{numeric})}</details>`:''}${numeric?`<h3>成熟したときの伸びしろ</h3>${ratingTable(b.potential,abilityLabels,{numeric:true})}${b.role==='racing'?`<div class="wellbeing"><span>体調 <b>${Math.floor(b.condition)} / 100</b></span><span>脚の負担 <b>${Math.floor(b.strain)} / 100</b></span><span>療養 <b>あと${b.health}週</b></span></div>`:''}`:''}</section>`;
   }
-  return Object.freeze({genetics:geneticResearch,status});
+  function birthGenetics(state,report) {
+    if(report.type!=='birth'||!report.geneticLottery)return '';
+    const level=R.labLevel(state),numeric=level>=2,position=level>=3;
+    const table=labels=>`<div class="ability-grid birth-genetic-grid">${Object.entries(labels).map(([key,label])=>{
+      const {min,max,value}=report.geneticLottery[key],low=R.geneticRating(min),high=R.geneticRating(max);
+      const fixed=max===min,percent=fixed?null:Math.round(Math.max(0,Math.min(1,(value-min)/(max-min)))*100);
+      const range=`${low}～${high}`,numbers=`${Math.floor(value)} / ${Math.floor(min)}～${Math.floor(max)}`;
+      const location=fixed?'固定（抽選幅なし）':`下限から${percent}%`;
+      return `<div data-birth-trait="${key}"><span>${label}</span><b aria-label="${label}：結果 ${R.geneticRating(value)}、可能範囲 ${range}">${R.geneticRating(value)} <span class="birth-range">/ ${range}</span></b>${numeric?`<small data-birth-score="${key}">${numbers}</small>`:''}${position?`<small class="birth-position">${location}</small>${fixed?'':`<meter min="0" max="100" value="${percent}" aria-label="${label}の可能範囲内の位置" aria-valuetext="${location}（下限0%、上限100%）">${percent}%</meter>`}`:''}</div>`;
+    }).join('')}</div>`;
+    return `<section class="birth-genetics"><h4>孵化時の遺伝の抽選結果</h4><p class="muted">結果 / 可能範囲（例：◯ / △～◎）。父母からの継承とクロスによる変異を含む、孵化時の遺伝効果です。誕生時の個体差や育成は含みません。</p>${numeric?'<p class="muted">数値も「結果 / 最小～最大」で表示します。</p>':''}${position?'<p class="muted">位置は下限0%・上限100%。抽選の確率や順位を表すものではありません。</p>':''}<h5>身体・管理・性格</h5>${table(statLabels)}${level>=1?`<h5>羽場適性</h5>${table(R.Genetics.APTITUDES)}<h5>成長と加齢</h5>${table(R.Genetics.DEVELOPMENT)}`:''}</section>`;
+  }
+  return Object.freeze({genetics:geneticResearch,status,birthGenetics});
 });

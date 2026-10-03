@@ -70,7 +70,7 @@
       course.every((s, i) => i === 0 || s.from >= course[i - 1].to)) return;
     throw new RangeError('Course must have ordered, non-overlapping segments and slopes within ±0.2');
   }
-  // A target speed is a rider request, not a direct velocity assignment.
+  // A target speed expresses pacing intent; physical limits determine velocity.
   function step(state, p, dt, targetSpeed, slope = 0, traction = 1, effortCost = 1) {
     if (!Number.isFinite(dt) || dt <= 0 || dt > .5 || !Number.isFinite(targetSpeed) ||
         !Number.isFinite(slope) || Math.abs(slope) > .2 || !Number.isFinite(traction) || traction < .7 || traction > 1 ||

@@ -20,7 +20,7 @@ async function advance(g,weeks,answer='results-only'){
 }
 test('all management screens render with persistent world data',()=>{
  const g=boot();assert.equal(g.h.active().length,6);assert.equal(g.h.state.owners.length,7);assert.ok(W.validState(g.h.state));
- for(const page of ['ranch','calendar','market','staff','accounts','world','records','help','breed','race']){g.click('nav',{page});assert.ok(g.node('#app').innerHTML.length>1000,page);}
+ for(const page of ['ranch','calendar','market','staff','accounts','world','records','help','breed','race']){g.click('nav',{page});assert.ok(g.node('#app').innerHTML.length>1000,page);if(page==='race')assert.doesNotMatch(g.node('#app').innerHTML,/作戦|id="tactic"/);}
 });
 test('manual race pays entry once, resolves all registered competitors, and cannot pay twice',()=>{
  const g=boot(),b=g.h.active()[0],e=W.calendar(g.h.state.week)[0],before=g.h.state.money;

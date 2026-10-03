@@ -13,12 +13,12 @@
     <div class="intro"><div><p class="eyebrow">WING & WIND · BALANCE LAB</p><h1>速さの、その先。</h1>
       <p class="lead">距離適性ラボ <span>1200 — 3600 m</span></p>
       <p class="muted">巡航力、予備容量、脚の耐久。7羽の走りから、得意距離が生まれる仕組みを探る。</p></div>
-      <div class="model-note"><b>3つの仕組みで、走りをつくる</b><p><span>A</span> 有酸素の供給出力 <span>W</span> 無酸素の予備容量 <span>L</span> 脚疲労</p><small>距離適性の直接補正なし。独立した実験用モデルです。</small></div>
+      <div class="model-note"><b>3つの仕組みで、走りをつくる</b><p><span>A</span> 有酸素の供給出力 <span>W</span> 無酸素の予備容量 <span>L</span> 脚疲労</p><small>距離適性の直接補正なし。ペース配分を比較する実験用モデルです。</small></div>
     </div>
     <section class="panel" aria-labelledby="comparison-title">
       <div class="section-top"><div><p class="eyebrow">01 / DISTANCE COMPARISON</p><h2 id="comparison-title">距離を変えると、主役が変わる。</h2></div><button id="export" class="secondary" disabled>設定と結果をJSON保存</button></div>
       <div class="controls"><label>コース<select id="course"><option value="flat">平地</option><option value="hills">起伏あり（上り・下り2.5%）</option></select></label>
-        <label>共通の作戦ルール<select id="policy"></select></label>
+        <label>共通のペース配分<select id="policy"></select></label>
         <button id="recalculate">全距離を再計算</button>
         <p id="status" role="status" aria-live="polite">計算を準備しています…</p></div>
       <div id="matrix" class="table-scroll"></div>
@@ -26,7 +26,7 @@
       <p id="protocol" class="footnote"></p>
     </section>
     <section class="panel pacing-panel" aria-labelledby="pacing-title">
-      <div class="section-top"><div><p class="eyebrow">PACING STUDY / 同じ個体で作戦を比較</p><h2 id="pacing-title">巡航からのラストスパートが速くなる例</h2></div><button id="compare-pacing">ユウナギ・2400mで比較する</button></div>
+      <div class="section-top"><div><p class="eyebrow">PACING STUDY / 同じ個体でペース配分を比較</p><h2 id="pacing-title">巡航からのラストスパートが速くなる例</h2></div><button id="compare-pacing">ユウナギ・2400mで比較する</button></div>
       <p class="muted">無酸素エネルギーの使用で脚が疲れ、疲れた脚では走行コストが増える個体。序盤から使うと、その後の走行にも負担が残ります。</p>
       <p class="footnote">平地・同じ個体・同じ物理式で比較。巡航倍率0.005刻み、スパート位置50m刻みで探索し、一定ペースも細かく調整します。下の7羽とは独立した追加例です。</p>
       <p id="pacing-status" role="status" aria-live="polite"></p>

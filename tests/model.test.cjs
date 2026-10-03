@@ -12,8 +12,8 @@ function racer(values={}) {
   r.distance=400;r.gate=0;r.form=1;r.phaseSeed=.7;
   return r;
 }
-function factors(r, course=M.COURSES.short, tactic='steady', packed=false) {
-  return M.factors(r,packed?[r,{...r,index:1,distance:r.distance+5},{...r,index:2,distance:r.distance-5}]:[r],course,10,tactic);
+function factors(r, course=M.COURSES.short, packed=false) {
+  return M.factors(r,packed?[r,{...r,index:1,distance:r.distance+5},{...r,index:2,distance:r.distance-5}]:[r],course,10);
 }
 test('30 named traits and every trait has a training route',()=>{
   assert.equal(M.KEYS.length,30);
@@ -68,7 +68,7 @@ test('gate, focus and courage reduce starting delay; acceleration changes speed 
   const r=racer();
   for(const key of ['gate','focus','courage'])assert.ok(M.gateDelay({...r.stats,[key]:90},()=>0)<M.gateDelay({...r.stats,[key]:10},()=>0));
   const low=racer({acceleration:10}),high=racer({acceleration:90});
-  M.stepRace([low],M.COURSES.short,1,.1,'steady');M.stepRace([high],M.COURSES.short,1,.1,'steady');
+  M.stepRace([low],M.COURSES.short,1,.1);M.stepRace([high],M.COURSES.short,1,.1);
   assert.ok(high.velocity>low.velocity);
 });
 test('race stat effects cover cruise, sprint, pace, surfaces, weather and pack behavior',()=>{
@@ -80,7 +80,7 @@ test('race stat effects cover cruise, sprint, pace, surfaces, weather and pack b
   sustainLow.distance=sustainHigh.distance=1050;sustainLow.spurtTime=sustainHigh.spurtTime=10;
   assert.equal(factors(sustainLow).spurt,false);assert.equal(factors(sustainHigh).spurt,true);
   assert.ok(factors(racer({versatility:90,leader:0})).paceStress<factors(racer({versatility:0,leader:0})).paceStress);
-  assert.ok(factors(racer({temper:90,leader:0}),M.COURSES.short,'front').pace>factors(racer({temper:10,leader:0}),M.COURSES.short,'front').pace);
+  assert.ok(factors(racer({temper:90,leader:0}),M.COURSES.short).pace>factors(racer({temper:10,leader:0}),M.COURSES.short).pace);
   assert.ok(factors(racer({leader:90})).pace>factors(racer({leader:10})).pace);
   for(const [key,course] of [['turf',M.COURSES.short],['dirt',M.COURSES.dirt],['mud',M.COURSES.rain],['balance',M.COURSES.rain],['corner',M.COURSES.short],['hill',M.COURSES.long],['wind',M.COURSES.long],['focus',M.COURSES.short]]){
     assert.ok(factors(racer({[key]:90}),course).target>factors(racer({[key]:10}),course).target,key);
@@ -89,17 +89,25 @@ test('race stat effects cover cruise, sprint, pace, surfaces, weather and pack b
   const adaptableLow=racer({adaptability:10}),adaptableHigh=racer({adaptability:90});
   adaptableLow.bird.genes.distance=adaptableHigh.bird.genes.distance=['L','L'];
   assert.ok(factors(adaptableHigh).target>factors(adaptableLow).target);
-  for(const key of ['crowd','courage','grit','competitive'])assert.ok(factors(racer({[key]:90}),M.COURSES.short,'steady',true).target>factors(racer({[key]:10}),M.COURSES.short,'steady',true).target,key);
-  assert.ok(factors(racer({competitive:90}),M.COURSES.short,'steady',true).drain>factors(racer({competitive:10}),M.COURSES.short,'steady',true).drain);
+  for(const key of ['crowd','courage','grit','competitive'])assert.ok(factors(racer({[key]:90}),M.COURSES.short,true).target>factors(racer({[key]:10}),M.COURSES.short,true).target,key);
+  assert.ok(factors(racer({competitive:90}),M.COURSES.short,true).drain>factors(racer({competitive:10}),M.COURSES.short,true).drain);
 });
-test('every course and tactic completes with finite ordered finish times even when exhausted',()=>{
-  for(const course of Object.values(M.COURSES))for(const tactic of Object.keys(M.TACTICS)){
+test('every course completes with finite ordered finish times even when exhausted',()=>{
+  for(const course of Object.values(M.COURSES)){
     const rs=Array.from({length:6},(_,i)=>{const b=bird(i%2?'F':'M');b.condition=i?100:0;b.strain=i?0:69;return M.runner(b,i,()=>.4);});
     let time=0;
-    while(rs.some(r=>r.finishedAt===null)&&time<400){time+=.1;M.stepRace(rs,course,time,.1,tactic);}
-    assert.ok(rs.every(r=>Number.isFinite(r.finishedAt)&&r.finishedAt>0),`${course.name}/${tactic}`);
+    while(rs.some(r=>r.finishedAt===null)&&time<400){time+=.1;M.stepRace(rs,course,time,.1);}
+    assert.ok(rs.every(r=>Number.isFinite(r.finishedAt)&&r.finishedAt>0),course.name);
     assert.ok(rs.every(r=>r.energy>=0&&r.energy<=100));
   }
+});
+test('every entrant uses its own temperament regardless of its position in the field array',()=>{
+  const runners=[racer({leader:90,temper:20}),racer({leader:10,temper:80})];
+  const reversed=structuredClone(runners).reverse();
+  M.stepRace(runners,M.COURSES.short,10,.1);
+  M.stepRace(reversed,M.COURSES.short,10,.1);
+  assert.deepEqual(runners,reversed.reverse());
+  assert.notEqual(runners[0].energy,runners[1].energy);
 });
 function legacySave(){
   const birds=[bird('M'),bird('F')];

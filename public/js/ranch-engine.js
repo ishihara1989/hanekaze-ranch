@@ -43,9 +43,9 @@
     meadow:{name:'穏やかな平原',cost:8000000,max:3,description:'自制心と賢さを育てる放牧地。最初から利用できます。'},
     forest:{name:'過酷な森',cost:8000000,max:3,description:'走る意欲と刺激への慣れを育てる放牧地。'},
     shop:{name:'グッズ販売所',cost:25000000,max:3,description:'GⅠ勝者のファンから毎月収入。引退後は5年で減衰、殿堂入りは一部継続。'},
-    lab:{name:'研究所',cost:25000,max:1,description:'羽場・成長・羽色などの遺伝と、得意羽場などの競走情報を調べられます。',lock:'レース初勝利'},
-    statue:{name:'銅像',cost:50000000,max:1,description:'三冠を記念する銅像。研究所と合わせて全遺伝の座位を公開。記念館も完成すると現在能力の数値を公開します。',lock:'三冠制覇'},
-    museum:{name:'記念館',cost:100000000,max:1,description:'牧場で8大競走を制覇した記念館。研究所と合わせて全遺伝の座位を公開。銅像も完成すると現在能力の数値を公開します。',lock:'8大競走制覇'},
+    lab:{name:'研究所',cost:25000,max:1,description:'羽場・成長・羽色などの遺伝と、得意羽場などの競走情報を調べられます。孵化報告に羽場・成長の抽選結果を追加します。',lock:'レース初勝利'},
+    statue:{name:'銅像',cost:50000000,max:1,description:'三冠を記念する銅像。研究所と合わせて全遺伝の座位と孵化時の数値範囲を公開。記念館も完成すると現在能力の数値と孵化時の抽選位置を公開します。',lock:'三冠制覇'},
+    museum:{name:'記念館',cost:100000000,max:1,description:'牧場で8大競走を制覇した記念館。研究所と合わせて全遺伝の座位と孵化時の数値範囲を公開。銅像も完成すると現在能力の数値と孵化時の抽選位置を公開します。',lock:'8大競走制覇'},
   };
   const TITLES = {
     triple:['神竜賞','チョコボダービー','オメガ賞'],
@@ -249,6 +249,10 @@
       const [min,max]=inherited(parents.map(p=>p.genome.character[key]),mutation('character',key,0));
       ranges[key]={min,max};
     }
+    for(const [group,labels] of [['aptitude',Genetics.APTITUDES],['development',Genetics.DEVELOPMENT]])for(const key of Object.keys(labels)){
+      const [min,max]=inherited(parents.map(p=>p.genome.traits[group][key]),mutation(group,key,0));
+      ranges[key]={min:50+100*min,max:50+100*max};
+    }
     const distance=inherited(parents.map(p=>p.genome.distance)),release=inherited(parents.map(p=>p.genome.release));
     for(const a of Mapping.ABILITIES)for(const [weight,range] of [[a.distance,distance],[a.release,release]]){
       ranges[a.key].min+=Math.min(...range.map(v=>v*weight));
@@ -264,6 +268,11 @@
       for(const [key,weight] of Object.entries(effects)){ranges[key].min-=maximum*weight;ranges[key].max-=minimum*weight;}
     }
     return ranges;
+  }
+  function geneticLottery(b,ranges) {
+    const values={...geneticScores(b)};
+    for(const group of ['aptitude','development'])for(const [key,pair] of Object.entries(b.genome.traits[group]))values[key]=50+100*mean(pair);
+    return Object.fromEntries(Object.entries(ranges).map(([key,range])=>[key,{...range,value:values[key]}]));
   }
   function profile(b) {
     const values={...b.potential,...b.management,...b.inborn};
@@ -451,6 +460,9 @@
     s.worldVersion=1;
   }
   function upgradeState(s) {
+    // Refresh the old sale introduction without changing the bird or its abilities.
+    for(const b of s.birds)if(b.comment==='おだやかで、人の合図によく耳を傾ける子です。')
+      b.comment='おだやかで、周りにつられず自分のペースを保てる子です。';
     if(s.geneticsVersion!==Genetics.VERSION){
       for(const b of s.birds){
         b.genome.traits??=Genetics.legacy(b);
@@ -499,7 +511,7 @@
     s.marketYear = year;
     s.birds.filter(b => b.owner === 'sale').forEach(b => {b.role = 'archived'; b.owner = 'archive';});
     s.sale = [
-      ['ハルノコムギ',.0,-.2,'おだやかで、人の合図によく耳を傾ける子です。',2800],
+      ['ハルノコムギ',.0,-.2,'おだやかで、周りにつられず自分のペースを保てる子です。',2800],
       ['ミズノシズク',.8,.4,'長く歩いても、まだ先へ行きたそうですね。',3200],
       ['アカネノハネ',-.8,.65,'走り始めると、とても軽やか。少し元気いっぱいです。',3200],
     ].map(([name,distance,release,comment,price],i) => {
@@ -576,7 +588,7 @@
   function observe(s,b) {
     const d=mean(b.genome.distance),r=mean(b.genome.release);
     const body=d>.35?'長く走ることが得意になりそう':d<-.35?'短い距離を軽やかに走れそう':'いろいろな距離を試してみたい';
-    const character=b.personality.control>85?'落ち着いて合図を聞いてくれます':b.personality.drive>85?'走ることが大好きな、元気な子です':'少しずつ、人との呼吸を覚えています';
+    const character=b.personality.control>85?'落ち着いて自分のペースを保てます':b.personality.drive>85?'走ることが大好きな、元気な子です':'少しずつ、周りに慌てず走ることを覚えています';
     return `${body}ですね。${r>.3?'力をためてから走り出すのが好きみたい。':''}${character}。`;
   }
   function abilityProgress(s,b) {
@@ -870,13 +882,13 @@
     if(d.week===48){annual(s,d.year);retireWorld(s,d.year);}
     s.week++;
     for(const mother of own(s).filter(b=>b.pregnancy&&b.pregnancy.due<=s.week)) {
-      const father=bird(s,mother.pregnancy.sireId),child=createBird(s,{},[father,mother]);
+      const father=bird(s,mother.pregnancy.sireId),ranges=breedingPreview(s,father,mother),child=createBird(s,{},[father,mother]);
       mother.pregnancy=null;
       if(!child){
         report(s,'event','卵は、かえりませんでした',`${mother.name}の卵は、今回はかえりませんでした。予約していた羽房を空け、お母さんを見守ります。今年の配合は終了しています。`,{expression:'sad'});
         s.stage='running';continue;
       }
-      report(s,'birth','小さな羽音が、聞こえます',`${mother.name}の子が生まれました！ ${observe(s,child)}まずは穏やかな平原で、のびのび育てますね。2歳になる年の1月に、競走羽として名前を登録しましょう。`,{birdId:child.id,expression:'overjoyed'});
+      report(s,'birth','小さな羽音が、聞こえます',`${mother.name}の子が生まれました！ ${observe(s,child)}まずは穏やかな平原で、のびのび育てますね。2歳になる年の1月に、競走羽として名前を登録しましょう。`,{birdId:child.id,expression:'overjoyed',geneticLottery:geneticLottery(child,ranges)});
       if(!s.milestones.birth)s.milestones.birth=s.week;
       s.stage='running';
     }
@@ -924,8 +936,14 @@
       scores(b.potential,Mapping.ABILITIES.map(a=>a.key))&&scores(b.personality,Object.keys(PERSONALITY))&&scores(b.inborn,Object.keys(PERSONALITY))&&scores(b.management,Object.keys(MANAGEMENT))&&b.training&&Mapping.ABILITIES.every(a=>finite(b.training[a.key],0,1))&&schedule(b.schedule)&&finite(b.condition,0,100)&&finite(b.strain,0,100)&&finite(b.health,0,100)&&['steady','challenge'].includes(b.policy)&&['meadow','forest'].includes(b.pasture)&&['early','normal','late'].includes(b.growth)&&Object.hasOwn(Genetics.COLORS,b.color)&&typeof b.registered==='boolean'&&['races','wins','g1','graded','earnings','fans','bredYear'].every(k=>finite(b[k],0,1e15))&&Number.isInteger(b.lastRace)&&Array.isArray(b.records)&&b.records.every(record)&&Array.isArray(b.titles)&&b.titles.every(t=>typeof t==='string')&&
       b.genome&&['distance','release'].every(k=>Array.isArray(b.genome[k])&&b.genome[k].length===2&&b.genome[k].every(x=>finite(x,-1,1)))&&[...Mapping.ABILITIES.map(a=>a.key),...Object.keys(MANAGEMENT)].every(k=>Array.isArray(b.genome.quality?.[k])&&b.genome.quality[k].length===32&&b.genome.quality[k].every(p=>Array.isArray(p)&&p.length===2&&p.every(x=>x===0||x===1)))&&
       (b.pregnancy===null||(b.sex==='F'&&b.role==='mare'&&Number.isInteger(b.pregnancy.due)&&b.pregnancy.due>s.week&&s.birds.some(p=>p.id===b.pregnancy.sireId&&p.sex==='M')))))return false;
+    const lotteryKeys=[...Mapping.ABILITIES.map(a=>a.key),...Object.keys(MANAGEMENT),...Object.keys(PERSONALITY),...Object.keys(Genetics.APTITUDES),...Object.keys(Genetics.DEVELOPMENT)];
+    const validLottery=rows=>rows&&typeof rows==='object'&&!Array.isArray(rows)&&Object.keys(rows).length===lotteryKeys.length&&lotteryKeys.every(key=>{
+      const row=rows[key];
+      return row&&['min','max','value'].every(k=>Number.isFinite(row[k]))&&row.min<=row.max&&row.value>=row.min-1e-8&&row.value<=row.max+1e-8;
+    });
     const validReport=r=>r&&/^report-\d+$/.test(r.id)&&Number.isInteger(r.week)&&typeof r.title==='string'&&typeof r.text==='string'&&['talk','neutral','happy','overjoyed','sad','motivated','disappointed','ambiguous-smile'].includes(r.expression)&&['weekly','monthly','annual','birth','event','registration','founder'].includes(r.type)&&
       (!['birth','founder'].includes(r.type)||!!bird(s,r.birdId))&&(r.type!=='registration'||Array.isArray(r.birdIds)&&r.birdIds.every(id=>bird(s,id)))&&
+      (r.geneticLottery===undefined||r.type==='birth'&&validLottery(r.geneticLottery))&&
       (r.results===undefined||Array.isArray(r.results)&&r.results.every(x=>record(x)&&bird(s,x.birdId)&&typeof x.birdName==='string'))&&(r.notes===undefined||Array.isArray(r.notes)&&r.notes.every(x=>typeof x==='string'))&&['income','expense','change'].every(k=>r[k]===undefined||Number.isFinite(r[k]));
     if(!s.reports.every(validReport)||!s.journal.every(validReport))return false;
     return s.ledger.every(l=>l&&Number.isInteger(l.week)&&Number.isFinite(l.amount)&&typeof l.note==='string')&&s.awards.every(a=>a&&Number.isInteger(a.year)&&typeof a.title==='string'&&typeof a.name==='string'&&bird(s,a.birdId))&&s.sale.every(id=>bird(s,id))&&s.founderOffers.every(id=>bird(s,id))&&racingCount(s)<=capacity(s).racing&&['mare','stud'].every(role=>own(s).filter(b=>b.role===role).length<=capacity(s)[role]);

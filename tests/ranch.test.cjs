@@ -14,6 +14,13 @@ test('new ranch starts in March with an automated racing filly, funded and guide
   assert.equal(R.validState({version:3}),false);assert.throws(()=>R.advance(s),/迎え/);
   assert.equal(R.sires(s).filter(b=>b.kind==='root').length,32);assert.ok(R.sires(s).filter(b=>b.kind==='root').every(b=>R.age(s,b)===null));
 });
+test('loading an existing ranch refreshes the old sale introduction without changing gameplay state',()=>{
+  const s=R.initial(),expected=copy(s),mare=R.bird(s,s.sale[0]);
+  mare.comment='おだやかで、人の合図によく耳を傾ける子です。';
+  const loaded=R.deserializeState(R.serializeState(s));
+  R.upgradeState(loaded);
+  assert.deepEqual(loaded,expected);assert.ok(R.validState(loaded));
+});
 test('purchase and breeding charge exactly once, reserve a foal stall, and produce inherited genes',()=>{
   const s=R.initial(),mother=R.bird(s,s.sale[0]),father=R.sires(s)[0];R.buy(s,mother.id);assert.equal(s.money,17200);assert.equal(s.stage,'breed');
   assert.throws(()=>R.buy(s,mother.id));read(s);R.breed(s,mother.id,father.id);assert.equal(s.money,16600);assert.equal(R.racingCount(s),2);assert.throws(()=>R.breed(s,mother.id,father.id));

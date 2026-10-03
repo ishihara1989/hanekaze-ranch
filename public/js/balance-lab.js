@@ -87,10 +87,10 @@
     columns = []; traces = [];
     setBusy(true); renderMatrix();
     $('#summary').innerHTML = ''; $('#charts').innerHTML = ''; $('#laps').innerHTML = '';
-    status('作戦と距離を比較しています…');
+    status('ペース配分と距離を比較しています…');
     $('#protocol').textContent = settings().policy === 'search' ?
       '探索：巡航倍率0.85〜1.40（0.025刻み）× スパート残り0・200・400・600・800・1200m、および全力走。全個体に共通の139候補。候補内の最速を採用します。' :
-      '同じ作戦ルールを7羽に適用します。最高速・巡航速度が違うため、要求される速度も個体ごとに変わります。';
+      '同じペース配分を7羽に適用します。最高速・巡航速度が違うため、要求される速度も個体ごとに変わります。';
     try {
       worker = new Worker('js/balance-worker.js');
       worker.onmessage = ({data}) => {
@@ -138,7 +138,7 @@
     const {results, distance:demoDistance} = comparison;
     const spurt = results.find(r => r.id === 'spurt');
     $('#pacing-status').textContent = `比較完了：${comparison.search.candidates.toLocaleString()}候補を探索。候補内の最速であり、任意のペース配分の最適解を保証するものではありません。`;
-    $('#pacing-results').innerHTML = `<div class="table-scroll"><table><thead><tr><th>作戦</th><th>時計</th><th>最初の400m</th><th>最後の400m</th></tr></thead><tbody>${results.map(r => `<tr><th><span class="bird-dot" style="background:${r.color}"></span>${r.name}${r.rank === 1 ? ' / BEST' : ''}</th><td>${r.finished ? formatTime(r.time) : '未完走'}</td><td>${r.splits[0].duration.toFixed(2)} s</td><td>${r.finished ? r.splits.at(-1).duration.toFixed(2) + ' s' : '—'}</td></tr>`).join('')}</tbody></table></div><p class="muted">探索したスパート作戦：${(spurt.parameters.criticalSpeed * spurt.strategy.pace).toFixed(2)} m/sで巡航 → 残り${spurt.strategy.kickAt}mで最高速を要求。</p><p class="footnote">この例もゴール直前には予備容量が尽きて減速しますが、最後の400m全体は巡航区間より速くなります。終盤の加速を、速度のグラフで確認できます。</p><div class="pacing-key">${results.map(r => `<span><span class="bird-dot" style="background:${r.color}"></span>${r.name}</span>`).join('')}</div>`;
+    $('#pacing-results').innerHTML = `<div class="table-scroll"><table><thead><tr><th>ペース配分</th><th>時計</th><th>最初の400m</th><th>最後の400m</th></tr></thead><tbody>${results.map(r => `<tr><th><span class="bird-dot" style="background:${r.color}"></span>${r.name}${r.rank === 1 ? ' / BEST' : ''}</th><td>${r.finished ? formatTime(r.time) : '未完走'}</td><td>${r.splits[0].duration.toFixed(2)} s</td><td>${r.finished ? r.splits.at(-1).duration.toFixed(2) + ' s' : '—'}</td></tr>`).join('')}</tbody></table></div><p class="muted">探索したスパートの配分：${(spurt.parameters.criticalSpeed * spurt.strategy.pace).toFixed(2)} m/sで巡航 → 残り${spurt.strategy.kickAt}mで最高速を要求。</p><p class="footnote">この例もゴール直前には予備容量が尽きて減速しますが、最後の400m全体は巡航区間より速くなります。終盤の加速を、速度のグラフで確認できます。</p><div class="pacing-key">${results.map(r => `<span><span class="bird-dot" style="background:${r.color}"></span>${r.name}</span>`).join('')}</div>`;
     const series = value => results.map(r => ({samples:r.samples, color:r.color, active:true, value:point => value(point, r)}));
     $('#pacing-charts').innerHTML = graph('同じ個体の速度比較', '緑：巡航→スパート。青：一定の目標速度。', series(s => s.speed), 28, 'm/s', demoDistance) +
       graph('同じ個体の脚疲労比較', '早く疲労が増えるほど、その後の走行コストも高くなります。', series(s => s.fatigue * 100), 100, '%', demoDistance);
@@ -154,7 +154,7 @@
       else $('#pacing-status').textContent = data.message;
       finish();
     };
-    pacingWorker.onerror = () => { $('#pacing-status').textContent = '作戦比較の計算に失敗しました。'; finish(); };
+    pacingWorker.onerror = () => { $('#pacing-status').textContent = 'ペース配分の比較計算に失敗しました。'; finish(); };
     pacingWorker.postMessage({id:0, type:'pacing-example'});
   });
   $('#apply-pacing').addEventListener('click', () => {

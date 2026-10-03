@@ -2,6 +2,20 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const M=require('../public/js/model.js'),W=require('../public/js/world.js');
 function makeState(){return W.initial(Array.from({length:6},(_,i)=>M.initialize({id:'p'+i,name:'自羽'+i,sex:i%2?'F':'M',gen:1,age:2,genes:{distance:['S','L'],color:['B','b']},parents:[],races:0,wins:0,trainedWeek:-1,released:false,condition:100},[1,1,1],()=>.5)));}
+
+test('legacy pacing choices are discarded without losing reservations or settling a race twice',()=>{
+ const s=makeState(),bird=s.birds[0],event=W.calendar(s.week)[0];
+ W.reserve(s,bird.id,W.calendar(s.week+4)[0].id);
+ W.prepareRace(s,event.id,bird.id);
+ const expected=structuredClone(s),old=structuredClone(s);
+ old.entries[0].tactic='late';old.pendingRace.tactic='front';
+ const restored=W.migrate(old);
+ assert.deepEqual(restored,expected);assert.ok(W.validState(restored));
+ W.simulate(expected,expected.pendingRace);W.simulate(restored,restored.pendingRace);
+ assert.deepEqual(restored,expected);assert.equal(restored.pendingRace,null);
+ const again=W.migrate(structuredClone(restored));
+ assert.deepEqual(again,restored);
+});
 test('48-week calendar repeats graded stakes; classics enforce age and sex',()=>{
  const s=makeState();assert.deepEqual(W.date(49),{year:2,week:1,month:1,monthWeek:1});
  for(const [week,name] of W.STAKES){assert.ok(W.calendar(week).some(e=>e.name===name));assert.ok(W.calendar(week+48).some(e=>e.name===name));}
@@ -61,7 +75,7 @@ test('trained birds run 2400m in about 2–3 minutes with speed capped at 81km/h
  const s=makeState(),course=W.calendar(21).at(-1),b=s.birds[0];b.condition=100;
  for(const ability of [65,85]){
   const r=M.runner(b,0,()=>.5);r.stats=Object.fromEntries(M.KEYS.map(k=>[k,ability]));let time=0,top=0;
-  while(r.finishedAt===null&&time<300){time+=.1;M.stepRace([r],course,time,.1,'steady');top=Math.max(top,r.velocity);}
+  while(r.finishedAt===null&&time<300){time+=.1;M.stepRace([r],course,time,.1);top=Math.max(top,r.velocity);}
   assert.ok(r.finishedAt>130&&r.finishedAt<190,`${ability}: ${r.finishedAt}`);assert.ok(top<=22.5);
  }
 });

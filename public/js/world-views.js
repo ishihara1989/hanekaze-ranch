@@ -11,14 +11,14 @@
   const eventLine=e=>`${grade(e.level)} <b>${esc(e.name)}</b> <small>${e.track.name} ${e.surface==='turf'?'芝':'ダート'}${e.distance}m</small>`;
   function schedule(s){
     const rows=s.entries.filter(x=>x.week<s.week+W.PLAN_WEEKS);
-    return `<section class="panel schedule-panel"><div class="section-heading"><h2>出走予定</h2><span>今後${W.PLAN_WEEKS}週 / ${s.mode==='auto'?`${esc(W.trainer(s)?.name)}が編成`:'番組表から予約'}</span></div>${rows.map(x=>{const b=W.find(s,x.birdId),e=W.eventById(x.eventId);return `<div class="schedule-row"><span class="schedule-week">${x.week===s.week?'今週':when(x.week).replace(/（.*$/,'')}</span><div>${eventLine(e)}<small>${esc(b.name)} ・ ${M.TACTICS[x.tactic]} ・ ${x.by==='trainer'?'調教師の予定':'自分で予約'}</small></div><button class="link-button" data-action="unreserve" data-id="${b.id}" data-week="${x.week}">取消</button></div>`;}).join('')||`<p class="empty">予定はありません。${s.mode==='auto'?'条件に合う競走があれば調教師が組みます。':'番組表から出走を予約できます。'}</p>`}</section>`;
+    return `<section class="panel schedule-panel"><div class="section-heading"><h2>出走予定</h2><span>今後${W.PLAN_WEEKS}週 / ${s.mode==='auto'?`${esc(W.trainer(s)?.name)}が編成`:'番組表から予約'}</span></div>${rows.map(x=>{const b=W.find(s,x.birdId),e=W.eventById(x.eventId);return `<div class="schedule-row"><span class="schedule-week">${x.week===s.week?'今週':when(x.week).replace(/（.*$/,'')}</span><div>${eventLine(e)}<small>${esc(b.name)} ・ ${x.by==='trainer'?'調教師の予定':'自分で予約'}</small></div><button class="link-button" data-action="unreserve" data-id="${b.id}" data-week="${x.week}">取消</button></div>`;}).join('')||`<p class="empty">予定はありません。${s.mode==='auto'?'条件に合う競走があれば調教師が組みます。':'番組表から出走を予約できます。'}</p>`}</section>`;
   }
   function raceCall(s,wait){
     let left=0;
     const rows=wait.items.map((it,i)=>{
       const b=W.find(s,it.birdId),e=W.eventById(it.eventId),row=W.resultFor(s,it.eventId)?.rows.find(r=>r.id===it.birdId),open=s.entries.some(x=>x.birdId===it.birdId&&x.eventId===it.eventId);
       if(open&&!row)left++;
-      return `<div class="call-row"><div>${eventLine(e)}<small>${esc(b.name)} ・ ${b.sex==='M'?'牡':'牝'}${W.age(b)} ・ 調子${b.condition}% ・ ${M.TACTICS[it.tactic]}</small></div>${row?`<span class="call-result">${row.rank}着 <small>+${money(row.reward)}</small></span>`:open?`<button class="primary small" data-action="watch-entry" data-index="${i}">観戦する</button>`:'<span class="subtext">取消</span>'}</div>`;
+      return `<div class="call-row"><div>${eventLine(e)}<small>${esc(b.name)} ・ ${b.sex==='M'?'牡':'牝'}${W.age(b)} ・ 調子${b.condition}%</small></div>${row?`<span class="call-result">${row.rank}着 <small>+${money(row.reward)}</small></span>`:open?`<button class="primary small" data-action="watch-entry" data-index="${i}">観戦する</button>`:'<span class="subtext">取消</span>'}</div>`;
     }).join('');
     return `<div class="modal-head"><h2>今週の出走</h2><span class="tag">${when(s.week)}</span></div><p class="subtext">観戦しない競走は、週を進めるときに同じ競走モデルで結果を確定します。</p><div class="call-list">${rows}</div><div class="actions"><button class="primary" data-action="results-only">${left?'観戦せずに進める':'週を進める'}</button>${wait.batch&&left?'<button class="secondary" data-action="skip-watching">この進行中は観戦しない</button>':''}<button class="secondary" data-action="cancel-week">まだ進めない</button></div>`;
   }
