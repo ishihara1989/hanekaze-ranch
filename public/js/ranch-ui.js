@@ -39,6 +39,59 @@
     try{localStorage.setItem(R.SAVE_KEY,R.serializeState(state));saveOK=true;}
     catch{saveOK=false;notice='自動保存ができません。設定からデータを書き出してください。';}
   }
+  const SAVE_SLOTS=5;
+  function slotKey(slot) {
+    if(!Number.isInteger(slot)||slot<1||slot>SAVE_SLOTS)throw Error('セーブスロットを選んでください。');
+    return `${R.SAVE_KEY}-slot-${slot}`;
+  }
+  function readSlot(slot) {
+    const raw=localStorage.getItem(slotKey(slot));
+    if(raw===null)return {raw,empty:true};
+    try {
+      const entry=JSON.parse(raw);
+      if(entry?.version!==1||typeof entry.data!=='string'||typeof entry.savedAt!=='string'||!Number.isFinite(Date.parse(entry.savedAt)))throw Error('invalid slot');
+      const saved=R.deserializeState(entry.data);
+      if(!R.validState(saved))throw Error('invalid state');
+      return {raw,savedAt:entry.savedAt,state:saved};
+    }catch{return {raw,invalid:true};}
+  }
+  function writeSlot(slot,expectedRaw) {
+    const key=slotKey(slot);
+    try {
+      if(localStorage.getItem(key)!==expectedRaw)throw Error('changed');
+    }catch(e){throw Error(e.message==='changed'?'このスロットは別のタブで更新されました。確認画面を閉じて選び直してください。':'保存先を確認できません。ブラウザの保存設定を確認してください。');}
+    try {
+      localStorage.setItem(key,JSON.stringify({version:1,savedAt:new Date().toISOString(),data:R.serializeState(state)}));
+    }catch{throw Error('セーブできませんでした。保存容量やブラウザの保存設定を確認し、必要ならデータを書き出してください。');}
+    modal=null;notice=`スロット${slot}にセーブしました。`;render();
+  }
+  function saveSummary(saved) {
+    return `${R.when(saved.week)} ・ ${money(saved.money)} G ・ 所有 ${R.own(saved).length}羽`;
+  }
+  function saveSlots() {
+    return `<section class="paper save-slots" aria-labelledby="save-slots-title"><span class="eyebrow">SAVE & LOAD</span><h2 id="save-slots-title">セーブ・ロード</h2><p class="save-slots-description">手動セーブは5つまで残せます。自動保存・週送り・牧場のリセットでは上書きされません。</p>${Array.from({length:SAVE_SLOTS},(_,i)=>{
+      const slot=i+1;let entry;
+      try{entry=readSlot(slot);}catch{entry={unavailable:true};}
+      const description=entry.unavailable?'保存先にアクセスできません。':entry.empty?'空きスロット':entry.invalid?'データを読み込めません。上書きして保存し直せます。':saveSummary(entry.state);
+      return `<article class="save-slot"><div class="save-slot-info"><h3>スロット${slot}</h3><p>${esc(description)}</p>${entry.savedAt?`<time datetime="${esc(entry.savedAt)}">保存日時：${esc(new Date(entry.savedAt).toLocaleString('ja-JP'))}</time>`:''}</div><div class="save-slot-actions">${button('slot-save',entry.empty?'セーブ':'上書きセーブ',`data-slot="${slot}" aria-label="スロット${slot}にセーブ" ${entry.unavailable?'disabled':''}`,'button outline')}${button('slot-load','ロード',`data-slot="${slot}" aria-label="スロット${slot}をロード" ${!entry.state?'disabled':''}`,'button quiet')}</div></article>`;
+    }).join('')}</section>`;
+  }
+  function loadSlot(slot,expectedRaw) {
+    let entry;
+    try{entry=readSlot(slot);}catch{throw Error('保存先にアクセスできません。ブラウザの保存設定を確認してください。');}
+    if(entry.raw!==expectedRaw)throw Error('このスロットは別のタブで更新されました。確認画面を閉じて選び直してください。');
+    if(!entry.state)throw Error('このスロットのデータは読み込めません。');
+    const restored=R.upgradeState(entry.state);
+    if(!R.validState(restored))throw Error('このスロットのデータは読み込めません。');
+    // Commit the new autosave before replacing the running ranch so a failed
+    // storage write leaves both the current session and its save intact.
+    try{localStorage.setItem(R.SAVE_KEY,R.serializeState(restored));}
+    catch{throw Error('ロード後の自動保存ができないため、ロードを中止しました。保存容量やブラウザの保存設定を確認してください。');}
+    state=restored;saveBlocked=false;saveOK=true;modal=null;page='home';
+    damId='';sireId='';sireTab='root';rootTrait='';sireQuery='';sireRoute='';sireSort='fee';
+    Object.keys(sireChoices).forEach(key=>delete sireChoices[key]);birdFilter='all';notebookTab='calendar';
+    notice=`スロット${slot}からロードしました。`;render();window.scrollTo({top:0});
+  }
   function button(action,text,extra='',className='button primary'){return `<button class="${className}" data-action="${action}" ${extra}>${text}</button>`;}
   function heading(kicker,title,description=''){return `<div class="page-heading"><span class="eyebrow">${kicker}</span><h1>${title}</h1>${description?`<p>${description}</p>`:''}</div>`;}
   function portrait(expression='talk',speaker='shiroma') {return `<img class="portrait ${speaker}" src="assets/${speaker==='moogle'?'moogle/trainer.png':`shiroma/shiroma-${expression}.png`}" alt="${speaker==='moogle'?'トレーナーのモーグリ':'シロマ'}">`;}
@@ -164,13 +217,13 @@
     let content='';
     if(notebookTab==='calendar') {
       const plans=R.own(state).filter(b=>b.role==='racing').map(b=>({b,e:R.nextRace(state,b)}));
-      content=`${note('無理な連戦はしないクポ。元気と脚の状態を見て、方針に合うレースを選ぶクポ。','moogle')}<section class="paper"><h2>これからの予定</h2>${plans.map(({b,e})=>`<div class="list-row"><span><b>${esc(b.name)}</b><small>${b.policy==='steady'?'着実に勝ちを積み上げる':'積極的に重賞へ挑む'}</small></span><span>${e?`${R.when(e.week)}<small>${esc(e.name)} / ${e.distance}m</small><small>${esc(e.track?.name||'')} / ${groundText(e)}</small>`:'休養・調教'}</span></div>`).join('')||'<p class="muted">デビューまでは、シロマと成長を見守りましょう。</p>'}<div class="list-row"><span><b>繁殖牝羽セール</b><small>毎年 2月〜3月</small></span>${button('nav',R.saleOpen(state)?'セールを見る →':'開催案内','data-page="market"','button quiet')}</div><div class="list-row"><span><b>競走羽の名前登録</b><small>2歳になる年の1月第1週</small></span><span class="muted">報告から登録できます</span></div><div class="list-row"><span><b>年度表彰・始祖入りの審査</b><small>12月第4週</small></span><span class="muted">シロマがお知らせします</span></div></section>`;
+      content=`${note('得意な距離と羽場から、方針に合うレースを選ぶクポ。元気と脚の状態を見て、4週以上の間隔を空けるクポ。','moogle')}<section class="paper"><h2>これからの予定</h2>${plans.map(({b,e})=>`<div class="list-row"><span><b>${esc(b.name)}</b><small>${b.policy==='steady'?'着実に勝ちを積み上げる':'積極的に重賞へ挑む'}</small></span><span>${e?`${R.when(e.week)}<small>${esc(e.name)} / ${e.distance}m</small><small>${esc(e.track?.name||'')} / ${groundText(e)}</small>`:'休養・調教'}</span></div>`).join('')||'<p class="muted">デビューまでは、シロマと成長を見守りましょう。</p>'}<div class="list-row"><span><b>繁殖牝羽セール</b><small>毎年 2月〜3月</small></span>${button('nav',R.saleOpen(state)?'セールを見る →':'開催案内','data-page="market"','button quiet')}</div><div class="list-row"><span><b>競走羽の名前登録</b><small>2歳になる年の1月第1週</small></span><span class="muted">報告から登録できます</span></div><div class="list-row"><span><b>年度表彰・始祖入りの審査</b><small>12月第4週</small></span><span class="muted">シロマがお知らせします</span></div></section>`;
     } else if(notebookTab==='accounts') content=`<div class="finance-strip paper"><span>現在のギル<strong>${money(state.money)} G</strong></span><span>未払金<strong>${money(state.debt)} G</strong></span><span>ファン<strong>${money(state.birds.filter(b=>b.owner==='player').reduce((n,b)=>n+b.fans,0))} 人</strong></span></div><section class="paper"><h2>収支の記録</h2>${state.ledger.slice(-60).reverse().map(l=>`<div class="list-row"><span>${esc(l.note)}<small>${R.when(l.week)}</small></span><b class="${l.amount>0?'positive':''}">${l.amount>0?'+':''}${money(l.amount)} G</b></div>`).join('')||'<p class="muted">これからの歩みを、ここに記録します。</p>'}</section>`;
     else if(notebookTab==='records') content=`<section class="paper"><h2>牧場の思い出</h2>${Object.entries(state.milestones).filter(([k])=>!k.includes(':')).map(([k,w])=>`<div class="list-row"><b>${{purchase:'最初の仲間',breeding:'はじめての配合',birth:'はじめての誕生',win:'レース初勝利',g1:'GⅠ初勝利',derby:'ダービー初勝利'}[k]||esc(k)}</b><span>${R.when(w)}</span></div>`).join('')||'<p class="muted">一歩ずつ、私たちの記録を増やしていきましょう。</p>'}<h2 class="section-gap">年度表彰</h2><p class="muted">GⅠ勝利のみ加点。ダート60点、短距離70点、2歳80点、牝羽限定100点、その他120点、長距離140点、ダービー・ワールドカップ・バハムート180点。各部門の対象レースを集計します。</p>${state.awards.map(a=>`<div class="list-row"><span>${a.year}年 ${esc(a.title)}</span><b>${esc(a.farm||'羽風牧場')} / ${esc(a.name)}<small>${a.points??''}点</small></b></div>`).join('')||'<p class="muted">年末に、今年の活躍を振り返ります。</p>'}${state.founderOffers.length?'<h2 class="section-gap">始祖入りのオファー</h2>':''}${state.founderOffers.map(id=>`<div class="list-row"><b>${esc(R.bird(state,id).name)}</b>${button('promote','始祖入りを受ける',`data-id="${id}"`,'button outline')}</div>`).join('')}</section>`;
     else content=`<section class="paper"><h2>シロマの報告を読み返す</h2>${state.journal.slice().reverse().map(r=>`<details class="journal-entry"><summary><span>${esc(r.title)}</span><small>${R.when(r.week)}</small></summary><p>${esc(r.text)}</p>${r.notes?.map(n=>`<p>${esc(n)}</p>`).join('')||''}${r.results?.length?reportRaces(r):''}</details>`).join('')||'<p class="muted">まだ報告はありません。</p>'}</section>`;
     return `${heading('RANCH NOTEBOOK','知りたいことを、知りたいときに。')}<div class="tabs">${[['calendar','予定'],['accounts','収支'],['records','記録・表彰'],['letters','報告の便り']].map(([k,n])=>button('notebook-tab',n,`data-tab="${k}"`,`tab ${notebookTab===k?'active':''}`)).join('')}</div>${content}`;
   }
-  function settings() {return `${heading('AT YOUR OWN PACE','牧場の設定。')}<section class="paper settings"><div class="settings-row"><div><h2>自動保存</h2><p>購入・配合・週送りなどの操作ごとに保存します。</p></div><span class="tag">${saveOK?'保存できています':'保存できていません'}</span></div><div class="settings-row"><div><h2>ファンのボーナス</h2><p>特別な記録を達成したときの、ファン増加量を調整します。</p></div><select id="difficulty" aria-label="ファンのボーナス">${[['easy','多め'],['normal','標準'],['hard','控えめ']].map(([k,n])=>`<option value="${k}" ${state.difficulty===k?'selected':''}>${n}</option>`).join('')}</select></div><div class="settings-row"><div><h2>牧場データのバックアップ</h2><p>新しい進行のセーブデータを書き出します。</p></div>${button('export','書き出す','','button outline')}</div><div class="settings-row"><div><h2>バックアップから再開</h2><p>新しい進行のセーブデータを読み込みます。</p></div>${button('import','読み込む','','button outline')}<input id="import-file" type="file" accept=".json,application/json" hidden></div><div class="settings-row reset-row"><div><h2>牧場を最初から始める</h2><p>3月第1週・2歳牝羽1羽から、シロマとの出会いをもう一度。<br>実行前に確認画面が開きます。</p></div>${button('reset-dialog','セーブをリセット','','button danger-outline')}</div></section>`;}
+  function settings() {return `${heading('AT YOUR OWN PACE','牧場の設定。')}<section class="paper settings"><div class="settings-row"><div><h2>自動保存</h2><p>購入・配合・週送りなどの操作ごとに保存します。</p></div><span class="tag">${saveOK?'保存できています':'保存できていません'}</span></div></section>${saveSlots()}<section class="paper settings"><div class="settings-row"><div><h2>ファンのボーナス</h2><p>特別な記録を達成したときの、ファン増加量を調整します。</p></div><select id="difficulty" aria-label="ファンのボーナス">${[['easy','多め'],['normal','標準'],['hard','控えめ']].map(([k,n])=>`<option value="${k}" ${state.difficulty===k?'selected':''}>${n}</option>`).join('')}</select></div><div class="settings-row"><div><h2>牧場データのバックアップ</h2><p>新しい進行のセーブデータを書き出します。</p></div>${button('export','書き出す','','button outline')}</div><div class="settings-row"><div><h2>バックアップから再開</h2><p>新しい進行のセーブデータを読み込みます。</p></div>${button('import','読み込む','','button outline')}<input id="import-file" type="file" accept=".json,application/json" hidden></div><div class="settings-row reset-row"><div><h2>牧場を最初から始める</h2><p>3月第1週・2歳牝羽1羽から、シロマとの出会いをもう一度。<br>実行前に確認画面が開きます。</p></div>${button('reset-dialog','セーブをリセット','','button danger-outline')}</div></section>`;}
   function geneticResearch(b,options) {return RanchObservation.genetics(state,b,options);}
   function research(b) {return RanchObservation.status(state,b)+geneticResearch(b);}
   function detail(b) {
@@ -178,7 +231,9 @@
   }
   function modalMarkup() {
     let body='',wide=false;
-    if(modal.type==='reset')body=`<span class="dialog-symbol">↺</span><h2 id="dialog-title">牧場を最初から始めますか？</h2><p>現在のチョコボ・ギル・施設・記録をリセットします。<br>この操作は取り消せません。</p><div class="reset-preview"><span>1年 3月 第1週</span><span>所有 1羽（2歳牝）</span><span>20,000 G</span></div><p class="muted">残したい記録があるときは、先に設定から書き出してください。</p><div class="modal-actions">${button('close','キャンセル','data-autofocus','button outline')}${button('reset-confirm','リセットして始める','','button danger')}</div>`;
+    if(modal.type==='slot-save')body=`<h2 id="dialog-title">スロット${modal.slot}に上書きしますか？</h2><p>${modal.entry.invalid?'読み込めない保存データ':esc(saveSummary(modal.entry.state))}を、現在の牧場の記録に置き換えます。<br>このスロットの以前の記録は取り消せません。</p><div class="reset-preview">${esc(saveSummary(state))}</div><div class="modal-actions">${button('close','キャンセル','data-autofocus','button outline')}${button('slot-save-confirm','上書きセーブ')}</div>`;
+    if(modal.type==='slot-load')body=`<h2 id="dialog-title">スロット${modal.slot}をロードしますか？</h2><p>現在の牧場と自動保存を、このスロットの記録に置き換えます。残したい進行は先に別のスロットへセーブしてください。</p><div class="reset-preview">${esc(saveSummary(modal.entry.state))}</div><div class="modal-actions">${button('close','キャンセル','data-autofocus','button outline')}${button('slot-load-confirm','ロードして再開')}</div>`;
+    if(modal.type==='reset')body=`<span class="dialog-symbol">↺</span><h2 id="dialog-title">牧場を最初から始めますか？</h2><p>現在のチョコボ・ギル・施設・記録をリセットします。<br>この操作は取り消せません。</p><div class="reset-preview"><span>1年 3月 第1週</span><span>所有 1羽（2歳牝）</span><span>20,000 G</span></div><p class="muted">残したい記録があるときは、先に手動セーブか書き出しをしてください。手動セーブの5スロットは残ります。</p><div class="modal-actions">${button('close','キャンセル','data-autofocus','button outline')}${button('reset-confirm','リセットして始める','','button danger')}</div>`;
     if(modal.type==='buy') {const b=R.bird(state,modal.id);body=`<h2 id="dialog-title">${esc(b.name)}を迎えますか？</h2><div class="purchase-bird">${birdArt(b)}</div><p>繁殖牝羽として羽風牧場に迎えます。</p><div class="price-check"><span>購入料金</span><b>${money(b.price)} G</b><span>購入後のギル</span><b>${money(state.money-b.price)} G</b></div><div class="modal-actions">${button('close','戻る','data-autofocus','button outline')}${button('buy-confirm','この子を迎える',`data-id="${b.id}"`)}</div>`;}
     if(modal.type==='breed') {const d=R.bird(state,damId),s=R.bird(state,sireId);body=`<h2 id="dialog-title">この組み合わせで配合しますか？</h2><p class="pair-names">${esc(d.name)} × ${esc(s.name)}</p>${crossHint(s,d)}<div class="price-check"><span>配合料金</span><b>${money(R.breedFee(s))} G</b><span>出産予定</span><b>${R.when(state.week+R.GESTATION)}</b></div><p class="muted">年に1回の配合です。出産用の羽房を1枠予約します。</p><div class="modal-actions">${button('close','戻る','data-autofocus','button outline')}${button('breed-confirm','配合をお願いする')}</div>`;}
     if(modal.type==='build'){const key=modal.key,f=R.FACILITIES[key];body=`<h2 id="dialog-title">${f.name}を${state.facilities[key]?'拡張':'建設'}しますか？</h2><p>${f.description}</p><div class="price-check"><span>費用</span><b>${money(R.facilityCost(state,key))} G</b><span>建設後の段階</span><b>Lv. ${state.facilities[key]+1}</b></div><div class="modal-actions">${button('close','戻る','data-autofocus','button outline')}${button('build-confirm','工事をお願いする',`data-key="${key}"`)}</div>`;}
@@ -187,7 +242,7 @@
     if(modal.type==='result'){
       const b=R.bird(state,modal.id),r=b.records.find(r=>r.week===modal.week),x=r.interactions;
       const notes=x?[x.crowdedSeconds>1?'羽混みの中を走る場面がありました。':'',x.duelSeconds>1?'近くの相手と競り合いました。':'',x.savingSeconds>1?'先頭で差を確かめながら、余力を温存しました。':'',x.laneChanges>1?'周囲を見ながら進路を変えました。':'',x.blockedSeconds>1?'前の羽に進路を塞がれ、速度を抑える場面がありました。':''].filter(Boolean).join(''):'';
-      body=`<span class="eyebrow">RACE RESULT</span><h2 id="dialog-title">${esc(r.name)}</h2><p>${R.when(r.week)} / ${r.distance}m / ${groundText(r)}</p><div class="result-summary"><strong>${r.rank}<small>着</small></strong><span>${esc(b.name)}<small>賞金・手当 ${money(r.reward)} G</small></span></div>${notes?`<p class="soft-note">${notes}</p>`:''}<div class="result-actions">${replayButton(r,b.id)||'<p class="race-old-note">このレースには走行データがありません。レース観戦は走行記録のある出走から利用できます。</p>'}</div>${finishOrder(r,b.id)}`;
+      body=`<span class="eyebrow">RACE RESULT</span><h2 id="dialog-title">${esc(r.name)}</h2><p>${R.when(r.week)} / ${r.distance}m / ${groundText(r)}</p><div class="result-summary"><strong>${r.rank}<small>着</small></strong><span>${esc(b.name)}<small>賞金・手当 ${money(r.reward)} G</small>${r.prize!==undefined?`<small>本賞金 ${money(r.prize)} G / 出走手当 ${money(r.allowance)} G</small><small>出走経費 ${money(r.fee)} G</small>`:''}</span></div>${notes?`<p class="soft-note">${notes}</p>`:''}<div class="result-actions">${replayButton(r,b.id)||'<p class="race-old-note">このレースには走行データがありません。レース観戦は走行記録のある出走から利用できます。</p>'}</div>${finishOrder(r,b.id)}`;
     }
     if(modal.type==='replay'){
       const b=R.bird(state,modal.id),r=b?.records.find(x=>x.week===modal.week);
@@ -215,7 +270,7 @@
     }
   }
   function openModal(value) {returnFocus=document.activeElement;modal=value;render();requestAnimationFrame(()=>($('[data-autofocus]')||$('.modal-close')||$('.modal'))?.focus());}
-  function closeModal() {const action=returnFocus?.dataset?.action,id=returnFocus?.dataset?.id;modal=null;render();const target=[...document.querySelectorAll('[data-action]')].find(el=>el.dataset.action===action&&el.dataset.id===id);target?.focus();}
+  function closeModal() {const action=returnFocus?.dataset?.action,id=returnFocus?.dataset?.id,slot=returnFocus?.dataset?.slot;modal=null;render();const target=[...document.querySelectorAll('[data-action]')].find(el=>el.dataset.action===action&&el.dataset.id===id&&el.dataset.slot===slot);target?.focus();}
   function ack() {
     const options={names:{},policies:{}};
     document.querySelectorAll('[data-register-name]').forEach(el=>{options.names[el.dataset.registerName]=el.value;if(!el.value.trim())throw Error('競走羽の名前を入力してください。');});
@@ -241,6 +296,20 @@
       if(action==='open-sire-picker') {const picker=$('#sire-picker');if(picker){picker.open=true;picker.scrollIntoView?.({behavior:'smooth',block:'start'});}return;}
       if(action==='nav'){page=target.dataset.page;modal=null;render();window.scrollTo({top:0});return;}
       if(action==='close'){closeModal();return;}
+      if(action==='slot-save'||action==='slot-load') {
+        const slot=Number(target.dataset.slot);let entry;
+        try{entry=readSlot(slot);}catch{throw Error('保存先を確認できません。ブラウザの保存設定を確認してください。');}
+        if(action==='slot-save') {
+          if(entry.empty)writeSlot(slot,entry.raw);
+          else openModal({type:'slot-save',slot,entry});
+        }else {
+          if(!entry.state)throw Error(entry.empty?'このスロットにはセーブデータがありません。':'このスロットのデータは読み込めません。');
+          openModal({type:'slot-load',slot,entry});
+        }
+        return;
+      }
+      if(action==='slot-save-confirm'){if(modal?.type==='slot-save')writeSlot(modal.slot,modal.entry.raw);return;}
+      if(action==='slot-load-confirm'){if(modal?.type==='slot-load')loadSlot(modal.slot,modal.entry.raw);return;}
       if(action==='dismiss')notice='';
       if(action==='search-sires'){sireQuery=$('#sire-query').value;render();return;}
       if(action==='advance'||action==='advance-month'){advance(action==='advance'?1:4);return;}
@@ -325,7 +394,10 @@
       else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
     }
   });
-  window.addEventListener('storage',event=>{if(event.key===R.SAVE_KEY){notice='別のタブで牧場が更新されました。再読み込みして続けてください。';saveBlocked=true;saveOK=false;busy=true;render();}});
+  window.addEventListener('storage',event=>{
+    if(event.key===R.SAVE_KEY){notice='別のタブで牧場が更新されました。再読み込みして続けてください。';saveBlocked=true;saveOK=false;busy=true;render();}
+    else if(Array.from({length:SAVE_SLOTS},(_,i)=>slotKey(i+1)).includes(event.key)&&page==='settings')render();
+  });
   window.addEventListener('pagehide',()=>{
     if(modal?.type==='replay')modal.playback={...modal.playback,...raceViewer?.snapshot()};
     viewerGeneration++;raceViewer?.dispose();raceViewer=null;

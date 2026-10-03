@@ -266,13 +266,130 @@
     return shot(`trackside-${sector}`,rail.corner?'コーナー中継':'向正面中継',
       {x:rail.x+outward.x*80,y:32,z:rail.z+outward.z*80},target,26);
   }
-  function commentary(record){
+  // Calls use only the field at this moment and its recent movement. Pre-race
+  // prospects come from paddock snapshots, never the eventual finishing order.
+  function raceCommentary(record,track,clock,add,assessments){
+    const replay=record.replay,number=r=>`${r.lane+1}番 ${r.name}`,
+      prospects=assessments.every(row=>row.chance!==null)?assessments.slice()
+        .sort((a,b)=>b.score-a.score||a.runner.lane-b.runner.lane).slice(0,2):[],
+      introduced=new Set(),mentions=new Map(),lastMention=new Map(),c=course(record,track);
+    let lastCall=-2,opening=false,settled=false,lineupAt=14,prospectAt=19,prospectIndex=0,
+      announcedLeader=null,corner=false,straight=false,finishCall=false;
+    const emit=(sec,speaker,text,runners=[])=>{
+      add(clock.race+sec,speaker,text);lastCall=sec;
+      for(const r of runners){mentions.set(r.id,(mentions.get(r.id)||0)+1);lastMention.set(r.id,sec);}
+    };
+    const rankText=(r,index)=>`${index===0?'先頭':`${index+1}番手`}は${number(r)}`;
+    const gapText=gap=>gap<3?'ほとんど差はありません。':`先頭との差はおよそ${Math.round(gap)}メートルです。`;
+    const introduce=(sec,order,secondsToStraight)=>{
+      const unintroduced=order.map((r,i)=>({r,rank:i})).filter(x=>!introduced.has(x.r.id)),
+        // Short races need a briefer overview before the home straight.
+        size=secondsToStraight<=12?unintroduced.length:record.distance<=1400?4:3,
+        group=unintroduced.slice(0,size),first=introduced.size===0;
+      group.forEach(x=>introduced.add(x.r.id));
+      emit(sec,'lamia',`${first?'ここで隊列を見ていきます。':'続く隊列です。'}${group.map(x=>rankText(x.r,x.rank)).join('、')}。${introduced.size===order.length?'これで全羽の位置をお伝えしました。':''}`,group.map(x=>x.r));
+      lineupAt=sec+6;
+    };
+    for(let sec=3;sec<clock.raceEnd;sec++){
+      const order=standings(replay,sec),leader=order[0],second=order[1],remaining=record.distance-leader.distance,
+        inStraight=remaining<=c.finalStraight,nearFinish=remaining<=100,
+        gap=second?leader.distance-second.distance:Infinity;
+      if(leader.finished||leader.stopped||sec-lastCall<(nearFinish?3:inStraight?4:5))continue;
+      if(!opening){
+        opening=true;announcedLeader=leader.id;
+        const front=order.slice(0,3).filter(r=>leader.distance-r.distance<=8);
+        emit(sec,'lamia',`${number(leader)}が好ダッシュ！ ${front.length>1?`${front.slice(1).map(number).join('、')}も前へ。ハナをうかがいます。`:'まずは前に出ました。'}`,front);
+        continue;
+      }
+      if(nearFinish){
+        const changed=announcedLeader!==leader.id;
+        if(!finishCall||changed||sec-lastCall>=4){
+          finishCall=true;announcedLeader=leader.id;
+          emit(sec,'lamia',second?(gap<3?
+            `ゴールは目前！ ${number(leader)}と${number(second)}、ほとんど並んで先頭争い！`:
+            gap<10?`ゴールは目前！ ${number(leader)}が先頭、${number(second)}が${Math.round(gap)}メートル差で追う！`:
+            `ゴールは目前！ ${number(leader)}が後続におよそ${Math.round(gap)}メートルのリード！`):
+            `ゴールは目前！ ${number(leader)}が最後まで駆けていきます！`,order.slice(0,2));
+          continue;
+        }
+      }
+      if(inStraight&&!straight){
+        straight=true;announcedLeader=leader.id;
+        emit(sec,'lamia',`最後の直線に入りました！ ${number(leader)}が先頭${second?`、${number(second)}が${gap<3?'すぐ隣で競り合う':`${Math.round(gap)}メートル差で続く`}`:''}！`,order.slice(0,2));
+        continue;
+      }
+      if(!settled&&!inStraight){
+        settled=true;announcedLeader=leader.id;
+        const front=order.slice(1,3).filter(r=>leader.distance-r.distance<=10);
+        emit(sec,'lamia',`${number(leader)}がハナを切ります。${front.length?`${front.map(number).join('、')}が続いて、先行争い。`:
+          second?`${number(second)}をおよそ${Math.round(gap)}メートル離してレースを引っ張ります。`:'自分のリズムで進んでいきます。'}`,[leader,...front]);
+        continue;
+      }
+      if(announcedLeader!==leader.id){
+        announcedLeader=leader.id;
+        emit(sec,'lamia',`${number(leader)}が先頭に立ちました！ ${second?`${number(second)}は${gap<3?'すぐ後ろ、先頭争いが続きます！':`${Math.round(gap)}メートル差で追いかけます。`}`:''}`,order.slice(0,2));
+        continue;
+      }
+      const before=standings(replay,Math.max(0,sec-5)),past=new Map(before.map((r,i)=>[r.id,{r,rank:i}])),
+        movers=order.map((r,i)=>{
+          const prev=past.get(r.id),gained=prev.rank-i,
+            closed=(before[0].distance-prev.r.distance)-(leader.distance-r.distance);
+          return {r,rank:i,gained,closed};
+        }).filter(x=>!x.r.stopped&&sec-(lastMention.get(x.r.id)??-20)>=10&&
+          (x.gained>=2||x.gained>=1&&x.closed>=2||x.rank>0&&x.closed>=4))
+        .sort((a,b)=>b.gained-a.gained||b.closed-a.closed||a.rank-b.rank);
+      if(inStraight&&movers.length){
+        const m=movers[0];
+        emit(sec,'lamia',`${number(m.r)}が伸びてきました！ ${m.gained>0?`${m.gained}つ順位を上げて${m.rank===0?'先頭へ':`${m.rank+1}番手へ`}！`:
+          `先頭との差を詰めて、現在${m.rank+1}番手！`}`, [m.r]);
+        continue;
+      }
+      const lineupDue=!inStraight&&introduced.size<order.length&&sec>=lineupAt,
+        pace=Math.max(1,(leader.distance-before[0].distance)/5),secondsToStraight=(remaining-c.finalStraight)/pace;
+      if(lineupDue&&secondsToStraight<=12){
+        introduce(sec,order,secondsToStraight);
+        continue;
+      }
+      if(!corner&&!inStraight&&remaining<=c.finalStraight+Math.PI*c.radius){
+        corner=true;
+        emit(sec,'lamia',`最終コーナー、${number(leader)}が先頭。${second?`${number(second)}が${gap<3?'ぴったり続きます。':`${Math.round(gap)}メートル差で追います。`}`:''}直線の攻防へ向かいます。`,order.slice(0,2));
+        continue;
+      }
+      if(!nearFinish&&prospects.length&&sec>=prospectAt){
+        const index=prospectIndex++%prospects.length,id=prospects[index].runner.id,rank=order.findIndex(r=>r.id===id),r=order[rank],
+          prev=past.get(id),movement=prev.rank>rank?'順位を上げてきています。':prev.rank<rank?'少し位置を下げています。':
+            r.mode==='前詰まり'?'前が詰まって、進路を探しています。':'この位置で運んでいます。';
+        emit(sec,'sahagin',`${index===0?'本命視される':'対抗に挙げた'}${number(r)}は${rank===0?'先頭':`現在${rank+1}番手`}。${movement}${rank>0?gapText(leader.distance-r.distance):''}`,[r]);
+        prospectAt=sec+18;
+        continue;
+      }
+      if(lineupDue){
+        introduce(sec,order,secondsToStraight);
+        continue;
+      }
+      if(sec-lastCall>=(inStraight?6:12)){
+        if(inStraight){
+          emit(sec,'lamia',second&&gap<3?`${number(leader)}と${number(second)}、直線で先頭を競り合っています！`:
+            `${number(leader)}が先頭を保っています。${second?`${number(second)}までおよそ${Math.round(gap)}メートル。`:''}`,order.slice(0,2));
+        }else{
+          // Cover the rest of the field without automatically choosing the owner.
+          const r=order.filter(r=>!r.stopped).sort((a,b)=>(mentions.get(a.id)||0)-(mentions.get(b.id)||0)||
+            (lastMention.get(a.id)??-20)-(lastMention.get(b.id)??-20)||a.lane-b.lane)[0],rank=order.findIndex(x=>x.id===r.id),
+            movement=r.mode==='前詰まり'?'前が詰まり、進路を探しています。':r.mode==='進路確保'?'進路を確保しています。':
+              r.mode==='余力温存'?'余力を温存して運んでいます。':past.get(r.id).rank>rank?'順位を上げてきました。':'この位置でレースを進めています。';
+          emit(sec,'sahagin',`${number(r)}は${rank===0?'先頭':`${rank+1}番手`}。${movement}${rank>0?gapText(leader.distance-r.distance):''}`,[r]);
+        }
+      }
+    }
+  }
+  function commentary(record,track={}){
     const t=timeline(record),replay=record.replay,own=replay.runners.find(r=>r.id===record.birdId)||replay.runners.find(r=>r.player),
       cues=[],add=(at,speaker,text)=>cues.push({at,speaker,text});
     const number=r=>`${r.lane+1}番 ${r.name}`;
     add(0,'lamia',`${record.name}。パドックからお届けします！ ${replay.runners.length}羽が登場です。`);
     add(3,'sahagin',`${record.distance}メートル、${record.surface==='dirt'?'ダート':'芝'}の競走です。一羽ずつご紹介しましょう。`);
-    paddockAssessments(record).forEach((row,index)=>{
+    const assessments=paddockAssessments(record);
+    assessments.forEach((row,index)=>{
       const r=row.runner,p=r.paddock,at=PADDOCK.intro+index*PADDOCK.runnerSeconds,
         details=row.known?`${p.age}歳の${p.sex==='M'?'牡羽':'牝羽'}。${p.races?`${p.races}戦${p.wins}勝`:'これが初めてのレース'}です。`:'';
       add(at,'lamia',`${number(r)}です。${details}`);
@@ -280,21 +397,8 @@
     });
     add(t.gate,'lamia','各羽、ゲートに入りました。まもなく発走です！');
     add(t.race,'lamia','ゲートが開いた！ 全羽、いっせいにスタート！');
-    let previous='',lastCall=-20,spurt=false;
     const firstFinish=Math.min(...replay.runners.filter(r=>r.finished).map(r=>r.time));
-    for(let sec=6;sec<t.raceEnd;sec+=4){
-      const order=standings(replay,sec),leader=order[0],remaining=record.distance-leader.distance;
-      if(leader.finished)continue;
-      if(remaining<=400&&!spurt){spurt=true;lastCall=sec;
-        add(t.race+sec,'lamia',`残り${Math.ceil(remaining/100)*100}メートル！ ${number(leader)}が先頭！ 最後の勝負です！`);
-      }else if(leader.id!==previous&&sec-lastCall>=8){lastCall=sec;
-        add(t.race+sec,'lamia',`${number(leader)}が先頭に立ちました！ ${order[1]?`${order[1].name}が追いかける！`:''}`);
-      }else if(sec-lastCall>=14){lastCall=sec;
-        if(order[1]&&leader.distance-order[1].distance<3)add(t.race+sec,'lamia',`${leader.name}と${order[1].name}、並んで競り合う！`);
-        else add(t.race+sec,'sahagin',`${own?`${own.name}は現在${order.findIndex(r=>r.id===own.id)+1}番手。`:''}${remaining>400?'まだ距離があります。ここは余力を残したいところです。':'翼を広げてスパート。最後まで脚を使えるかが鍵です。'}`);
-      }
-      previous=leader.id;
-    }
+    raceCommentary(record,track,t,add,assessments);
     const winner=replay.runners.find(r=>r.id===record.field[0].id);
     if(Number.isFinite(firstFinish))add(t.race+firstFinish,'lamia',`${winner.name}、いま先頭でゴールイン！`);
     add(t.result,'lamia',`着順が確定しました。${own?`${own.name}は${record.rank}着です。`:'全羽の結果をご覧ください。'}`);

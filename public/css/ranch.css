@@ -90,3 +90,14 @@
 .genetic-notes { padding-top:14px; }
 @media(max-width:900px) { .breeding-parent { padding:18px; } .breeding-parent-head { gap:8px; } .breeding-parent-head>.chocobo-art { width:70px; height:85px; } .breeding-confirm { flex-direction:row; align-items:center; gap:12px; } }
 @media(max-width:700px) { .breeding-layout { grid-template-columns:1fr; } .breeding-parent-head>.chocobo-art { width:90px; height:95px; } .breeding-confirm { top:6px; padding:12px 15px; flex-wrap:wrap; gap:10px; } .breeding-confirm h3 { font-size:14px; margin-top:4px; } .breeding-confirm p { margin-top:4px; } .breeding-confirm .button { width:100%; min-height:40px; padding-block:8px; } .sire-picker { padding:14px 16px; scroll-margin-top:185px; } .sire-picker>summary>span { display:block; margin:5px 0 0; } }
+.save-slots { margin-block:22px; }
+.save-slots>h2 { margin-top:8px; }
+.save-slots-description { font-size:11px; color:var(--muted); line-height:2; margin-top:12px; }
+.save-slot { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:22px 0; border-bottom:1px solid var(--line); }
+.save-slot:last-child { border-bottom:0; padding-bottom:0; }
+.save-slot-info { min-width:0; }
+.save-slot h3 { font-size:14px; }
+.save-slot p { font-size:12px; color:var(--muted); line-height:1.9; margin-top:8px; overflow-wrap:anywhere; }
+.save-slot time { display:block; font-size:10px; color:var(--muted); margin-top:6px; }
+.save-slot-actions { display:flex; gap:10px; flex-shrink:0; }
+@media(max-width:650px) { .save-slot { flex-direction:column; align-items:stretch; gap:14px; } .save-slot-actions .button { flex:1; padding-inline:10px; } }

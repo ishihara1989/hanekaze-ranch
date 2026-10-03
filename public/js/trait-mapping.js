@@ -49,7 +49,10 @@
           // Pedigree honours move the lower/upper end of the birth lottery independently.
           // Unrelated birds retain the original bounded normal distribution.
           const bounds = birthBounds?.[ability.key];
-          sample = center + (bounds
+          // Extreme inherited body tradeoffs can put the centre outside the physical
+          // range. Keep the lottery reachable without clipping sampled abilities.
+          const lotteryCenter = bounds ? Math.max(50, Math.min(150, center)) : center;
+          sample = lotteryCenter + (bounds
             ? (-20 + bounds.lower) + (40 + bounds.upper - bounds.lower) * (.5 + .5 * Math.tanh(z / 2))
             : deviation * z);
           if (++attempts > 10000) throw new RangeError('Unable to sample bounded normal');

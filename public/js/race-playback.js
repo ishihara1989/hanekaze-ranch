@@ -6,7 +6,7 @@ const format=t=>`${Math.floor(t/60)}:${(t%60).toFixed(2).padStart(5,'0')}`;
 export class RacePlayback {
   constructor(root,record,track,options={}){
     this.root=root;this.record=record;this.track=track;this.replay=record.replay;
-    this.timeline=R.timeline(record);this.cues=R.commentary(record);
+    this.timeline=R.timeline(record);this.cues=R.commentary(record,track);
     this.time=Math.max(0,Math.min(this.timeline.end,options.time??0));this.rate=options.rate??1;
     this.paused=document.hidden||(options.paused??matchMedia('(prefers-reduced-motion: reduce)').matches);
     this.cameraMode=options.cameraMode??'broadcast';

@@ -41,6 +41,19 @@ test('conditional scores are reproducible bounded normal draws without endpoint 
   }
 });
 
+test('pedigree birth lotteries remain reachable with extreme inherited body tradeoffs', () => {
+  const bounds=Object.fromEntries(M.ABILITIES.map(({key})=>[key,{lower:0,upper:0}]));
+  for(const quality of [50,130])for(const distance of [-1,1])for(const release of [-1,1]){
+    const options={quality,distance,release,birthBounds:bounds};
+    const a=M.seededRandom(42),b=M.seededRandom(42);
+    for(let i=0;i<100;i++){
+      const scores=M.generate({...options,random:a});
+      assert.deepEqual(scores,M.generate({...options,random:b}));
+      assert.ok(Object.values(scores).every(value=>value>50&&value<150));
+    }
+  }
+});
+
 test('same-quality explosive and endurance types exchange advantage across distance and time steps', () => {
   const sprint = M.toPhysics(M.generate({distance: -1, deviation: 0}));
   const endurance = M.toPhysics(M.generate({distance: 1, deviation: 0}));

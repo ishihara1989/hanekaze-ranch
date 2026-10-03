@@ -37,7 +37,8 @@ test('purses, mare values and sire fees create a large separation from open raci
   const s=R.initial(),events=Array.from({length:48},(_,i)=>R.calendar(i+1)).flat();
   assert.ok(events.filter(e=>e.level==='GI').every(e=>e.purse[0]>=100000000));
   assert.ok(events.filter(e=>e.level==='GIII').every(e=>e.purse[0]>=R.facilityCost(s,'lab')));
-  assert.ok(events.filter(e=>!/^G/.test(e.level)).every(e=>e.purse[0]<=2600));
+  assert.ok(events.filter(e=>e.level==='open').every(e=>e.purse[0]>=100000&&e.purse[0]<1000000));
+  assert.ok(events.filter(e=>['new','maiden','c1','c2','c3'].includes(e.level)).every(e=>e.purse[0]>=10000&&e.purse[0]<100000));
   const sires=publicSires(s),specialists=sires.filter(b=>b.records.filter(r=>r.rank===1&&r.level==='GI').every(r=>r.surface==='dirt'||r.distance<=1400));
   assert.ok(specialists.length);assert.ok(specialists.every(b=>R.studFee(b)>=300000&&R.studFee(b)<=1000000));
   assert.ok(sires.some(b=>R.studFee(b)>=30000000));

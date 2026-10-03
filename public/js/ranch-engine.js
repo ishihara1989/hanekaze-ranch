@@ -34,7 +34,7 @@
   const MANAGEMENT = {robustness:'丈夫さ', recovery:'回復力'};
   const TRAINING = {speed:.15, cardio:.45, power:.35, reserve:.30, legs:.45, economy:.40, start:.50, resilience:.35};
   const FACILITIES = {
-    stalls:{name:'羽房',cost:12000000,max:4,description:'幼羽・競走羽の枠と、種牡羽・繁殖牝羽の枠を増やします。最大32 / 16 / 16羽。'},
+    stalls:{name:'羽房',cost:25000,costs:[0,25000,35000,12000000],max:4,description:'幼羽・競走羽の枠と、種牡羽・繁殖牝羽の枠を増やします。最初の拡張は2.5万G、次は3.5万G。最大32 / 16 / 16羽。'},
     course:{name:'コース',cost:18000000,max:3,description:'走り込みと動作の練習。段階ごとに調教の効果が上がります。'},
     hill:{name:'坂路',cost:22000000,max:3,description:'瞬発力とスパート容量を育てる調教施設。'},
     pool:{name:'プール',cost:20000000,max:3,description:'脚への負担を抑えながら心肺を育てます。'},
@@ -43,7 +43,7 @@
     meadow:{name:'穏やかな平原',cost:8000000,max:3,description:'自制心と賢さを育てる放牧地。最初から利用できます。'},
     forest:{name:'過酷な森',cost:8000000,max:3,description:'走る意欲と刺激への慣れを育てる放牧地。'},
     shop:{name:'グッズ販売所',cost:25000000,max:3,description:'GⅠ勝者のファンから毎月収入。引退後は5年で減衰、殿堂入りは一部継続。'},
-    lab:{name:'研究所',cost:5000000,max:1,description:'羽場・成長・羽色などの遺伝と、得意羽場などの競走情報を調べられます。',lock:'レース初勝利'},
+    lab:{name:'研究所',cost:25000,max:1,description:'羽場・成長・羽色などの遺伝と、得意羽場などの競走情報を調べられます。',lock:'レース初勝利'},
     statue:{name:'銅像',cost:50000000,max:1,description:'三冠を記念する銅像。研究所と合わせて全遺伝の座位を公開。記念館も完成すると現在能力の数値を公開します。',lock:'三冠制覇'},
     museum:{name:'記念館',cost:100000000,max:1,description:'牧場で8大競走を制覇した記念館。研究所と合わせて全遺伝の座位を公開。銅像も完成すると現在能力の数値を公開します。',lock:'8大競走制覇'},
   };
@@ -247,12 +247,43 @@
       .sort((a,b)=>sort==='fee'?breedFee(a)-breedFee(b):sort==='g1'?b.g1-a.g1:score(b)-score(a));
   }
   const g1Points=e=>e.surface==='dirt'?60:e.distance<=1400?70:e.minAge===2||/オニオン|光の戦士/.test(e.name)?80:e.sex||e.sexRestricted?100:e.distance>=2800?140:/ダービー|ワールドカップ|バハムート/.test(e.name)?180:120;
+  // JRA 2026 counterparts, with a 100-million floor for the game's juvenile G1s.
+  const G1_PRIZES={
+    'タイタンステークス':150000000,'カーバンクル記念':170000000,'リヴァイアサン記念':300000000,
+    'クリスタル賞':140000000,'神竜賞':200000000,'オーディーン賞（春）':300000000,
+    'CRAマイルカップ':130000000,'セイレーンカップ':130000000,'チョコボオークス':150000000,
+    'チョコボダービー':300000000,'イフリート記念':180000000,'フェニックス記念':300000000,
+    'ラムウステークス':170000000,'ミスリル賞':110000000,'オメガ賞':200000000,
+    'オーディーン賞（秋）':300000000,'シヴァ女王杯':130000000,'アレクサンダーカップ':180000000,
+    'CRAワールドカップ':500000000,'ナイツ・オブ・ラウンド記念':120000000,'バハムート記念':500000000,
+    'オニオンガールステークス':100000000,'オニオンボーイステークス':100000000,'光の戦士ステークス':100000000,
+  };
+  const raceLoad=e=>(e.distance<=1400?.8:e.distance<=1800?1:e.distance<=2400?1.15:e.distance<2800?1.25:1.4)*(e.surface==='dirt'?.8:1);
   function economyEvent(e) {
-    const prize={new:1000,maiden:900,c1:1400,c2:1800,c3:2200,open:2600,GIII:15000000,GII:40000000,GI:Math.max(100000000,g1Points(e)*1000000)}[e.level];
-    return {...e,fee:/^G/.test(e.level)?500:e.fee,allowance:/^G/.test(e.level)?300:e.allowance,
+    const load=raceLoad(e),prize=e.level==='GI'?(G1_PRIZES[e.name]||100000000):Math.round(
+      {new:30000,maiden:25000,c1:45000,c2:55000,c3:65000,open:300000,GIII:5000000,GII:30000000}[e.level]*load);
+    const fee=Math.round({new:400,maiden:400,c1:600,c2:800,c3:1000,open:1500,GIII:5000,GII:10000,GI:20000}[e.level]*load);
+    return {...e,fee,allowance:Math.round(prize*.03),
       purse:[1,.4,.25,.15,.1,0].map(f=>Math.round(prize*f))};
   }
-  const calendar=week=>Calendar.calendar(week).map(economyEvent);
+  function calendar(week) {
+    const events=Calendar.calendar(week),month=date(week).month;
+    // Each class has a suitable route every week. Preserve the original event IDs.
+    return events.flatMap(e=>{
+      if(/^G/.test(e.level))return [e];
+      const variants=[e];
+      for(const surface of ['turf','dirt']){
+        const tracks=Object.values(Calendar.TRACKS).filter(t=>t.surface===surface),track=tracks[(month-1)%tracks.length];
+        for(const distance of surface==='turf'?[1400,1800,2200,2400,3000]:[1400,1800,2200,2400]){
+          if(e.surface===surface&&e.distance===distance)continue;
+          const label=distance<=1600?'短距離':distance<=1800?'マイル':distance<2800?'中距離':'長距離';
+          variants.push({...e,id:`${e.id}:${surface}:${distance}`,name:`${Calendar.CLASSES[e.level].name} ${surface==='turf'?'芝':'ダート'}${distance}m`,
+            distance,surface,label,trackId:track.id,track,hill:track.hill,wind:track.wind,heat:month>=6&&month<=9?track.heat:0});
+        }
+      }
+      return variants;
+    }).map(economyEvent);
+  }
   function inheritanceWeights(r) {
     // Every G1 is mapped by the demands of its surface and distance.
     if(r.surface==='dirt')return {power:1.1,resilience:1,legs:.7,start:.6};
@@ -529,7 +560,7 @@
     if (s.money<facilityCost(s,key)) return 'ギルが足りません。';
     return '';
   }
-  const facilityCost=(s,key)=>FACILITIES[key].cost*(s.facilities[key]+1);
+  const facilityCost=(s,key)=>FACILITIES[key].costs?.[s.facilities[key]]??FACILITIES[key].cost*(s.facilities[key]+1);
   function build(s,key) {const reason=facilityReason(s,key);if(reason)throw Error(reason);pay(s,-facilityCost(s,key),`${FACILITIES[key].name}を建設・拡張`);s.facilities[key]++;}
   function setPasture(s,id,value) {
     const b=bird(s,id);
@@ -564,12 +595,16 @@
   }
   function nextRace(s,b) {
     if (b.role!=='racing'||!b.registered) return null;
-    const preferred=mean(b.genome.distance)>.3?2400:mean(b.genome.distance)<-.3?1400:1800;
+    const tendency=mean(b.genome.distance),preferred=tendency>.65?3000:tendency>.3?2400:tendency<-.3?1400:1800;
+    const [minDistance,maxDistance]=tendency>.3?[2200,3600]:tendency<-.3?[1000,1600]:[1600,2200];
+    const bestSurface=Math.max(mean(b.genome.traits.aptitude.turf),mean(b.genome.traits.aptitude.dirt));
+    const strength=mean(Object.values(currentAbilities(s,b)));
     const candidates=[];
     for(let week=s.week;week<s.week+12;week++) {
       if (week-b.lastRace<4) continue;
-      for(const e of calendar(week)) if(eligible(s,b,e)) {
-        const graded=/^G/.test(e.level),strength=mean(Object.values(currentAbilities(s,b)));
+      for(const e of calendar(week)) if(eligible({...s,week},b,e)) {
+        if(e.distance<minDistance||e.distance>maxDistance||mean(b.genome.traits.aptitude[e.surface])<bestSurface-.15)continue;
+        const graded=/^G/.test(e.level);
         if(b.policy==='steady'&&graded&&(b.wins<5||strength<80))continue;
         const footing=Ground.efficiency(b.genome.traits,e);
         candidates.push({event:e,score:Math.abs(e.distance-preferred)/800+(week-s.week)*.13+8*(1-footing.traction)-(b.policy==='challenge'&&graded?3:0)});
@@ -607,19 +642,19 @@
       if(s.birds.some(x=>x.farm&&x.records.some(r=>r.week===s.week&&r.name===e.name)))throw Error('この競走は確定済みです。');
       sharedRuns=runWorldEvent(s,e,[b]);
     }
-    pay(s,-e.fee,`${b.name} 出走登録`);
+    pay(s,-e.fee,`${b.name} 出走経費`);
     let rivals=[];
     if(!sharedRuns) {
       rivals=worldRoster(s,e);
     }
     const runs=(sharedRuns||simulateField(s,[b,...rivals],e,true)).sort((a,b)=>Number(b.finished)-Number(a.finished)||
       (a.finished?a.time-b.time:b.state.distance-a.state.distance));
-    const rank=runs.findIndex(x=>x.id===b.id)+1,run=runs[rank-1],reward=(run.finished?e.purse[rank-1]||0:0)+e.allowance;
+    const rank=runs.findIndex(x=>x.id===b.id)+1,run=runs[rank-1],prize=run.finished?e.purse[rank-1]||0:0,reward=prize+e.allowance;
     pay(s,reward,`${b.name} ${e.name} ${rank}着`);
-    const result={week:s.week,year:date(s.week).year,name:e.name,level:e.level,distance:e.distance,surface:e.surface,trackId:e.trackId,going:run.ground.going,cushion:run.ground.cushion,rank,reward,time:run.time,finished:run.finished,field:runs.map(({name,time,id,finished})=>({name,time,id,finished})),sexRestricted:!!e.sex,interactions:run.interactions};
+    const result={week:s.week,year:date(s.week).year,name:e.name,level:e.level,distance:e.distance,surface:e.surface,trackId:e.trackId,going:run.ground.going,cushion:run.ground.cushion,rank,prize,allowance:e.allowance,fee:e.fee,reward,time:run.time,finished:run.finished,field:runs.map(({name,time,id,finished})=>({name,time,id,finished})),sexRestricted:!!e.sex,interactions:run.interactions};
     result.replay=Replay.capture(runs,e);
     b.races++;b.lastRace=s.week;b.earnings+=reward;b.records.push(result);
-    const durability=1-.1*(b.management.robustness-100)/50;
+    const durability=(1-.1*(b.management.robustness-100)/50)*raceLoad(e);
     b.condition=clamp(b.condition-durability*(4+14*run.state.energyUsed/12000+10*run.state.reserveSpent/run.parameters.reserveCapacity),0,100);
     b.strain=clamp(b.strain+durability*(3+22*run.state.fatigue),0,100);
     if(e.level==='GI') b.fans+=rank===1?1200:150;
@@ -793,7 +828,7 @@
     if(!s.birds.every(b=>b.genome&&(s.breedingVersion===undefined&&b.genome.defects===undefined||Breeding.validDefects(b.genome,DEFECTS))&&
       (s.breedingVersion===undefined&&b.genome.character===undefined||Object.keys(PERSONALITY).every(k=>Array.isArray(b.genome.character?.[k])&&b.genome.character[k].length===2&&b.genome.character[k].every(v=>finite(v,50,150))))))return false;
     const scores=(x,keys)=>x&&keys.every(k=>finite(x[k],50,150));
-    const record=r=>r&&typeof r.name==='string'&&Number.isInteger(r.week)&&Number.isInteger(r.year)&&finite(r.rank,1,12)&&finite(r.time,0,900)&&finite(r.reward,0,1e15)&&finite(r.distance,100,10000)&&['turf','dirt'].includes(r.surface)&&typeof r.level==='string'&&Array.isArray(r.field)&&r.field.every(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&finite(x.time,0,900))&&(r.replay===undefined||Replay.valid(r.replay,r));
+    const record=r=>r&&typeof r.name==='string'&&Number.isInteger(r.week)&&Number.isInteger(r.year)&&finite(r.rank,1,12)&&finite(r.time,0,900)&&finite(r.reward,0,1e15)&&['prize','allowance','fee'].every(k=>r[k]===undefined||finite(r[k],0,1e15))&&finite(r.distance,100,10000)&&['turf','dirt'].includes(r.surface)&&typeof r.level==='string'&&Array.isArray(r.field)&&r.field.every(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&finite(x.time,0,900))&&(r.replay===undefined||Replay.valid(r.replay,r));
     if(!s.birds.every(b=>b&&/^bird-\d+$/.test(b.id)&&typeof b.name==='string'&&b.name.length<=40&&(b.farm===undefined||typeof b.farm==='string'&&b.farm.length<=40)&&(b.season===undefined||Number.isInteger(b.season))&&(b.worldGroup===undefined||typeof b.worldGroup==='string')&&['M','F'].includes(b.sex)&&['player','sale','public','source','archive','npc'].includes(b.owner)&&['young','racing','mare','stud','retired','archived'].includes(b.role)&&['root','founder','home','general'].includes(b.kind)&&Number.isInteger(b.birthYear)&&Number.isInteger(b.bornWeek)&&
       scores(b.potential,Mapping.ABILITIES.map(a=>a.key))&&scores(b.personality,Object.keys(PERSONALITY))&&scores(b.inborn,Object.keys(PERSONALITY))&&scores(b.management,Object.keys(MANAGEMENT))&&b.training&&Mapping.ABILITIES.every(a=>finite(b.training[a.key],0,1))&&finite(b.condition,0,100)&&finite(b.strain,0,100)&&finite(b.health,0,100)&&['steady','challenge'].includes(b.policy)&&['meadow','forest'].includes(b.pasture)&&['early','normal','late'].includes(b.growth)&&Object.hasOwn(Genetics.COLORS,b.color)&&typeof b.registered==='boolean'&&['races','wins','g1','graded','earnings','fans','bredYear'].every(k=>finite(b[k],0,1e15))&&Number.isInteger(b.lastRace)&&Array.isArray(b.records)&&b.records.every(record)&&Array.isArray(b.titles)&&b.titles.every(t=>typeof t==='string')&&
       b.genome&&['distance','release'].every(k=>Array.isArray(b.genome[k])&&b.genome[k].length===2&&b.genome[k].every(x=>finite(x,-1,1)))&&[...Mapping.ABILITIES.map(a=>a.key),...Object.keys(MANAGEMENT)].every(k=>Array.isArray(b.genome.quality?.[k])&&b.genome.quality[k].length===32&&b.genome.quality[k].every(p=>Array.isArray(p)&&p.length===2&&p.every(x=>x===0||x===1)))&&

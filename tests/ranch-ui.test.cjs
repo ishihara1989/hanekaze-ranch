@@ -5,16 +5,114 @@ const fs=require('node:fs'),vm=require('node:vm');
 const R=require('../public/js/ranch-engine.js'),W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
-function boot(saved,failSave=false){
-  const elements=new Map(),handlers={},windowHandlers={},storage=new Map(saved?[[R.SAVE_KEY,saved]]:[]);
+function boot(saved,failSave=false,failRead=false){
+  const elements=new Map(),handlers={},windowHandlers={},storage=new Map(saved instanceof Map?saved:saved?[[R.SAVE_KEY,saved]]:[]);
   const node=key=>{if(!elements.has(key))elements.set(key,{innerHTML:'',textContent:'',value:'',focus(){},dataset:{},classList:{toggle(){}},matches(){return false;}});return elements.get(key);};
-  const ctx=vm.createContext({Ranch:R,RanchObservation,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>{if(failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
+  const ctx=vm.createContext({Ranch:R,RanchObservation,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
   vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},setViewer(value){raceViewer=value},advance,render};})();`),ctx);
   return {h:ctx.hooks,node,storage,windowEvent(type,event={}){windowHandlers[type]?.(event);},click(action,data={}){handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key){handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})}});}};
 }
 const html=g=>g.node('#app').innerHTML;
+const slotKey=slot=>`${R.SAVE_KEY}-slot-${slot}`;
 function purchase(g){g.click('buy-dialog',{id:g.h.state.sale[0]});g.click('buy-confirm',{id:g.h.state.sale[0]});g.click('ack');}
+
+test('settings offer exactly five independent manual saves and disable empty loads',()=>{
+  const g=boot();g.click('nav',{page:'settings'});
+  assert.equal((html(g).match(/class="save-slot"/g)||[]).length,5);
+  assert.equal((html(g).match(/data-action="slot-load"[^>]*disabled/g)||[]).length,5);
+  const autosave=g.storage.get(R.SAVE_KEY);
+  for(let slot=1;slot<=5;slot++){
+    g.h.state.money=20000+slot;g.click('slot-save',{slot:String(slot)});
+    const entry=JSON.parse(g.storage.get(slotKey(slot)));
+    assert.ok(Number.isFinite(Date.parse(entry.savedAt)));
+    assert.equal(R.deserializeState(entry.data).money,20000+slot);
+    assert.match(html(g),/保存日時：/);
+    assert.equal(g.storage.get(R.SAVE_KEY),autosave,'manual saves do not write autosave');
+  }
+  const restored=boot(g.storage);restored.click('nav',{page:'settings'});
+  assert.equal((html(restored).match(/data-action="slot-load"[^>]*disabled/g)||[]).length,0);
+  assert.match(html(restored),/20,001 G/);assert.match(html(restored),/20,005 G/);
+});
+
+test('overwriting a slot requires confirmation and cancellation preserves its snapshot',()=>{
+  const g=boot();g.click('slot-save',{slot:'1'});const original=g.storage.get(slotKey(1));
+  purchase(g);g.click('slot-save',{slot:'1'});
+  assert.equal(g.h.modal.type,'slot-save');assert.equal(g.storage.get(slotKey(1)),original);
+  assert.match(html(g),/上書きしますか/);g.click('close');
+  g.click('slot-save-confirm');assert.equal(g.storage.get(slotKey(1)),original);
+  g.click('slot-save',{slot:'1'});g.click('slot-save-confirm');
+  assert.equal(g.h.modal,null);assert.equal(R.deserializeState(JSON.parse(g.storage.get(slotKey(1))).data).money,g.h.state.money);
+  assert.notEqual(g.storage.get(slotKey(1)),original);
+});
+
+test('loading restores the full ranch and autosave while retaining all five snapshots through reset',async()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');g.click('breed-confirm');g.click('ack');await g.h.advance(1);
+  const snapshot=JSON.stringify(g.h.state);
+  for(let slot=1;slot<=5;slot++)g.click('slot-save',{slot:String(slot)});
+  const slots=Array.from({length:5},(_,i)=>g.storage.get(slotKey(i+1)));
+  while(g.h.state.reports.length)g.click('ack');await g.h.advance(1);
+  const current=JSON.stringify(g.h.state),autosave=g.storage.get(R.SAVE_KEY);
+  g.click('slot-load',{slot:'1'});assert.equal(g.h.modal.type,'slot-load');
+  assert.equal(JSON.stringify(g.h.state),current);assert.equal(g.storage.get(R.SAVE_KEY),autosave);
+  g.click('close');g.click('slot-load-confirm');assert.equal(JSON.stringify(g.h.state),current);
+  g.click('slot-load',{slot:'1'});g.click('slot-load-confirm');
+  assert.equal(JSON.stringify(g.h.state),snapshot);assert.equal(g.h.page,'home');assert.equal(g.h.modal,null);
+  assert.equal(JSON.stringify(R.deserializeState(g.storage.get(R.SAVE_KEY))),snapshot);
+  const reloaded=boot(g.storage);assert.equal(JSON.stringify(reloaded.h.state),snapshot);
+  g.click('reset-dialog');g.click('reset-confirm');assert.equal(g.h.state.stage,'buy');
+  assert.deepEqual(Array.from({length:5},(_,i)=>g.storage.get(slotKey(i+1))),slots);
+  g.click('slot-load',{slot:'5'});g.click('slot-load-confirm');assert.equal(JSON.stringify(g.h.state),snapshot);
+});
+
+test('corrupted slots remain protected until explicit overwrite and cannot replace the running ranch',()=>{
+  const g=boot(),current=JSON.stringify(g.h.state),autosave=g.storage.get(R.SAVE_KEY);
+  for(const raw of ['', '{bad',JSON.stringify({version:1,savedAt:new Date().toISOString(),data:'{}'})]){
+    g.storage.set(slotKey(2),raw);g.click('nav',{page:'settings'});assert.match(html(g),/データを読み込めません/);
+    g.click('slot-load',{slot:'2'});assert.equal(g.h.modal,null);assert.equal(JSON.stringify(g.h.state),current);assert.equal(g.storage.get(R.SAVE_KEY),autosave);
+    g.click('slot-save',{slot:'2'});assert.equal(g.h.modal.type,'slot-save');assert.equal(g.storage.get(slotKey(2)),raw);
+    g.click('close');assert.equal(g.storage.get(slotKey(2)),raw);
+  }
+  g.click('slot-save',{slot:'2'});g.click('slot-save-confirm');
+  assert.ok(R.validState(R.deserializeState(JSON.parse(g.storage.get(slotKey(2))).data)));
+  for(const slot of ['0','6','1.5','bad']){g.click('slot-save',{slot});assert.equal(g.storage.has(slotKey(slot)),false);}
+});
+
+test('failed slot writes and failed load autosaves preserve prior saves and current progress',()=>{
+  let deny=false;const g=boot(undefined,key=>deny&&key===slotKey(1));
+  g.click('slot-save',{slot:'1'});const raw=g.storage.get(slotKey(1));purchase(g);
+  deny=true;g.click('slot-save',{slot:'1'});g.click('slot-save-confirm');
+  assert.equal(g.storage.get(slotKey(1)),raw);assert.equal(g.h.modal.type,'slot-save');assert.match(html(g),/セーブできませんでした/);
+  const failedLoad=boot(g.storage,key=>key===R.SAVE_KEY),current=JSON.stringify(failedLoad.h.state),autosave=failedLoad.storage.get(R.SAVE_KEY);
+  failedLoad.click('slot-load',{slot:'1'});failedLoad.click('slot-load-confirm');
+  assert.equal(JSON.stringify(failedLoad.h.state),current);assert.equal(failedLoad.storage.get(R.SAVE_KEY),autosave);
+  assert.equal(failedLoad.h.modal.type,'slot-load');assert.match(html(failedLoad),/ロードを中止/);
+});
+
+test('unreadable storage disables manual saves and an intact slot recovers a corrupted autosave',()=>{
+  const denied=boot(undefined,false,key=>key===slotKey(1));denied.click('nav',{page:'settings'});
+  assert.match(html(denied),/data-action="slot-save" data-slot="1"[^>]*disabled/);
+  denied.click('slot-save',{slot:'1'});assert.equal(denied.storage.has(slotKey(1)),false);
+  const g=boot();purchase(g);g.click('slot-save',{slot:'3'});g.storage.set(R.SAVE_KEY,'{bad');
+  const recovered=boot(g.storage);assert.equal(recovered.storage.get(R.SAVE_KEY),'{bad');
+  recovered.click('slot-load',{slot:'3'});recovered.click('slot-load-confirm');
+  assert.equal(recovered.h.saveOK,true);assert.equal(JSON.stringify(recovered.h.state),JSON.stringify(g.h.state));
+  assert.ok(R.validState(R.deserializeState(recovered.storage.get(R.SAVE_KEY))));
+});
+
+test('slot confirmation detects another tab changing its data instead of overwriting or loading it',()=>{
+  const g=boot();g.click('slot-save',{slot:'1'});purchase(g);g.click('slot-save',{slot:'2'});
+  const original=g.storage.get(slotKey(1)),updated=g.storage.get(slotKey(2));
+  for(const action of ['slot-save','slot-load']){
+    g.storage.set(slotKey(1),original);g.click(action,{slot:'1'});g.storage.set(slotKey(1),updated);
+    const current=JSON.stringify(g.h.state);g.click(`${action}-confirm`);
+    assert.equal(g.storage.get(slotKey(1)),updated);assert.equal(JSON.stringify(g.h.state),current);
+    assert.match(html(g),/別のタブで更新されました/);g.click('close');
+  }
+  g.click('nav',{page:'settings'});g.storage.delete(slotKey(1));g.windowEvent('storage',{key:slotKey(1)});
+  assert.match(html(g),/data-action="slot-load" data-slot="1"[^>]*disabled/);
+  g.click('slot-save',{slot:'1'});assert.ok(g.storage.has(slotKey(1)),'slot updates do not block the running ranch');
+});
 
 test('list and status portraits follow calendar age and show inherited crest only on adults',()=>{
   const g=boot(),b=R.own(g.h.state)[0];b.color='blue';b.crest='rainbow';
