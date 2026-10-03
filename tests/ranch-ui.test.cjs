@@ -6,12 +6,12 @@ const R=require('../public/js/ranch-engine.js'),W=require('../public/js/world.js
 const RanchObservation=require('../public/js/ranch-observation.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 function boot(saved,failSave=false,failRead=false){
-  const elements=new Map(),handlers={},windowHandlers={},storage=new Map(saved instanceof Map?saved:saved?[[R.SAVE_KEY,saved]]:[]);
+  const elements=new Map(),handlers={},windowHandlers={},queryLists={},storage=new Map(saved instanceof Map?saved:saved?[[R.SAVE_KEY,saved]]:[]);
   const node=key=>{if(!elements.has(key))elements.set(key,{innerHTML:'',textContent:'',value:'',focus(){},dataset:{},classList:{toggle(){}},matches(){return false;}});return elements.get(key);};
-  const ctx=vm.createContext({Ranch:R,RanchObservation,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
+  const ctx=vm.createContext({Ranch:R,RanchObservation,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:selector=>queryLists[selector]||[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
   vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},setViewer(value){raceViewer=value},advance,render};})();`),ctx);
-  return {h:ctx.hooks,node,storage,windowEvent(type,event={}){windowHandlers[type]?.(event);},click(action,data={}){handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key){handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})}});}};
+  return {h:ctx.hooks,node,storage,setQuery(selector,values){queryLists[selector]=values;},backdrop(){handlers.click({target:{classList:{contains:name=>name==='modal-backdrop'},closest:()=>null}});},inside(){handlers.click({target:{classList:{contains:()=>false},closest:()=>null}});},windowEvent(type,event={}){windowHandlers[type]?.(event);},click(action,data={}){handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key){handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})}});}};
 }
 const html=g=>g.node('#app').innerHTML;
 const slotKey=slot=>`${R.SAVE_KEY}-slot-${slot}`;
@@ -153,7 +153,7 @@ test('weekly reports, career results and old letters open a replay without chang
   g.click('watch-race',{id:b.id,week:String(r.week)});
   assert.equal(g.h.modal.type,'replay');assert.match(html(g),/パドック/);assert.match(html(g),/実況のラミア/);assert.match(html(g),/解説のサハギン/);assert.match(html(g),/1× リアルタイム/);
   assert.match(html(g),/data-phase="award"/);assert.equal(JSON.stringify(g.h.state),before);
-  g.click('close');assert.equal(g.h.modal,null);assert.equal(JSON.stringify(g.h.state),before);
+  g.click('close');assert.equal(g.h.modal.type,'reports');assert.equal(JSON.stringify(g.h.state),before);
   g.click('detail',{id:b.id});assert.match(html(g),/結果・観戦/);g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/[23]Dでレースを見る/);
   g.click('close');g.click('ack');g.click('nav',{page:'notebook'});g.click('notebook-tab',{tab:'letters'});assert.match(html(g),/[23]Dでレースを見る/);
   const restored=boot(g.storage.get(R.SAVE_KEY));restored.click('watch-race',{id:b.id,week:String(r.week)});assert.equal(restored.h.modal.type,'replay');
@@ -219,7 +219,7 @@ test('new UI exposes one tutorial action, hides numeric traits and renders every
 test('purchase and breeding are reviewable before payment, with a clear route back to the weekly loop',async()=>{
   const g=boot(),before=g.h.state.money;g.click('nav',{page:'market'});g.click('buy-dialog',{id:g.h.state.sale[0]});assert.equal(g.h.state.money,before);assert.match(html(g),/17,200 G/);g.click('close');assert.equal(g.h.state.money,before);
   purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');assert.match(html(g),/600 G/);g.click('breed-confirm');assert.equal(g.h.state.stage,'grow');g.click('ack');
-  await g.h.advance(4);assert.equal(g.h.state.week,10,'first win stops multi-week advance');while(g.h.state.reports.length)g.click('ack');await g.h.advance(3);assert.equal(g.h.state.week,13);assert.ok(g.h.state.reports.some(r=>r.type==='birth'));assert.ok(R.own(g.h.state).some(b=>b.role==='young'));
+  await g.h.advance(4);assert.equal(g.h.state.week,13,'monthly letters and first wins are included without stopping the four-week advance');assert.equal(g.h.modal.type,'reports');assert.equal(g.h.state.reports.filter(r=>r.type==='weekly').length,4);assert.ok(g.h.state.reports.some(r=>r.type==='monthly'));assert.ok(g.h.state.reports.some(r=>r.type==='birth'));assert.ok(R.own(g.h.state).some(b=>b.role==='young'));assert.match(html(g),/4週のダイジェスト/);
   const restored=boot(g.storage.get(R.SAVE_KEY));assert.equal(restored.h.state.week,13);assert.deepEqual(JSON.parse(JSON.stringify(restored.h.state)),JSON.parse(JSON.stringify(g.h.state)));
 });
 test('reset cancellation preserves everything; confirmation returns to March with the automated racing filly',()=>{
@@ -433,4 +433,59 @@ test('pedigree and cross preview show a source backcross but prohibit it without
   g.click('breed-dialog');assert.equal(g.h.modal,null);assert.equal(s.money,money);assert.equal(s.rng,rng);assert.equal(dam.pregnancy,null);
   g.click('detail',{id:sire.id});assert.doesNotMatch(html(g),/id="bird-name"/);
   s.facilities.lab=1;s.facilities.statue=1;g.h.render();assert.match(html(g),/潜性の欠点因子/);assert.match(html(g),/aa 4座/);assert.match(html(g),/Aa 4座/);
+});
+
+test('home always links to the mare sale; off-season breeding is greyed out while its forecast stays visible',()=>{
+  const g=boot();purchase(g);g.h.state.week=17;g.click('nav',{page:'home'});
+  assert.match(html(g),/class="home-quick-links"[\s\S]*data-page="market"/);assert.match(html(g),/次の開催は2月〜3月/);
+  g.click('nav',{page:'breed'});assert.match(html(g),/breeding-season closed|breeding-confirm unavailable/);
+  assert.match(html(g),/data-action="breed-dialog" disabled/);assert.match(html(g),/生まれる子の遺伝効果|data-preview-trait="power"/);
+  const before=JSON.stringify(g.h.state);g.click('breed-dialog');assert.equal(g.h.modal,null);assert.equal(JSON.stringify(g.h.state),before);
+});
+
+test('breeding forecasts use five-level ranges and update when either parent changes without consuming randomness',async()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});const s=g.h.state,rng=s.rng;
+  const forecast=()=>html(g).match(/<section class="paper offspring-preview">([\s\S]*?)<\/section>/)[1];
+  assert.equal((forecast().match(/data-preview-trait=/g)||[]).length,16);assert.doesNotMatch(forecast(),/data-score|<meter/);
+  const before=forecast();g.click('select-sire',{id:R.sires(s)[1].id});assert.notEqual(forecast(),before);assert.equal(s.rng,rng);
+  g.click('nav',{page:'market'});g.click('buy-dialog',{id:s.sale[1]});g.click('buy-confirm',{id:s.sale[1]});g.click('nav',{page:'breed'});
+  const first=forecast();await g.change('dam-choice',s.sale[1]);assert.notEqual(forecast(),first);assert.equal(s.rng,rng);
+});
+
+test('bird schedule changes save immediately, preserve the detail modal, and reload with the same chosen menu',async()=>{
+  const g=boot(),b=R.own(g.h.state)[0];g.click('detail',{id:b.id});assert.equal((html(g).match(/data-plan-week=/g)||[]).length,8);
+  await g.change('', 'training:power',{scheduleId:b.id,week:String(g.h.state.week)});
+  assert.equal(g.h.modal.type,'detail');assert.equal(b.schedule[g.h.state.week].menu,'power');assert.match(html(g),/指定した予定/);
+  const restored=boot(g.storage.get(R.SAVE_KEY));assert.equal(R.bird(restored.h.state,b.id).schedule[g.h.state.week].menu,'power');
+  await g.change('', 'auto',{scheduleId:b.id,week:String(g.h.state.week)});assert.equal(b.schedule[g.h.state.week],undefined);
+});
+
+test('report overlays keep the chosen page, preserve all four weekly letters and support repeated advancing',async()=>{
+  const g=boot();purchase(g);g.click('nav',{page:'breed'});g.click('breed-dialog');g.click('breed-confirm');g.click('close');g.click('nav',{page:'birds'});
+  await g.h.advance(4);assert.equal(g.h.page,'birds');assert.equal(g.h.modal.type,'reports');assert.equal(g.h.state.week,13);
+  assert.match(html(g),/4週のダイジェスト|3月の牧場だより|レース初勝利|小さな羽音/);
+  assert.equal(g.h.state.reports.filter(r=>r.type==='weekly').length,4);assert.match(html(g),/一羽ずつ、違う物語/);
+  const journal=JSON.stringify(g.h.state.journal);g.backdrop();assert.equal(g.h.modal,null);assert.equal(g.h.state.reports.length,0);assert.equal(JSON.stringify(g.h.state.journal),journal);
+  await g.h.advance(1);assert.equal(g.h.page,'birds');assert.equal(g.h.modal.type,'reports');assert.equal(g.h.state.week,14);
+  await g.h.advance(4);assert.equal(g.h.state.week,18);assert.equal(g.h.state.reports.filter(r=>r.type==='weekly').length,4);
+});
+
+test('four-week advance stops for January registration and backdrop dismissal keeps the required choices pending',async()=>{
+  const g=boot(),s=g.h.state;s.stage='running';s.week=47;
+  const child=R.createBird(s,{name:'コトリ',birthYear:0,bornWeek:9});
+  await g.h.advance(4);assert.equal(s.week,49);assert.equal(g.h.modal.type,'reports');assert.ok(s.reports.some(r=>r.type==='registration'));
+  g.backdrop();assert.equal(g.h.modal,null);assert.equal(s.reports.length,1);assert.equal(s.reports[0].type,'registration');assert.equal(child.registered,false);
+  await g.h.advance(4);assert.equal(s.week,49);assert.equal(g.h.modal.type,'reports');
+  g.setQuery('[data-register-name]',[{dataset:{registerName:child.id},value:'ハルノユメ'}]);
+  g.setQuery('[data-register-policy]',[{dataset:{registerPolicy:child.id},value:'challenge'}]);
+  g.click('ack');assert.equal(child.name,'ハルノユメ');assert.equal(child.policy,'challenge');assert.equal(child.registered,true);assert.equal(child.role,'racing');
+  g.setQuery('[data-register-name]',[]);g.setQuery('[data-register-policy]',[]);
+  await g.h.advance(1);assert.equal(s.week,50);
+});
+
+test('only clicking the backdrop closes a dialog; nested bird views return to their previous modal',()=>{
+  const g=boot(),b=R.own(g.h.state)[0];g.click('detail',{id:b.id});g.inside();assert.equal(g.h.modal.type,'detail');
+  g.backdrop();assert.equal(g.h.modal,null);
+  g.click('buy-dialog',{id:g.h.state.sale[0]});const before=JSON.stringify(g.h.state);g.backdrop();assert.equal(g.h.modal,null);assert.equal(JSON.stringify(g.h.state),before);
+  g.click('detail',{id:b.id});g.click('detail',{id:R.sires(g.h.state)[0].id});g.backdrop();assert.equal(g.h.modal.id,b.id);g.backdrop();assert.equal(g.h.modal,null);
 });

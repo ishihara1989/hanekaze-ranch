@@ -23,3 +23,5 @@
 追加モーション: [ラストスパート](spurt/README.md)。低い首・滑空するように広げた翼・本気の表情の8コマを、同じ本体10色・額羽6色で用意。親の `manifest.json` の `motions.spurt` から参照する。
 
 追加モーション: [歩行](walk/README.md)。パドック用の短い歩幅・低い足上げの8コマを、同じ本体10色・額羽6色で用意。親の `manifest.json` の `motions.walk` から参照する。
+
+追加モーション: [表彰](podium/README.md)。正面待機からくちばしを少し開き、左右に片羽を上げて声援へ応える。片側4コマ＋完全な左右反転の8コマで、本体10色・額羽6色に対応。`motions.podium` と `frameSequence` で待機・挨拶を長めに保持する。再構築は `node tools/build_chocobo_podium.cjs`。

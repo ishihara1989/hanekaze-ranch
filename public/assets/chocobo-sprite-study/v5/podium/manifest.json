@@ -1,0 +1,128 @@
+{
+  "revision": 5,
+  "motion": "podium",
+  "label": "表彰・声援への挨拶",
+  "columns": 4,
+  "rows": 2,
+  "cellWidth": 448,
+  "cellHeight": 448,
+  "width": 1792,
+  "height": 896,
+  "frameCount": 8,
+  "recommendedFps": 5,
+  "frameSequence": [
+    0,
+    0,
+    0,
+    1,
+    2,
+    2,
+    2,
+    3,
+    4,
+    4,
+    4,
+    5,
+    6,
+    6,
+    6,
+    7
+  ],
+  "source": "../../podium-yellow-v1.png",
+  "semanticMask": "../../regions-podium-v1.png",
+  "metallicSource": "../../podium-golden-metallic-v1.png",
+  "body": {
+    "yellow": {
+      "label": "黄",
+      "file": "body-yellow.png"
+    },
+    "red": {
+      "label": "赤",
+      "file": "body-red.png"
+    },
+    "blue": {
+      "label": "青",
+      "file": "body-blue.png"
+    },
+    "green": {
+      "label": "緑",
+      "file": "body-green.png"
+    },
+    "rose": {
+      "label": "ピンク",
+      "file": "body-rose.png"
+    },
+    "white": {
+      "label": "白",
+      "file": "body-white.png"
+    },
+    "black": {
+      "label": "黒",
+      "file": "body-black.png"
+    },
+    "purple": {
+      "label": "紫",
+      "file": "body-purple.png"
+    },
+    "gray": {
+      "label": "灰",
+      "file": "body-gray.png"
+    },
+    "golden": {
+      "label": "金",
+      "file": "body-golden.png"
+    }
+  },
+  "crest": {
+    "yellow": {
+      "label": "黄",
+      "file": "crest-yellow.png"
+    },
+    "red": {
+      "label": "赤",
+      "file": "crest-red.png"
+    },
+    "blue": {
+      "label": "青",
+      "file": "crest-blue.png"
+    },
+    "white": {
+      "label": "白",
+      "file": "crest-white.png"
+    },
+    "black": {
+      "label": "黒",
+      "file": "crest-black.png"
+    },
+    "rainbow": {
+      "label": "虹",
+      "file": "crest-rainbow.png"
+    }
+  },
+  "masks": {
+    "body": "body-mask.png",
+    "crest": "crest-mask.png"
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 0.9375
+  },
+  "crestCrop": {
+    "x": 126,
+    "y": 12,
+    "width": 202,
+    "height": 116
+  },
+  "phases": [
+    "正面で待機",
+    "やや右を向き、くちばしを少し開いて右羽を上げる",
+    "右羽を上げて声援に応える",
+    "右羽を下ろして正面へ戻る",
+    "正面で待機（左右反転）",
+    "やや左を向き、くちばしを少し開いて左羽を上げる",
+    "左羽を上げて声援に応える",
+    "左羽を下ろして正面へ戻る"
+  ],
+  "mirroring": "Frames 5–8 are exact horizontal RGBA mirrors of frames 1–4 for every layer. Right/left refer to screen direction.",
+  "compositing": "Draw body then crest at identical coordinates. Layers have disjoint nonzero-alpha pixels. Use frameSequence at recommendedFps to hold idle and greeting poses."
+}

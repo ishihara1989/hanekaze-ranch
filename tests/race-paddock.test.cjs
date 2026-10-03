@@ -80,15 +80,17 @@ test('2D paddock renders only the introduced walker and reproduces its gait afte
   Object.assign(globalThis,{RaceReplay:Replay,Race2DCourse:Projection,window:{devicePixelRatio:1}});
   try{
     const {RaceViewer2D}=await import('../public/js/race-viewer-2d.js'),record=recording(),before=JSON.stringify(record),
-      manifest=require('../public/assets/chocobo-sprite-study/v5/manifest.json'),rendered=[],node={},
-      ctx=new Proxy({createLinearGradient:()=>({addColorStop(){}})},{get:(object,key)=>object[key]||(()=>{})}),
+      manifest=require('../public/assets/chocobo-sprite-study/v5/manifest.json'),rendered=[],labels=[],node={getBoundingClientRect:()=>({height:88})},
+      ctx=new Proxy({createLinearGradient:()=>({addColorStop(){}}),fillText:(...args)=>labels.push(args)},{get:(object,key)=>object[key]||(()=>{})}),
       viewer=Object.assign(Object.create(RaceViewer2D.prototype),{ready:true,disposed:false,record,replay:record.replay,
         track:{id:'tenku'},theme:{key:'temple'},manifest,ctx,canvas:{},stage:{dataset:{},getBoundingClientRect:()=>({width:390,height:360})},
         course:Replay.course(record),root:{querySelectorAll:()=>[]},$:()=>node,cameraMode:'finish',motionPitch:2,
         bird(...args){rendered.push(args);},updateOverlay(){},minimap(){throw Error('Paddock must not draw the race course.');}});
     for(const index of [0,11,4,0]){
-      viewer.time=6+index*16+4.3;rendered.length=0;viewer.draw();
+      viewer.time=6+index*16+4.3;rendered.length=0;labels.length=0;viewer.draw();
       assert.equal(rendered.length,1);assert.equal(rendered[0][0].id,`bird-${index}`);assert.equal(rendered[0][6],'walk');
+      assert.ok(rendered[0][1].y<272,'the walking bird stays above the commentary panel');
+      assert.ok(labels.length===2&&labels.every(([, ,y])=>y<272),'entrant details stay above the commentary panel');
       const gait=rendered[0][3];assert.ok(gait>=0&&gait<8);
       assert.equal(viewer.stage.dataset.paddockId,`bird-${index}`);
       viewer.motionPitch=1;rendered.length=0;viewer.draw();assert.equal(rendered[0][3],gait);

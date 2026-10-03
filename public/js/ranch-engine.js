@@ -231,6 +231,40 @@
     return {base,effects,total};
   }
   const geneticScores=b=>geneticBreakdown(b).total;
+  function breedingPreview(s,sire,dam) {
+    if(!sire||!dam)return {};
+    const parents=[sire,dam],plan=crossPlan(s,sire,dam);
+    const mutation=(group,key,locus)=>plan.find(p=>p.group===group&&p.key===key&&p.locus===locus);
+    const inherited=(pairs,p)=>{
+      let low=pairs.map(pair=>Math.min(...pair)),high=pairs.map(pair=>Math.max(...pair));
+      if(p?.rate>0){high=high.map(v=>Math.max(v,p.value));if(p.rate===1)low=low.map(v=>Math.max(v,p.value));}
+      return [mean(low),mean(high)];
+    };
+    const ranges={};
+    for(const key of [...Mapping.ABILITIES.map(a=>a.key),...Object.keys(MANAGEMENT)]){
+      const loci=Array.from({length:32},(_,i)=>inherited(parents.map(p=>p.genome.quality[key][i]),mutation('quality',key,i)));
+      ranges[key]={min:50+2.5*loci.reduce((n,p)=>n+p[0],0),max:50+2.5*loci.reduce((n,p)=>n+p[1],0)};
+    }
+    for(const key of Object.keys(PERSONALITY)){
+      const [min,max]=inherited(parents.map(p=>p.genome.character[key]),mutation('character',key,0));
+      ranges[key]={min,max};
+    }
+    const distance=inherited(parents.map(p=>p.genome.distance)),release=inherited(parents.map(p=>p.genome.release));
+    for(const a of Mapping.ABILITIES)for(const [weight,range] of [[a.distance,distance],[a.release,release]]){
+      ranges[a.key].min+=Math.min(...range.map(v=>v*weight));
+      ranges[a.key].max+=Math.max(...range.map(v=>v*weight));
+    }
+    for(const id of new Set([...parents.flatMap(p=>Object.keys(p.genome.defects)),...plan.filter(p=>p.group==='defects').map(p=>p.key)])){
+      let minimum=0,maximum=0;
+      for(let i=0;i<Breeding.DEFECT_LOCI;i++){
+        const [low,high]=inherited(parents.map(p=>p.genome.defects[id]?.[i]||[0,0]),mutation('defects',id,i));
+        minimum+=Number(low===1)*Breeding.DEFECT_STEP;maximum+=Number(high===1)*Breeding.DEFECT_STEP;
+      }
+      const trait=DEFECTS[id].trait,effects=Breeding.SPECIAL[trait]||{[trait]:1};
+      for(const [key,weight] of Object.entries(effects)){ranges[key].min-=maximum*weight;ranges[key].max-=minimum*weight;}
+    }
+    return ranges;
+  }
   function profile(b) {
     const values={...b.potential,...b.management,...b.inborn};
     const sorted=Object.entries(values).sort((a,b)=>b[1]-a[1]);
@@ -497,6 +531,7 @@
     return s;
   }
   const saleOpen = s => [2,3].includes(date(s.week).month);
+  const breedingOpen = s => [3,4].includes(date(s.week).month);
   const sires = s => s.birds.filter(b => b.role==='stud' && (['root','founder'].includes(b.kind)||b.owner==='player'||date(s.week).year-b.retiredYear<5));
   const studFee = b => {
     if(b.kind==='root')return 600;
@@ -515,10 +550,11 @@
     if (own(s).filter(b=>b.role==='mare').length>=capacity(s).mare) throw Error('繁殖牝羽の羽房がいっぱいです。');
     pay(s,-b.price,`${b.name}を購入`); b.owner='player';
     if (s.stage==='buy') s.stage='breed';
-    milestone(s,'purchase','最初の仲間を迎えました',`${b.name}、ようこそ羽風牧場へ。次はこの子の相手を選びましょう。源流の種牡羽なら、いつでも配合をお願いできますよ。`);
+    milestone(s,'purchase','最初の仲間を迎えました',`${b.name}、ようこそ羽風牧場へ。次はこの子の相手を選びましょう。配合できるのは3月第1週から4月第4週です。`);
     return b;
   }
   function breedingReason(s, dam, sire) {
+    if (!breedingOpen(s)) return '配合期間は3月第1週〜4月第4週です。次の3月までお待ちください。';
     if (!dam || dam.owner!=='player' || dam.role!=='mare') return '繁殖牝羽を選んでください。';
     if (!sire || !sires(s).includes(sire)) return '種牡羽を選んでください。';
     const danger=crossReason(s,sire,dam);if(danger)return danger;
@@ -543,13 +579,17 @@
     const character=b.personality.control>85?'落ち着いて合図を聞いてくれます':b.personality.drive>85?'走ることが大好きな、元気な子です':'少しずつ、人との呼吸を覚えています';
     return `${body}ですね。${r>.3?'力をためてから走り出すのが好きみたい。':''}${character}。`;
   }
-  function currentAbilities(s,b) {
+  function abilityProgress(s,b) {
     const genes=Genetics.growth(b.genome.traits),birthWeek=(b.birthYear-1)*YEAR+date(Math.max(1,b.bornWeek)).week;
     const years=age(s,b)===null?genes.maturityYears:Math.max(0,(s.week-birthWeek)/YEAR);
     const maturity=clamp(years/genes.maturityYears,0,1);
     const decline=clamp(1-Math.max(0,years-genes.declineStart)*genes.declineRate,.6,1);
-    return Object.fromEntries(Mapping.ABILITIES.map(({key})=>[key,50+(b.potential[key]-50)*maturity*decline*(1-TRAINING[key]+TRAINING[key]*b.training[key])]));
+    return Object.fromEntries(Mapping.ABILITIES.map(({key})=>{
+      const developed=maturity*(1-TRAINING[key]+TRAINING[key]*b.training[key]),current=developed*decline;
+      return [key,{developed,current,decline:developed-current,remaining:1-developed,value:50+(b.potential[key]-50)*current}];
+    }));
   }
+  const currentAbilities=(s,b)=>Object.fromEntries(Object.entries(abilityProgress(s,b)).map(([key,p])=>[key,p.value]));
   function facilityReason(s,key) {
     const f=FACILITIES[key];
     if (!f) return '施設が見つかりません。';
@@ -593,15 +633,40 @@
     if (/^G/.test(e.level)) return b.wins>=2;
     return e.level===classFor(b)||(e.level==='maiden'&&b.races===0);
   }
+  const TRAINING_MENUS={balanced:{label:'総合調教',keys:[]},speed:{label:'最高速・立ち上がり',keys:['speed','start']},stamina:{label:'心肺・脚持久力',keys:['cardio','legs']},power:{label:'瞬発力・スパート容量',keys:['power','reserve']}};
+  function scheduledGap(b,week) {
+    return week-b.lastRace>=4&&!Object.entries(b.schedule||{}).some(([w,p])=>p.mode==='race'&&Number(w)!==week&&Math.abs(Number(w)-week)<4);
+  }
+  function raceOptions(s,b,week) {
+    if(!scheduledGap(b,week))return [];
+    return calendar(week).filter(e=>eligible({...s,week},b,e));
+  }
+  function setSchedule(s,id,week,value) {
+    const b=bird(s,id);
+    if(!b||b.owner!=='player'||b.role!=='racing'||!b.registered)throw Error('競走羽を選んでください。');
+    if(!Number.isInteger(week)||week<s.week||week>=s.week+8)throw Error('今週から8週先までの予定を選んでください。');
+    if(!value||!['auto','training','rest','race'].includes(value.mode))throw Error('調教・休養・出走を選んでください。');
+    if(value.mode==='training'&&!Object.hasOwn(TRAINING_MENUS,value.menu))throw Error('調教メニューを選んでください。');
+    if(value.mode==='race'&&!raceOptions(s,b,week).some(e=>e.id===value.eventId))throw Error('このレースには出走できません。出走条件と4週以上の間隔を確認してください。');
+    b.schedule??={};
+    if(value.mode==='auto')delete b.schedule[week];
+    else b.schedule[week]={mode:value.mode,...(value.mode==='training'?{menu:value.menu}:value.mode==='race'?{eventId:value.eventId}:{})};
+  }
   function nextRace(s,b) {
     if (b.role!=='racing'||!b.registered) return null;
+    const reserved=Object.entries(b.schedule||{}).filter(([w,p])=>Number(w)>=s.week&&p.mode==='race').sort((a,b)=>Number(a[0])-Number(b[0]));
+    if(reserved.length){
+      const [week,p]=reserved[0],e=raceOptions(s,b,Number(week)).find(e=>e.id===p.eventId);
+      if(e)return e;
+      if(Number(week)===s.week)return null;
+    }
     const tendency=mean(b.genome.distance),preferred=tendency>.65?3000:tendency>.3?2400:tendency<-.3?1400:1800;
     const [minDistance,maxDistance]=tendency>.3?[2200,3600]:tendency<-.3?[1000,1600]:[1600,2200];
     const bestSurface=Math.max(mean(b.genome.traits.aptitude.turf),mean(b.genome.traits.aptitude.dirt));
     const strength=mean(Object.values(currentAbilities(s,b)));
     const candidates=[];
     for(let week=s.week;week<s.week+12;week++) {
-      if (week-b.lastRace<4) continue;
+      if (!scheduledGap(b,week)||b.schedule?.[week]) continue;
       for(const e of calendar(week)) if(eligible({...s,week},b,e)) {
         if(e.distance<minDistance||e.distance>maxDistance||mean(b.genome.traits.aptitude[e.surface])<bestSurface-.15)continue;
         const graded=/^G/.test(e.level);
@@ -611,6 +676,27 @@
       }
     }
     return candidates.sort((a,b)=>a.score-b.score)[0]?.event||null;
+  }
+  function weeklyPlan(s,b) {
+    const override=b.schedule?.[s.week],e=nextRace(s,b),rest=b.condition<85||b.strain>15||b.health>0;
+    if(e?.week===s.week&&b.condition>=75&&b.strain<25&&!b.health&&s.money>=e.fee)return {mode:'race',event:e,manual:override?.mode==='race'};
+    if(override?.mode==='rest'||rest)return {mode:'rest',manual:override?.mode==='rest',reason:override?.mode==='rest'?'指定した休養':b.health?'療養中':'体調・脚の回復を優先'};
+    return {mode:'training',menu:override?.mode==='training'?override.menu:'balanced',manual:override?.mode==='training',reason:override?.mode==='race'?'出走条件・体調・ギルを確認して調教に変更':''};
+  }
+  function upcomingSchedule(s,b) {
+    const projected={...b,training:{...b.training},personality:{...b.personality}},rows=[];
+    for(let week=s.week;week<s.week+8;week++){
+      const snapshot={...s,week},plan=weeklyPlan(snapshot,projected);
+      rows.push({week,...plan,override:b.schedule?.[week]||{mode:'auto'}});
+      if(plan.mode==='race'){
+        projected.lastRace=week;projected.races++;projected.condition=Math.max(0,projected.condition-20);projected.strain+=20;
+      }else {
+        projected.condition=clamp(projected.condition+12+8*(b.management.recovery-50)/100+(plan.mode==='rest'?s.facilities.spa*3:0),0,100);
+        projected.strain=clamp(projected.strain-5-5*(b.management.recovery-50)/100-(plan.mode==='rest'?s.facilities.spa*2:0),0,100);
+        if(projected.health)projected.health=Math.max(0,projected.health-1-s.facilities.clinic);
+      }
+    }
+    return rows;
   }
   function raceEntry(s,b,e) {
     const abilities=currentAbilities(s,b),p=Mapping.toPhysics(abilities);
@@ -751,10 +837,11 @@
         const e=nextRace(s,b);
         if(b.lastRace!==s.week&&e?.week===s.week&&b.condition>=75&&b.strain<25&&!b.health) {const result=race(s,b,e);if(result)results.push({...result,birdId:b.id,birdName:b.name});}
         if(b.lastRace!==s.week) {
-          const rest=b.condition<85||b.strain>15||b.health>0;
+          const plan=weeklyPlan(s,b),rest=plan.mode==='rest';
           if(!rest)for(const key in b.training) {
             const bonus=(key==='cardio'?s.facilities.pool*.003:['power','reserve'].includes(key)?s.facilities.hill*.003:0);
-            b.training[key]=clamp(b.training[key]+.012+s.facilities.course*.003+bonus,0,1);
+            const focus=TRAINING_MENUS[plan.menu||'balanced'].keys,multiplier=focus.length?(focus.includes(key)?1.8:.85):1;
+            b.training[key]=clamp(b.training[key]+(.012+s.facilities.course*.003+bonus)*multiplier,0,1);
           }
           if(!rest){b.personality.control=clamp(b.personality.control+.2,50,150);b.personality.grit=clamp(b.personality.grit+.15,50,150);}
           b.condition=clamp(b.condition+12+8*(b.management.recovery-50)/100+(rest?s.facilities.spa*3:0),0,100);
@@ -764,6 +851,7 @@
         }
       }
     }
+    for(const b of s.birds)if(b.schedule)for(const week of Object.keys(b.schedule))if(Number(week)<=s.week)delete b.schedule[week];
     const cost=12+own(s).reduce((n,b)=>n+(b.role==='racing'?20:b.role==='young'?4:8),0)+Object.values(s.facilities).reduce((n,x)=>n+x,0)*2;
     if(s.money>=cost)pay(s,-cost,'今週の飼料・お世話・施設維持');
     else {s.debt+=cost-s.money;pay(s,-s.money,'今週の維持費（不足分は未払）');notes.push('維持費の不足分は未払金にしました。賞金などの収入から順に精算します。');}
@@ -797,7 +885,7 @@
       const ids=own(s).filter(b=>b.role==='young'&&age(s,b)===2).map(b=>b.id);
       if(ids.length)report(s,'registration','いよいよ、競走羽登録です',`今年2歳になる${ids.length}羽を、モーグリに預けましょう。名前と出走方針を決めたら、調教もレース選びも任せられます。`,{birdIds:ids,expression:'happy'});
     }
-    if(date(s.week).week===5&&own(s).some(b=>b.role==='mare'))notes.push('2月〜3月の繁殖牝羽セールが始まります。仲間を増やすなら、牧場手帳からどうぞ。');
+    if(date(s.week).week===5&&own(s).some(b=>b.role==='mare'))notes.push('2月〜3月の繁殖牝羽セールが始まります。トップページのセールへのリンクから、新しい仲間に会いに行けます。');
     const text=results.length?results.map(r=>`${r.birdName}は${r.name}で${r.rank}着。${r.reward.toLocaleString()}ギルを獲得しました。`).join(' '):
       own(s).some(b=>b.pregnancy)?'お母さんは落ち着いて過ごしています。新しい命に会える日を、楽しみに待ちましょう。':
       own(s).some(b=>b.role==='young')?'平原で元気な羽音が聞こえました。食べて、遊んで、よく眠って。今はその積み重ねが大切ですね。':'今週の調教と休養は順調です。次のレースへ、モーグリと準備を進めています。';
@@ -828,9 +916,12 @@
     if(!s.birds.every(b=>b.genome&&(s.breedingVersion===undefined&&b.genome.defects===undefined||Breeding.validDefects(b.genome,DEFECTS))&&
       (s.breedingVersion===undefined&&b.genome.character===undefined||Object.keys(PERSONALITY).every(k=>Array.isArray(b.genome.character?.[k])&&b.genome.character[k].length===2&&b.genome.character[k].every(v=>finite(v,50,150))))))return false;
     const scores=(x,keys)=>x&&keys.every(k=>finite(x[k],50,150));
+    const schedule=plans=>plans===undefined||plans&&typeof plans==='object'&&!Array.isArray(plans)&&Object.keys(plans).length<=8&&Object.entries(plans).every(([week,p])=>
+      /^\d+$/.test(week)&&Number.isSafeInteger(Number(week))&&Number(week)>=s.week&&Number(week)<s.week+8&&p&&['training','rest','race'].includes(p.mode)&&
+      (p.mode!=='training'||Object.hasOwn(TRAINING_MENUS,p.menu))&&(p.mode!=='race'||typeof p.eventId==='string'&&calendar(Number(week)).some(e=>e.id===p.eventId)));
     const record=r=>r&&typeof r.name==='string'&&Number.isInteger(r.week)&&Number.isInteger(r.year)&&finite(r.rank,1,12)&&finite(r.time,0,900)&&finite(r.reward,0,1e15)&&['prize','allowance','fee'].every(k=>r[k]===undefined||finite(r[k],0,1e15))&&finite(r.distance,100,10000)&&['turf','dirt'].includes(r.surface)&&typeof r.level==='string'&&Array.isArray(r.field)&&r.field.every(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&finite(x.time,0,900))&&(r.replay===undefined||Replay.valid(r.replay,r));
     if(!s.birds.every(b=>b&&/^bird-\d+$/.test(b.id)&&typeof b.name==='string'&&b.name.length<=40&&(b.farm===undefined||typeof b.farm==='string'&&b.farm.length<=40)&&(b.season===undefined||Number.isInteger(b.season))&&(b.worldGroup===undefined||typeof b.worldGroup==='string')&&['M','F'].includes(b.sex)&&['player','sale','public','source','archive','npc'].includes(b.owner)&&['young','racing','mare','stud','retired','archived'].includes(b.role)&&['root','founder','home','general'].includes(b.kind)&&Number.isInteger(b.birthYear)&&Number.isInteger(b.bornWeek)&&
-      scores(b.potential,Mapping.ABILITIES.map(a=>a.key))&&scores(b.personality,Object.keys(PERSONALITY))&&scores(b.inborn,Object.keys(PERSONALITY))&&scores(b.management,Object.keys(MANAGEMENT))&&b.training&&Mapping.ABILITIES.every(a=>finite(b.training[a.key],0,1))&&finite(b.condition,0,100)&&finite(b.strain,0,100)&&finite(b.health,0,100)&&['steady','challenge'].includes(b.policy)&&['meadow','forest'].includes(b.pasture)&&['early','normal','late'].includes(b.growth)&&Object.hasOwn(Genetics.COLORS,b.color)&&typeof b.registered==='boolean'&&['races','wins','g1','graded','earnings','fans','bredYear'].every(k=>finite(b[k],0,1e15))&&Number.isInteger(b.lastRace)&&Array.isArray(b.records)&&b.records.every(record)&&Array.isArray(b.titles)&&b.titles.every(t=>typeof t==='string')&&
+      scores(b.potential,Mapping.ABILITIES.map(a=>a.key))&&scores(b.personality,Object.keys(PERSONALITY))&&scores(b.inborn,Object.keys(PERSONALITY))&&scores(b.management,Object.keys(MANAGEMENT))&&b.training&&Mapping.ABILITIES.every(a=>finite(b.training[a.key],0,1))&&schedule(b.schedule)&&finite(b.condition,0,100)&&finite(b.strain,0,100)&&finite(b.health,0,100)&&['steady','challenge'].includes(b.policy)&&['meadow','forest'].includes(b.pasture)&&['early','normal','late'].includes(b.growth)&&Object.hasOwn(Genetics.COLORS,b.color)&&typeof b.registered==='boolean'&&['races','wins','g1','graded','earnings','fans','bredYear'].every(k=>finite(b[k],0,1e15))&&Number.isInteger(b.lastRace)&&Array.isArray(b.records)&&b.records.every(record)&&Array.isArray(b.titles)&&b.titles.every(t=>typeof t==='string')&&
       b.genome&&['distance','release'].every(k=>Array.isArray(b.genome[k])&&b.genome[k].length===2&&b.genome[k].every(x=>finite(x,-1,1)))&&[...Mapping.ABILITIES.map(a=>a.key),...Object.keys(MANAGEMENT)].every(k=>Array.isArray(b.genome.quality?.[k])&&b.genome.quality[k].length===32&&b.genome.quality[k].every(p=>Array.isArray(p)&&p.length===2&&p.every(x=>x===0||x===1)))&&
       (b.pregnancy===null||(b.sex==='F'&&b.role==='mare'&&Number.isInteger(b.pregnancy.due)&&b.pregnancy.due>s.week&&s.birds.some(p=>p.id===b.pregnancy.sireId&&p.sex==='M')))))return false;
     const validReport=r=>r&&/^report-\d+$/.test(r.id)&&Number.isInteger(r.week)&&typeof r.title==='string'&&typeof r.text==='string'&&['talk','neutral','happy','overjoyed','sad','motivated','disappointed','ambiguous-smile'].includes(r.expression)&&['weekly','monthly','annual','birth','event','registration','founder'].includes(r.type)&&
@@ -878,5 +969,5 @@
     for(const report of [...(s.reports||[]),...(s.journal||[])])for(const r of report.results||[])unpackRecord(r);
     delete s.packedGenomes;delete s.raceFields;delete s.raceReplays;return s;
   }
-  return {validBirdName,generatedName,crossRisk,crossReason,constitution,serializeState,deserializeState,Breeding,DEFECTS,DEFECT_LABELS,pedigree,breedingCrosses,crossPlan,createBird,worldRoster,calendar,g1Points,pedigreeBonus,rating,geneticRating,geneticEffectRating,geneticBreakdown,geneticScores,profile,farmName,MAJOR_FARMS,searchSires,marePrice,VERSION,SAVE_KEY,YEAR,GESTATION,PERSONALITY,MANAGEMENT,FACILITIES,ROOTS,TITLES,EIGHT,Mapping,Genetics,Ground,date,when,initial,refreshRoots,upgradeState,own,bird,age,capacity,racingCount,labLevel,quality,saleOpen,sires,studFee,breedFee,buy,breedingReason,breed,observe,currentAbilities,facilityCost,facilityReason,build,setPasture,setPolicy,rename,retire,classFor,nextRace,eligible,simulateBird,simulateField,race,founderEligible,promote,acknowledge,advance,validState};
+  return {breedingPreview,breedingOpen,abilityProgress,TRAINING_MENUS,raceOptions,setSchedule,weeklyPlan,upcomingSchedule,validBirdName,generatedName,crossRisk,crossReason,constitution,serializeState,deserializeState,Breeding,DEFECTS,DEFECT_LABELS,pedigree,breedingCrosses,crossPlan,createBird,worldRoster,calendar,g1Points,pedigreeBonus,rating,geneticRating,geneticEffectRating,geneticBreakdown,geneticScores,profile,farmName,MAJOR_FARMS,searchSires,marePrice,VERSION,SAVE_KEY,YEAR,GESTATION,PERSONALITY,MANAGEMENT,FACILITIES,ROOTS,TITLES,EIGHT,Mapping,Genetics,Ground,date,when,initial,refreshRoots,upgradeState,own,bird,age,capacity,racingCount,labLevel,quality,saleOpen,sires,studFee,breedFee,buy,breedingReason,breed,observe,currentAbilities,facilityCost,facilityReason,build,setPasture,setPolicy,rename,retire,classFor,nextRace,eligible,simulateBird,simulateField,race,founderEligible,promote,acknowledge,advance,validState};
 });

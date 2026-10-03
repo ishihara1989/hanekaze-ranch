@@ -142,7 +142,7 @@ function motionEntry(data, name) {
 }
 if (!additional && revision === 5) {
   manifest.motions = {};
-  for (const name of ['spurt', 'walk']) {
+  for (const name of ['spurt', 'walk', 'podium']) {
     const motionPath = path.join(root, 'v5', name, 'manifest.json');
     if (fs.existsSync(motionPath)) manifest.motions[name] = motionEntry(JSON.parse(fs.readFileSync(motionPath, 'utf8')), name);
   }

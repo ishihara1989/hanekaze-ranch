@@ -27,6 +27,10 @@ export function spriteMotion(state,phase,finishDistance){
   const remaining=finishDistance-state.distance;
   return remaining>=0&&remaining<=400&&['競り合い','羽混み','内へ進路変更','進路確保','前詰まり'].includes(state.mode)?'spurt':'run';
 }
+export function podiumFrame(manifest,elapsed){
+  const sequence=manifest.frameSequence||Array.from({length:manifest.frameCount},(_,i)=>i);
+  return sequence[Math.floor(Math.max(0,elapsed)*(manifest.recommendedFps||5))%sequence.length];
+}
 
 export class RaceViewer2D extends RacePlayback {
   constructor(root,record,track,options={}){
@@ -137,7 +141,7 @@ export class RaceViewer2D extends RacePlayback {
       this.rail(view,11.5,true);
       this.edges(edges,view);
     }
-    if(phase!=='paddock')this.minimap(view,runners);
+    if(phase!=='paddock'&&phase!=='award')this.minimap(view,runners);
     const selected=C.section(view.distance,this.record,this.track);
     const mode=view.finishLocked?'ゴール定点・後続の入線':view.startLocked?'スタート定点':{broadcast:'外側から中継',follow:'注目羽を追走',overview:'全羽の位置',finish:'ゴール・真横'}[this.cameraMode];
     const paddock=R.paddockAt(this.record,this.time);
@@ -154,8 +158,9 @@ export class RaceViewer2D extends RacePlayback {
   }
   paddockScene(view){
     const ctx=this.ctx,{width:w,height:h}=view,shot=R.paddockAt(this.record,this.time),
+      captionTop=h-(this.$('.race-commentary')?.getBoundingClientRect().height||0),
       walk=this.manifest.motions?.walk||this.manifest,travel=this.time*46,
-      ground=h*.79,size=Math.min(h*.64,w*.58,310),x=w<560?w*.53:w*.5;
+      ground=Math.min(h*.79,captionTop-44),size=Math.min(h*.64,w*.58,ground-h*.16,310),x=w<560?w*.53:w*.5;
     // Track the walking bird: rails and paving move while the subject stays
     // large in frame. All motion derives from the playback clock, so seeking
     // and changing renderer preserve the introduction and gait.
@@ -182,12 +187,12 @@ export class RaceViewer2D extends RacePlayback {
     this.bird(shot.runner,{x,y:ground},{...view,dir:1},gait,size,false,'walk');
     const nameSize=w<560?15:20,number=`${shot.runner.lane+1}番`,p=shot.runner.paddock;
     ctx.fillStyle='#294b3e';ctx.font=`600 ${nameSize}px sans-serif`;ctx.textAlign='center';
-    ctx.fillText(`${number}  ${shot.runner.name}`,x,h*.91,Math.max(160,w-36));
+    ctx.fillText(`${number}  ${shot.runner.name}`,x,captionTop-25,Math.max(160,w-36));
     ctx.font='11px sans-serif';ctx.fillStyle='#5e654c';
-    ctx.fillText(R.validPaddock(p)?`${p.age}歳 ${p.sex==='M'?'牡羽':'牝羽'}  ·  ${p.races}戦 ${p.wins}勝${shot.runner.player?'  ·  自家牧場':''}`:`出走羽 ${shot.index+1} / ${shot.total}`,x,h*.96);
+    ctx.fillText(R.validPaddock(p)?`${p.age}歳 ${p.sex==='M'?'牡羽':'牝羽'}  ·  ${p.races}戦 ${p.wins}勝${shot.runner.player?'  ·  自家牧場':''}`:`出走羽 ${shot.index+1} / ${shot.total}`,x,captionTop-9);
     // A quiet progress strip marks how long this entrant remains on screen.
     const progress=shot.intro?0:Math.min(1,shot.elapsed/R.PADDOCK.runnerSeconds);
-    ctx.fillStyle='#687f542b';ctx.fillRect(w*.25,h-4,w*.5,3);ctx.fillStyle='#a89450';ctx.fillRect(w*.25,h-4,w*.5*progress,3);
+    ctx.fillStyle='#687f542b';ctx.fillRect(w*.25,captionTop-4,w*.5,3);ctx.fillStyle='#a89450';ctx.fillRect(w*.25,captionTop-4,w*.5*progress,3);
   }
   backdrop(view){
     if(this.backdropImage){drawBackdropImage(this.ctx,view,this.backdropImage,this.motionPitch);return;}
@@ -283,7 +288,8 @@ export class RaceViewer2D extends RacePlayback {
     ctx.fillStyle='#3e543333';ctx.beginPath();ctx.ellipse(p.x,p.y-1,s*.33,s*.042,0,0,Math.PI*2);ctx.fill();
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(view.dir,1);
     const sx=frame%m.columns*m.cellWidth,sy=Math.floor(frame/m.columns)*m.cellHeight;
-    for(const img of [body,crest])if(img)ctx.drawImage(img,sx,sy,m.cellWidth,m.cellHeight,-s*.5,-s*.94,s,s);
+    const anchor=m.anchor||{x:.5,y:.94};
+    for(const img of [body,crest])if(img)ctx.drawImage(img,sx,sy,m.cellWidth,m.cellHeight,-s*anchor.x,-s*anchor.y,s,s);
     ctx.restore();
     const own=entry.id===this.focusId||entry.player;
     if(own){ctx.strokeStyle='#f3d779';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p.x,p.y+1,s*.39,s*.065,0,0,Math.PI*2);ctx.stroke();}
@@ -347,13 +353,16 @@ export class RaceViewer2D extends RacePlayback {
     ctx.fillStyle='#f5eed3';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(`${this.track.name||'競走場'} / ${c.right?'右回り':'左回り'}`,cx,y+h+10);
   }
   podium(view,raceTime){
-    const ctx=this.ctx,x=view.width/2,y=view.height*.84;
+    const ctx=this.ctx,x=view.width/2,
+      captionTop=view.height-(this.$('.race-commentary')?.getBoundingClientRect().height||0),
+      y=Math.min(view.height*.84,captionTop-34),size=Math.min(140,view.height*.3);
     ctx.fillStyle='#d9d2b5';ctx.fillRect(x-150,y-24,300,24);ctx.fillStyle='#bba76b';ctx.fillRect(x-60,y-55,120,55);
     const own=this.replay.runners.find(r=>r.id===this.record.birdId)||this.replay.runners[0];
-    this.bird(own,{x,y:y-55},view,0,Math.min(140,view.height*.3));
-    this.plaque(this.decor.title,x,view.height*.44,'#2e554e','#f8e1a4',16);
+    const elapsed=Math.max(0,this.time-this.timeline.award),motion=this.manifest.motions?.podium,
+      frame=motion?podiumFrame(motion,elapsed):0;
+    this.bird(own,{x,y:y-55},{...view,dir:1},frame,size,false,motion?'podium':'run');
+    this.plaque(this.decor.title,x,Math.max(32,y-55-size-12),'#2e554e','#f8e1a4',16);
     this.plaque(own.name,x,y+21,'#31564e','#f8e1a4',14);
-    const elapsed=this.time-this.timeline.award;
     for(let i=0;i<this.decor.confetti;i++){
       const age=mod(elapsed+i*1.73,6);ctx.fillStyle=['#e9c86d','#f8eee0','#8fa8bc'][i%3];
       ctx.fillRect(x+Math.sin(i*12.98)*210+Math.sin(age+i)*15,view.height*.3+age*view.height*.085,4,3);

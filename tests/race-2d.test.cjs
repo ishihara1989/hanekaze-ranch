@@ -286,7 +286,7 @@ test('last-spurt motion follows replay effort, including final traffic, rewinds 
   assert.equal(motion(121),'run');assert.equal(JSON.stringify(runner),before);
 });
 
-test('all three sprite motions provide all color layers and draw matching frames in either direction',async()=>{
+test('all sprite motions provide all color layers and draw matching frames in either direction',async()=>{
   globalThis.RaceReplay=R;globalThis.Race2DCourse=C;
   const {RaceViewer2D}=await import('../public/js/race-viewer-2d.js');
   const fs=require('node:fs'),path=require('node:path'),m=require('../public/assets/chocobo-sprite-study/v5/manifest.json'),spurt=m.motions.spurt;
@@ -300,7 +300,7 @@ test('all three sprite motions provide all color layers and draw matching frames
   }
   const draws=[],scales=[],ctx=new Proxy({drawImage:(...args)=>draws.push(args),scale:(...args)=>scales.push(args)},{get:(target,key)=>target[key]??(()=>{})}),
     viewer=Object.assign(Object.create(RaceViewer2D.prototype),{manifest:m,images,ctx,plaque(){}});
-  for(const color of Object.keys(m.body))for(const crest of Object.keys(m.crest))for(const motion of ['run','spurt','walk'])for(const dir of [-1,1])for(let frame=0;frame<8;frame++){
+  for(const color of Object.keys(m.body))for(const crest of Object.keys(m.crest))for(const motion of ['run',...Object.keys(m.motions)])for(const dir of [-1,1])for(let frame=0;frame<8;frame++){
     draws.length=0;const entry={id:'bird',lane:0,color,crest},active=m.motions[motion]||m;
     viewer.bird(entry,{x:60,y:100},{dir,scale:5},frame,null,false,motion);
     assert.equal(draws.length,2);assert.equal(draws[0][0],active.body[color].file);assert.equal(draws[1][0],active.crest[crest].file);

@@ -17,6 +17,15 @@
   function ratingTable(scores,labels,{numeric=false,genetic=false}={}) {
     return `<div class="ability-grid ${numeric?'numeric':'ratings-only'}">${Object.entries(labels).map(([key,label])=>`<div data-trait="${key}"><span>${label}</span><b>${(genetic?R.geneticRating:R.rating)(scores[key])}${numeric?` <small data-score="${key}">${Math.floor(scores[key])}</small>`:''}</b>${numeric?`<meter min="50" max="150" value="${scores[key]}">${Math.floor(scores[key])}</meter>`:''}</div>`).join('')}</div>`;
   }
+  function abilityGauges(state,b,numeric) {
+    const progress=R.abilityProgress(state,b),approx=value=>Math.round(value*20)*5;
+    return `<p class="muted">ゲージ全体は能力150。伸びしろの右端が、この子の能力上限です。</p><div class="ability-legend"><span><i class="current"></i>現在の能力</span><span><i class="decline"></i>加齢で低下</span><span><i class="remaining"></i>伸びしろ</span></div><div class="ability-grid ability-progress">${Object.entries(abilityLabels).map(([key,label])=>{
+      const p=progress[key],limit=b.potential[key],loss=(limit-50)*p.decline,remaining=(limit-50)*p.remaining;
+      const current=approx(p.value/limit),lost=approx(loss/limit),declineText=loss>0?(lost?`加齢で約${lost}%低下`:'加齢でわずかに低下'):'';
+      const description=`${label}：この子の能力上限に対して約${current}%${declineText?`、${declineText}`:''}。共通の最大目盛りは150です。`;
+      return `<div data-trait="${key}"><span>${label}</span><b>${R.rating(p.value)}${numeric?` <small data-score="${key}">${Math.floor(p.value)}</small>`:''}</b><div class="ability-gauge" role="meter" aria-label="${label}の育ち具合" aria-valuemin="0" aria-valuemax="150" aria-valuenow="${numeric?Math.floor(p.value):Math.round(p.value/5)*5}" aria-valuetext="${description}"><div class="ability-capacity" style="width:${limit/150*100}%"><span class="current" style="width:${p.value/limit*100}%"></span><span class="decline" style="width:${loss/limit*100}%"></span><span class="remaining" style="width:${remaining/limit*100}%"></span></div></div><small class="ability-progress-note">この子の上限まで約${current}%${declineText?` <span>${declineText}</span>`:''}</small></div>`;
+    }).join('')}</div>`;
+  }
   const traitScores=group=>Object.fromEntries(Object.entries(group).map(([key,pair])=>[key,50+mean(pair)*100]));
   function geneLoci(b) {
     const g=b.genome;
@@ -35,7 +44,7 @@
     const level=R.labLevel(state),numeric=level===3,years=R.age(state,b),young=years!==null&&years<=1;
     const traits=b.genome.traits,aptitude=traits.aptitude;
     const preference=(a,c,left,right)=>mean(a)===mean(c)?'どちらも同程度':mean(a)>mean(c)?left:right;
-    return `<section class="research status-record"><h3>${young?'成長率':'現在のステータス'}</h3><p class="speaker">${young?'シロマ / 育成担当':'モーグリ / トレーナー'}</p>${young?`<p class="muted">成長の速さ・衰え始め・衰え方の評価。高いほど、早く育ち、長く能力を保てます。</p>${ratingTable(traitScores(traits.development),R.Genetics.DEVELOPMENT,{numeric})}`:`<h3>現在の身体能力</h3>${ratingTable(R.currentAbilities(state,b),abilityLabels,{numeric})}<h3>管理の資質</h3>${ratingTable(b.management,R.MANAGEMENT,{numeric})}<h3>現在の性格</h3>${ratingTable(b.personality,R.PERSONALITY,{numeric})}`}${level>=1?`<details class="race-traits" open><summary>詳しい競走情報</summary><p class="muted">${R.profile(b).distance} / ${R.profile(b).style}</p><p>得意羽場：${preference(aptitude.turf,aptitude.dirt,'芝','ダート')} / 得意なクッション：${preference(aptitude.lowCushion,aptitude.highCushion,'柔らかめ','硬め')}</p><h3>羽場適性</h3>${ratingTable(traitScores(aptitude),R.Genetics.APTITUDES,{numeric})}</details>`:''}${numeric?`<h3>成熟したときの伸びしろ</h3>${ratingTable(b.potential,abilityLabels,{numeric:true})}${b.role==='racing'?`<div class="wellbeing"><span>体調 <b>${Math.floor(b.condition)} / 100</b></span><span>脚の負担 <b>${Math.floor(b.strain)} / 100</b></span><span>療養 <b>あと${b.health}週</b></span></div>`:''}`:''}</section>`;
+    return `<section class="research status-record"><h3>${young?'成長率':'現在のステータス'}</h3><p class="speaker">${young?'シロマ / 育成担当':'モーグリ / トレーナー'}</p>${young?`<p class="muted">成長の速さ・衰え始め・衰え方の評価。高いほど、早く育ち、長く能力を保てます。</p>${ratingTable(traitScores(traits.development),R.Genetics.DEVELOPMENT,{numeric})}`:`<h3>現在の身体能力</h3>${abilityGauges(state,b,numeric)}<h3>管理の資質</h3>${ratingTable(b.management,R.MANAGEMENT,{numeric})}<h3>現在の性格</h3>${ratingTable(b.personality,R.PERSONALITY,{numeric})}`}${level>=1?`<details class="race-traits" open><summary>詳しい競走情報</summary><p class="muted">${R.profile(b).distance} / ${R.profile(b).style}</p><p>得意羽場：${preference(aptitude.turf,aptitude.dirt,'芝','ダート')} / 得意なクッション：${preference(aptitude.lowCushion,aptitude.highCushion,'柔らかめ','硬め')}</p><h3>羽場適性</h3>${ratingTable(traitScores(aptitude),R.Genetics.APTITUDES,{numeric})}</details>`:''}${numeric?`<h3>成熟したときの伸びしろ</h3>${ratingTable(b.potential,abilityLabels,{numeric:true})}${b.role==='racing'?`<div class="wellbeing"><span>体調 <b>${Math.floor(b.condition)} / 100</b></span><span>脚の負担 <b>${Math.floor(b.strain)} / 100</b></span><span>療養 <b>あと${b.health}週</b></span></div>`:''}`:''}</section>`;
   }
   return Object.freeze({genetics:geneticResearch,status});
 });
