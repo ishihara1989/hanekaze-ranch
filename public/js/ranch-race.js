@@ -73,6 +73,7 @@
   }
   function routing(index,runners,states,event,c,target,dt){
     const r=runners[index],me=states[index],section=Course.section(me.distance,event.distance,c),
+      finalStraight=me.distance>=event.distance-c.finalStraight,
       wisdom=(r.traits.wisdom-50)/100,horizon=section.finalApproach?5+4*wisdom:3+2*wisdom,
       speed=Math.max(me.speed,Math.min(target,me.speed+2)),
       forward=(v,lane)=>v/(section.corner?1+(lane+.5)*c.laneWidth/c.radius:1),
@@ -86,10 +87,12 @@
       if(lane!==me.lateral&&others.some(s=>conflicts(me,s,preview,
         {distance:s.distance+forward(s.speed,s.lateral)*previewTime,lateral:s.lateral})))continue;
       // Near a bend, the saved arc length dominates a small cost for changing lanes.
-      const cornerTime=section.corner?horizon:Math.max(0,horizon-section.toCorner/Math.max(speed,1)),
+      const cornerTime=finalStraight?0:section.corner?horizon:Math.max(0,horizon-section.toCorner/Math.max(speed,1)),
         pathLoss=cornerTime*speed*(lane+.5)*c.laneWidth/c.radius,
         arrival=Math.abs(lane-me.lateral)/LATERAL_RATE;
-      let score=.35*lane+pathLoss+.16*Math.abs(lane-me.lateral)+(lane===r.routeTarget?0:.05);
+      // On the home straight, stop shifting as soon as the current corridor is clear.
+      let score=.16*Math.abs(lane-me.lateral);
+      if(!finalStraight)score+=.35*lane+pathLoss+(lane===r.routeTarget?0:.05);
       for(const s of others){
         const gap=s.distance-me.distance;
         if(gap<=0||Math.abs(s.lateral-lane)>=LATERAL_CLEARANCE)continue;

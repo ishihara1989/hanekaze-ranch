@@ -28,18 +28,47 @@ test('four sections follow physical boundaries and are available in the temple t
   }
 });
 
-test('broadcast freezes when the goal enters view and lets the leaders run off-screen',()=>{
+test('broadcast starts fixed and freezes with the goal one third from the leading edge',()=>{
   for(const t of [track,{...track,theme:'芝・右回り'}])for(const size of [{width:1200,height:500},{width:390,height:430}]){
-    const start=C.broadcastCamera(0,record,t,size),gates=C.camera(0,record,t,size);
-    close(start.origin.x,gates.origin.x);close(start.origin.z,gates.origin.z);
+    const start=C.broadcastCamera(0,record,t,size);
+    assert.equal(start.startLocked,true);assert.equal(start.finishLocked,false);
+    assert.deepEqual(C.broadcastCamera(1,record,t,size),start);
     const early=C.broadcastCamera(record.distance-100,record,t,size),atLine=C.broadcastCamera(record.distance,record,t,size),late=C.broadcastCamera(record.distance+100,record,t,size);
     assert.equal(early.finishLocked,false);assert.equal(atLine.finishLocked,true);assert.equal(late.finishLocked,true);
     close(atLine.distance,late.distance);close(atLine.origin.x,late.origin.x);close(atLine.origin.z,late.origin.z);
     const goal=C.project(record.distance,0,record,t,atLine),leader=C.project(record.distance+40,0,record,t,late),rear=C.project(record.distance-20,0,record,t,late);
+    close(goal.x,size.width*(t.theme.includes('右回り')?1/3:2/3));
+    const runout=C.project(record.distance+3,0,record,t,late);
+    assert.ok(runout.x>0&&runout.x<size.width,'a short run-out remains visible');
     assert.ok(goal.x>0&&goal.x<size.width);assert.ok(rear.x>0&&rear.x<size.width);
     assert.ok(t.theme.includes('右回り')?leader.x<0:leader.x>size.width);
     // Rewinding derives the travelling camera again without a stale latch.
     assert.deepEqual(C.broadcastCamera(record.distance-100,record,t,size),early);
+  }
+});
+
+test('opening holds the gates, follows at the leading third, and rewinds without camera jumps',()=>{
+  for(const source of Object.values(W.TRACKS))for(const right of [false,true])for(const pitch of [1,1.5,2])
+  for(const size of [{width:1200,height:500},{width:390,height:430}])for(const distance of [1200,2400,3200]){
+    const t={...source,theme:right?'右回り':'左回り'},r={distance},viewport={...size,pitch},
+      start=C.broadcastCamera(0,r,t,viewport),offset=size.width/(6*start.motionScale),
+      threshold=start.distance+offset,epsilon=1e-6;
+    for(const lane of [0,5.5,11]){
+      const gate=C.project(0,lane,r,t,start),trailing=right?size.width-gate.x:gate.x;
+      assert.ok(trailing>0&&trailing<size.width*.2,'gates fit at the trailing side, even on a bend');
+    }
+    assert.deepEqual(C.broadcastCamera(threshold*.5,r,t,viewport),start);
+    const a=C.broadcastCamera(threshold-epsilon,r,t,viewport),b=C.broadcastCamera(threshold+epsilon,r,t,viewport),
+      leader=C.project(threshold,5.5,r,t,start),anchor=size.width*(right?1/3:2/3);
+    assert.ok(Math.abs(leader.x-anchor)<size.width*.04,'following starts near one third from the leading edge');
+    assert.equal(a.startLocked,true);assert.equal(b.startLocked,false);
+    for(const [d,lane] of [[0,0],[0,11],[threshold,5.5]]){
+      const p=C.project(d,lane,r,t,a),q=C.project(d,lane,r,t,b);
+      assert.ok(Math.hypot(p.x-q.x,p.y-q.y)<.001,'fixed and tracking shots share the same boundary position');
+    }
+    const following=C.broadcastCamera(threshold+10,r,t,viewport);
+    assert.equal(following.startLocked,false);assert.equal(following.finishLocked,false);
+    assert.deepEqual(C.broadcastCamera(0,r,t,viewport),start);
   }
 });
 
@@ -83,6 +112,53 @@ test('visual pitch accelerates all eight frames without changing the physical re
   assert.equal(JSON.stringify(runner),before);
 });
 
+test('opening feet keep the cruising cadence and phase through acceleration, handoff and rewind',()=>{
+  const d=distanceAt(100),runner={lane:0,time:12,finished:false,samples:[
+    [0,d,0,0,0],[2,d+10,10,1,0],[4,d+36,15,1,0],[6,d+68,17,1,0],
+    [8,d+103,17.2,1,0],[10,d+138,17.3,1,0],[12,d+173,17.3,1,0]]},
+    before=JSON.stringify(runner),path=C.gaitPath(runner,record,track),
+    animation=t=>C.animationTravelled(runner,t,R.visualSample(runner,t),path),
+    epsilon=1e-5;
+  // The recorded opening accelerates; the feet use the same 17.5m/s cycle
+  // as the settled 8–10s cruise interval, with no cadence or phase reset.
+  close(C.travelled(runner,1,R.visualSample(runner,1),path),5);
+  close(animation(1),17.5);
+  for(const time of [0,1,2,4,6,8,9])close(animation(time),17.5*time);
+  for(const boundary of [2,4,6,8]){
+    close((animation(boundary)-animation(boundary-epsilon))/epsilon,17.5);
+    close((animation(boundary+epsilon)-animation(boundary))/epsilon,17.5);
+  }
+  for(const pitch of [1,1.5,2])for(let i=0;i<8;i++){
+    const time=(i+.01)*20/(17.5*8*pitch);
+    assert.equal(C.frame(animation(time),pitch),i);
+    assert.equal(C.frame(animation(time+8),pitch),C.frame(17.5*(time+8),pitch));
+  }
+  const later=animation(9);animation(1);close(animation(9),later);
+  close(animation(-1),0);close(animation(20),animation(12));
+  assert.equal(JSON.stringify(runner),before);
+});
+
+test('opening cadence respects outside path length, legacy samples, and finish deceleration',()=>{
+  const d=distanceAt(course.straight+100),lane=11,factor=1+(lane+.5)*course.laneWidth/course.radius,
+    runner={lane,time:12,finished:false,samples:[
+      [0,d,0,0,lane],[4,d+20/factor,10,1,lane],[6,d+45/factor,15,1,lane],
+      [8,d+75/factor,15.2,1,lane],[10,d+105/factor,15.2,1,lane],[12,d+135/factor,15.2,1,lane]]},
+    path=C.gaitPath(runner,record,track),legacy={...runner,samples:runner.samples.map(s=>s.slice(0,4))},
+    oldPath=C.gaitPath(legacy,record,track);
+  const at=t=>C.animationTravelled(runner,t,R.visualSample(runner,t),path);
+  close(at(1),15);
+  for(const time of [0,1,5,8,9,12])close(at(time),C.animationTravelled(legacy,time,R.visualSample(legacy,time),oldPath));
+  const finisher={lane:0,time:12,finished:true,samples:[
+    [0,0,0,0,0],[4,45,18,1,0],[6,85,20,1,0],[8,125,20,1,0],[10,165,20,1,0],[12,205,20,1,0]]},
+    fp=C.gaitPath(finisher,{distance:205},track),phase=t=>C.animationTravelled(finisher,t,R.visualSample(finisher,t),fp),
+    eps=1e-5;
+  close(phase(12+eps)-phase(12),20*eps);
+  close(phase(20),phase(100));
+  const steady={lane:0,time:2,finished:false,samples:[[0,0,20,1,0],[2,40,20,1,0]]},
+    sp=C.gaitPath(steady,record,track),s=R.visualSample(steady,1);
+  close(C.animationTravelled(steady,1,s,sp),C.travelled(steady,1,s,sp));
+});
+
 test('ground and five-metre fence posts travel four intervals in one eight-frame cycle',()=>{
   assert.equal(C.SCENERY.postSpacing,5);
   for(const t of [track,{...track,theme:'芝・右回り'}])for(const pitch of [1,1.5,2]){
@@ -106,9 +182,9 @@ test('gate and finish move with the posts, with unchanged relative runner speed 
   for(const t of Object.values(W.TRACKS))for(const pitch of [1,1.5,2])for(const size of [{width:1200,height:500},{width:390,height:430}]){
     const viewport={...size,pitch},dir=t.theme.includes('右回り')?-1:1,
       a=C.broadcastCamera(record.distance-35,record,t,viewport),locked=C.broadcastCamera(record.distance,record,t,viewport),
-      stop=locked.distance,threshold=stop+8/pitch;
+      stop=locked.distance,threshold=stop+size.width/(6*locked.motionScale);
     // Goal/camera coincidence uses the scaled projection on every display.
-    close(C.project(record.distance,5.5,record,t,locked).x,locked.cx+dir*(size.width/2-3*locked.scale));
+    close(C.project(record.distance,5.5,record,t,locked).x,size.width*(dir===1?2/3:1/3));
     const goal=record.distance,post=Math.floor(goal/(5/pitch))*(5/pitch),
       delta=(distance,v1,v2)=>C.project(distance,5.5,record,t,v2).x-C.project(distance,5.5,record,t,v1).x;
     close(delta(goal,a,locked),delta(post,a,locked));

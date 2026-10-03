@@ -100,7 +100,8 @@ export class RaceViewer2D extends RacePlayback {
     if(phase==='award'){distance=this.record.distance;span=58;}
     // Depth has enough room for all twelve original lanes at narrow widths.
     const viewport={width,height,pitch:this.motionPitch,span:Math.max(span,width/Math.max(5,height/16))};
-    if(this.cameraMode==='broadcast'&&['race','result'].includes(phase))return C.broadcastCamera(first.distance,this.record,this.track,viewport);
+    if(this.cameraMode==='broadcast'&&['gate','race','result'].includes(phase))return C.broadcastCamera(phase==='gate'?0:first.distance,this.record,this.track,viewport);
+    if(this.cameraMode==='finish'&&['race','result'].includes(phase))return C.broadcastCamera(this.record.distance,this.record,this.track,viewport);
     return C.camera(distance,this.record,this.track,viewport);
   }
   draw(){
@@ -127,9 +128,10 @@ export class RaceViewer2D extends RacePlayback {
       const edges=[[],[]];
       for(const bird of birds){
         if(bird.p.x<-35||bird.p.x>w+35){edges[bird.p.x<0?0:1].push(bird);continue;}
-        const travelled=C.travelled(bird.entry,raceTime,bird.state,this.paths.get(bird.entry.id));
+        const path=this.paths.get(bird.entry.id),travelled=C.travelled(bird.entry,raceTime,bird.state,path),
+          animationTravelled=C.animationTravelled(bird.entry,raceTime,bird.state,path);
         if(this.theme.dirt&&!bird.state.stopped)this.dust(bird.p,view,travelled,bird.state.speed);
-        this.bird(bird.entry,bird.p,view,bird.state.stopped?0:C.frame(travelled,this.motionPitch),null,phase!=='gate',spriteMotion(bird.state,phase,this.record.distance));
+        this.bird(bird.entry,bird.p,view,bird.state.stopped?0:C.frame(animationTravelled,this.motionPitch),null,phase!=='gate',spriteMotion(bird.state,phase,this.record.distance));
       }
       if(showGates)this.gates(view,phase,raceTime,true);
       this.rail(view,11.5,true);
@@ -137,12 +139,13 @@ export class RaceViewer2D extends RacePlayback {
     }
     if(phase!=='paddock')this.minimap(view,runners);
     const selected=C.section(view.distance,this.record,this.track);
-    const mode=view.finishLocked?'ゴール定点・後続の入線':{broadcast:'外側から中継',follow:'注目羽を追走',overview:'全羽の位置',finish:'ゴール・真横'}[this.cameraMode];
+    const mode=view.finishLocked?'ゴール定点・後続の入線':view.startLocked?'スタート定点':{broadcast:'外側から中継',follow:'注目羽を追走',overview:'全羽の位置',finish:'ゴール・真横'}[this.cameraMode];
     const paddock=R.paddockAt(this.record,this.time);
     this.$('[data-race-camera]').textContent=phase==='paddock'?`${paddock.runner.lane+1}番を紹介 / ${paddock.index+1}・${paddock.total}羽`:`${this.course.right?'右回り ←':'左回り →'} / ${mode} / ${C.SECTIONS[selected]}`;
     this.root.querySelectorAll('[data-section]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.section===selected&&phase==='race')));
     this.stage.dataset.section=selected;this.stage.dataset.direction=this.course.right?'left':'right';
     this.stage.dataset.finishLocked=String(!!view.finishLocked);
+    this.stage.dataset.startLocked=String(!!view.startLocked);
     this.stage.dataset.motionPitch=String(this.motionPitch);this.stage.dataset.venue=this.theme.key;
     this.stage.dataset.backdrop=this.backdropImage?'image':'fallback';
     this.stage.dataset.phase=phase;
@@ -337,10 +340,10 @@ export class RaceViewer2D extends RacePlayback {
     ctx.fillStyle=this.theme.dirt?'#584a3aba':'#244c4bba';ctx.fillRect(x-7,y-8,w+14,h+26);
     ctx.strokeStyle='#d6e4c4';ctx.lineWidth=4;ctx.beginPath();
     for(let i=0;i<=160;i++){const p=R.position(this.record.distance+this.course.lap*i/160,5.5,this.record,this.track),
-      px=cx+(p.x+(c.right?-1:1)*c.finishOffset)*scale,py=cy+p.z*scale*.57;
+      px=cx+(p.x+(c.right?-1:1)*c.finishOffset)*scale,py=cy-p.z*scale*.57;
       if(!i)ctx.moveTo(px,py);else ctx.lineTo(px,py);}ctx.stroke();
     for(const {entry,position:p} of runners){
-      ctx.fillStyle=entry.player?'#ffdc72':'#f7f4de';ctx.beginPath();ctx.arc(cx+(p.x+(c.right?-1:1)*c.finishOffset)*scale,cy+p.z*scale*.57,entry.player?3:1.8,0,Math.PI*2);ctx.fill();}
+      ctx.fillStyle=entry.player?'#ffdc72':'#f7f4de';ctx.beginPath();ctx.arc(cx+(p.x+(c.right?-1:1)*c.finishOffset)*scale,cy-p.z*scale*.57,entry.player?3:1.8,0,Math.PI*2);ctx.fill();}
     ctx.fillStyle='#f5eed3';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(`${this.track.name||'競走場'} / ${c.right?'右回り':'左回り'}`,cx,y+h+10);
   }
   podium(view,raceTime){

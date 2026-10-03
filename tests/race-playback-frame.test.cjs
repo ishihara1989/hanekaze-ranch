@@ -56,11 +56,32 @@ test('2D rendering projects the shared frame and cannot rerun or replace the rec
         time:clock.race+nearRail.time,motionPitch:2,cameraMode:'follow',focusId:'outer',theme:{dirt:false,key:'temple'},course:Replay.course(record,track),
         stage:{getBoundingClientRect:()=>({width:390,height:360}),dataset:{}},canvas:{width:390,height:360},ctx:{setTransform(){}},
         paths:new Map([['outer',Projection.gaitPath(record.replay.runners[0],record,track)]]),root:{querySelectorAll:()=>[]},$:()=>element,
-        backdrop(){},trackSurface(){},rail(){},gates(){},edges(){},minimap(){},updateOverlay(){},bird(entry,p){rendered.push(p);}});
+        backdrop(){},trackSurface(){},rail(){},gates(){},edges(){},minimap(){},updateOverlay(){},bird(entry,p,view,spriteFrame){rendered.push({p,spriteFrame});}});
     const original=Simulation.simulate,before=JSON.stringify(record);Simulation.simulate=()=>{throw Error('A renderer cannot simulate a race');};
     try{viewer.draw();const frame=Replay.frame(record,track,viewer.time),runner=frame.runners[0];
-      assert.deepEqual(rendered[0],Projection.projectPosition(runner.position,runner.state.distance,record,track,viewer.currentView));
-      viewer.time=clock.race;viewer.draw();assert.equal(rendered.length,2);assert.equal(JSON.stringify(record),before);
+      assert.deepEqual(rendered[0].p,Projection.projectPosition(runner.position,runner.state.distance,record,track,viewer.currentView));
+      viewer.time=clock.race+1;viewer.draw();
+      const opening=Replay.frame(record,track,viewer.time).runners[0],path=viewer.paths.get('outer');
+      assert.equal(rendered[1].spriteFrame,Projection.frame(Projection.animationTravelled(opening.entry,1,opening.state,path),viewer.motionPitch));
+      viewer.time=clock.race;viewer.draw();assert.equal(rendered.length,3);assert.equal(rendered[2].spriteFrame,0);assert.equal(JSON.stringify(record),before);
     }finally{Simulation.simulate=original;}
   }finally{if(oldWindow===undefined)delete globalThis.window;else globalThis.window=oldWindow;}
+});
+
+test('2D gate, opening and manual finish views use consistent fixed camera framing',async()=>{
+  globalThis.RaceReplay=Replay;globalThis.Race2DCourse=Projection;
+  const {RaceViewer2D}=await import('../public/js/race-viewer-2d.js');
+  const clock=Replay.timeline(record),viewer=Object.assign(Object.create(RaceViewer2D.prototype),{
+    record,track,motionPitch:2,cameraMode:'broadcast',focusId:'outer'}),
+    gate=viewer.view(Replay.frame(record,track,clock.gate),1200,500),
+    opening=viewer.view(Replay.frame(record,track,clock.race),1200,500);
+  assert.deepEqual(gate,opening);assert.equal(gate.startLocked,true);
+  const later=viewer.view(Replay.frame(record,track,clock.race+10),1200,500);
+  assert.equal(later.startLocked,false);assert.equal(later.finishLocked,false);
+  viewer.cameraMode='finish';
+  const manual=viewer.view(Replay.frame(record,track,clock.race+10),1200,500),
+    locked=viewer.view(Replay.frame(record,track,clock.race+record.time),1200,500);
+  assert.equal(manual.finishLocked,true);assert.deepEqual(manual,locked);
+  const goal=Projection.project(record.distance,0,record,track,manual);
+  close(goal.x,800);
 });

@@ -40,11 +40,15 @@
       depth,heading:p.heading,corner:p.corner};
   }
   function broadcastCamera(leaderDistance,record,track,viewport={}){
-    const pitch=motionPitch(viewport.pitch??1),following=camera(Math.max(0,leaderDistance-8/pitch),record,track,viewport),
-      // Leave room for the goal sign as the line enters the leading edge.
-      stopAt=record.distance-following.width/(2*following.motionScale)+3/pitch;
-    const view=camera(Math.min(following.distance,stopAt),record,track,viewport);
-    view.finishLocked=following.distance>=stopAt;
+    const framing=camera(0,record,track,viewport),
+      // Gates sit 15% from the trailing edge. The leader and finish line
+      // sit one third from the leading edge, leaving a visible run-out.
+      leadOffset=framing.width/(6*framing.motionScale),
+      startAt=framing.width*.35/framing.motionScale,
+      stopAt=record.distance-leadOffset,following=leaderDistance-leadOffset;
+    const view=camera(Math.min(Math.max(startAt,following),stopAt),record,track,viewport);
+    view.startLocked=following<=startAt;
+    view.finishLocked=following>=stopAt;
     return view;
   }
   // Physical metres include the longer outside arc and lateral movement.
@@ -60,7 +64,22 @@
         sideways=((b[4]??runner.lane)-(a[4]??runner.lane))*c.laneWidth;
       distances.push(distances[i-1]+Math.hypot(forward,sideways));
     }
-    return {distances,arc,course:c};
+    // Use the first settled cruising interval as the opening animation tempo.
+    // The physical path stays intact for positioning and dust. Only the feet
+    // receive a phase offset, so the handoff cannot reset or jump the gait.
+    let opening=null;
+    if(runner.samples[0][2]===0&&runner.samples.length>2){
+      let end=1;
+      for(let i=1;i<runner.samples.length-1&&runner.samples[i][0]<=12;i++){
+        end=i;
+        const a=runner.samples[i-1],b=runner.samples[i];
+        if(a[0]>=4&&b[2]>0&&Math.abs(b[2]-a[2])/(b[0]-a[0])<=.25)break;
+      }
+      const at=runner.samples[end][0],next=runner.samples[end+1][0],
+        speed=(distances[end+1]-distances[end])/(next-at);
+      if(speed>0)opening={time:at,speed,offset:at*speed-distances[end]};
+    }
+    return {distances,arc,course:c,opening};
   }
   function travelled(runner,time,state,path){
     let lo=0,hi=runner.samples.length-1;
@@ -71,6 +90,12 @@
     if(time>runner.time&&state.finished){const last=runner.samples.at(-1),c=path.course;
       d+=state.distance-last[1]+(path.arc(state.distance)-path.arc(last[1]))*(state.lateral+.5)*c.laneWidth/c.radius;}
     return d;
+  }
+  function animationTravelled(runner,time,state,path){
+    const opening=path.opening;
+    if(!opening)return travelled(runner,time,state,path);
+    if(time<=opening.time)return Math.max(0,time)*opening.speed;
+    return travelled(runner,time,state,path)+opening.offset;
   }
   const motionPitch=value=>Number.isFinite(Number(value))?Math.max(1,Math.min(2,Number(value))):2;
   const sceneryDistance=(distance,pitch=1)=>distance*motionPitch(pitch);
@@ -92,5 +117,5 @@
     const a=runner.samples[i-1],b=runner.samples[i];
     return a[0]+(b[0]-a[0])*(distance-a[1])/(b[1]-a[1]);
   }
-  return {GAIT,SCENERY,SECTIONS,section,camera,broadcastCamera,project,projectPosition,gaitPath,travelled,frame,motionPitch,sceneryDistance,sceneryPattern,sectionDistance,timeAtDistance};
+  return {GAIT,SCENERY,SECTIONS,section,camera,broadcastCamera,project,projectPosition,gaitPath,travelled,animationTravelled,frame,motionPitch,sceneryDistance,sceneryPattern,sectionDistance,timeAtDistance};
 });
