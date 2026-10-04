@@ -1,6 +1,9 @@
 """Check the Pages artifact and its module/asset paths under a project URL."""
 
 import importlib.util
+import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -96,6 +99,22 @@ class PagesTests(unittest.TestCase):
             pages.build_site(self.source, self.output)
         self.assertEqual(original_index, (self.output / "index.html").read_bytes())
         self.assertEqual(list((self.root / "dist").glob("pages-build-*")), [])
+
+    def test_facility_css_urls_use_project_page_directory(self):
+        pages.build_site(self.source, self.output)
+        # Render the actual built UI for every facility level, including legacy
+        # lab saves, at a Pages project URL rather than the local server root.
+        for base in ("https://example.test/hanekaze-ranch/",
+                     "https://example.test/hanekaze-ranch/index.html"):
+            with self.subTest(base=base):
+                result = subprocess.run(
+                    [shutil.which("node") or "node", "--test", "--test-name-pattern=facility art follows",
+                     "tests/ranch-ui.test.cjs"],
+                    cwd=REPO, capture_output=True, text=True, encoding="utf-8",
+                    env={**os.environ, "RANCH_UI_SOURCE": str(self.output / "js/ranch-ui.js"),
+                         "RANCH_UI_BASE_URI": base},
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_output_cannot_replace_source_or_distribution_root(self):
         for output in (self.source, self.root / "dist", self.root / "other"):

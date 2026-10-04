@@ -6,6 +6,8 @@ const R=require('../tools/lib/ranch-fixtures.cjs').R,W=require('../public/js/wor
 const RanchObservation=require('../public/js/ranch-observation.js');
 const RanchLibrary=require('../public/js/ranch-library.js');
 const RanchCharacters=require('../public/js/ranch-characters.js');
+const uiBase=process.env.RANCH_UI_BASE_URI||'http://localhost/';
+const uiSource=process.env.RANCH_UI_SOURCE||require.resolve('../public/js/ranch-ui.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 async function boot(saved,failSave=false,failRead=false,autoStart=true){
   const elements=new Map(),handlers={},windowHandlers={},queryLists={},storage=new Map(saved instanceof Map?saved:saved?[[R.SAVE_KEY,saved]]:[]);
@@ -14,8 +16,8 @@ async function boot(saved,failSave=false,failRead=false,autoStart=true){
   const read=async key=>{if(typeof failRead==='function'?failRead(key):failRead)throw Error('denied');return storage.get(key)??null;};
   const write=async (key,value,expected)=>{if(expected!==undefined&&(storage.get(key)??null)!==expected)throw Object.assign(Error('changed'),{code:'changed'});if(typeof failSave==='function'?failSave(key):failSave)throw Error('quota');storage.set(key,value);};
   const store={init:async keys=>new Map(await Promise.all(keys.map(async key=>[key,await read(key)]))),read,readAll:async keys=>new Map(await Promise.all(keys.map(async key=>{try{return [key,await read(key)];}catch{return [key,undefined];}}))),write,restore:async (slot,expected,key,value,expectedAutosave)=>{if(await read(slot)!==expected)throw Object.assign(Error('changed'),{code:'changed'});await write(key,value,expectedAutosave);},subscribe(){}};
-  const ctx=vm.createContext({RanchStorage:{create:()=>store},Ranch:R,RanchObservation,RanchLibrary,RanchCharacters,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:selector=>queryLists[selector]||[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
-  const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
+  const ctx=vm.createContext({RanchStorage:{create:()=>store},Ranch:R,RanchObservation,RanchLibrary,RanchCharacters,RanchPortraits,RanchWorld:W,console,URL,document:{baseURI:uiBase,querySelector:node,querySelectorAll:selector=>queryLists[selector]||[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
+  const source=fs.readFileSync(uiSource,'utf8');
   await vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},setViewer(value){raceViewer=value},advance,render};})();`),ctx);
   if(autoStart&&ctx.hooks.modal?.type==='new-game')await handlers.click({target:{closest:()=>({dataset:{action:'start-confirm'},disabled:false})}});
   return {h:ctx.hooks,node,storage,store,setQuery(selector,values){queryLists[selector]=values;},backdrop(){return handlers.click({target:{classList:{contains:name=>name==='modal-backdrop'},closest:()=>null}});},inside(){return handlers.click({target:{classList:{contains:()=>false},closest:()=>null}});},windowEvent(type,event={}){return windowHandlers[type]?.(event);},click(action,data={}){return handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},change(id,value,data={}){return handlers.change({target:{id,value,dataset:data,matches(){return false;}}});},key(key,options={}){return handlers.keydown({key,preventDefault(){},target:{closest:()=>({dataset:{action:'sire-tab'}})},...options});}};
@@ -640,7 +642,11 @@ test('facility art follows initial, constructed and upgraded levels while empty 
   for(const [key,f] of Object.entries(R.FACILITIES)){
     for(let level=1;level<=f.max;level++){
       g.h.state.facilities[key]=level;g.h.render();
-      assert.ok(html(g).includes(`/assets/facilities/${key}-lv${Math.min(level,f.artMax??f.max)}-v1.webp`),`${key} Lv${level}`);
+      const file=`assets/facilities/${key}-lv${Math.min(level,f.artMax??f.max)}-v1.webp`;
+      const card=cards().find(c=>c.includes(file)),art=card.match(/--facility-image:url\('([^']+)'\)/)[1];
+      const expected=new URL(file,uiBase).href;
+      assert.equal(art,expected,`${key} Lv${level}: image must use the page directory`);
+      assert.equal(new URL(art,new URL('css/ranch.css',uiBase)).href,expected,'external CSS must keep the same asset URL');
     }
   }
   g.h.state.facilities.lab=3;g.h.render();
