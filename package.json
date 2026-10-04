@@ -6,9 +6,12 @@
   "scripts": {
     "start": "node server.cjs",
     "test": "node tools/run-tests.cjs",
-    "test:ranch": "node tools/run-tests.cjs tests/ranch.test.cjs tests/ranch-ui.test.cjs tests/ranch-storage.test.cjs tests/ranch-resume.test.cjs tests/ranch-economy.test.cjs tests/roots.test.cjs tests/genetics.test.cjs tests/breeding.test.cjs tests/hatch-report.test.cjs tests/course-aptitude.test.cjs tests/opening-balance.test.cjs",
+    "test:ranch": "node tools/run-tests.cjs tests/ranch.test.cjs tests/ranch-ui.test.cjs tests/ranch-storage.test.cjs tests/ranch-resume.test.cjs tests/ranch-economy.test.cjs tests/roots.test.cjs tests/genetics.test.cjs tests/stall-inheritance.test.cjs tests/breeding.test.cjs tests/hatch-report.test.cjs tests/course-aptitude.test.cjs tests/opening-balance.test.cjs",
     "test:long": "node tools/run-tests.cjs tests/long/ranch-world.cjs",
     "balance:opening": "node tools/audit-opening.cjs",
+    "balance:breeding": "node tools/audit-breeding.cjs",
+    "balance:breeding:years": "node tools/audit-evolving-breeding.cjs",
+    "balance:g1": "node tools/audit-g1-races.cjs",
     "balance": "node tools/simulate-balance.cjs",
     "balance:report": "node tools/simulate-balance.cjs --write",
     "balance:pacing": "node tools/compare-pacing.cjs --write",

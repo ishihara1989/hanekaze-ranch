@@ -5,25 +5,26 @@ const fs=require('node:fs'),vm=require('node:vm');
 const {IDBFactory}=require('fake-indexeddb');
 const R=require('../tools/lib/ranch-fixtures.cjs').R,W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
+const RanchCharacters=require('../public/js/ranch-characters.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 const Storage=require('../public/js/ranch-storage.js');
 const slotKey=slot=>`${R.SAVE_KEY}-slot-${slot}`;
 const snapshot=s=>JSON.stringify({...s,rng:0});
 
-async function boot(raw,seeds=[12345,67890,13579]){
+async function boot(raw,seeds=[12345,67890,13579],slots=new Map()){
   let entropyCalls=0;
   const elements=new Map(),handlers={};
   const node=key=>{
     if(!elements.has(key))elements.set(key,{innerHTML:'',textContent:'',value:'',focus(){},dataset:{},classList:{toggle(){}},matches(){return false;}});
     return elements.get(key);
   };
-  const storage=Storage.create({indexedDB:new IDBFactory(),legacyStorage:()=>({getItem:key=>key===R.SAVE_KEY?raw:null}),channelFactory:()=>null});
-  const ctx=vm.createContext({Ranch:R,RanchWorld:W,RanchObservation,RanchPortraits,RanchStorage:{create:()=>storage},console,
+  const storage=Storage.create({indexedDB:new IDBFactory(),legacyStorage:()=>({getItem:key=>key===R.SAVE_KEY?raw:slots.get(key)??null}),channelFactory:()=>null});
+  const ctx=vm.createContext({Ranch:R,RanchWorld:W,RanchObservation,RanchCharacters,RanchPortraits,RanchStorage:{create:()=>storage},console,
     crypto:{getRandomValues(values){values[0]=seeds[entropyCalls++]??24680;return values;}},
     document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(name,fn)=>handlers[name]=fn,body:node('body'),activeElement:node('active')},
     requestAnimationFrame:fn=>fn(),setTimeout:fn=>{fn();return 1;},window:{scrollTo(){},addEventListener(){}}});
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
-  await vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal}};})();`),ctx);
+  await vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},render};})();`),ctx);
   return {h:ctx.hooks,storage,get entropyCalls(){return entropyCalls;},
     async click(action,data={}){await handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},
     async import(raw){await handlers.change({target:{id:'import-file',value:'',dataset:{},files:[{size:raw.length,text:async()=>raw}],matches(){return false;}}});}};
@@ -89,4 +90,45 @@ test('resume seeds differ from both saved and running RNG even if the entropy re
   const prior=g.h.state.rng;
   await g.click('slot-load',{slot:'1'});await g.click('slot-load-confirm');
   assert.notEqual(g.h.state.rng,prior);assert.ok(R.validState(g.h.state));
+});
+
+test('settings redraw and refresh use slot summaries; loading still validates the full snapshot',async()=>{
+  const g=await boot(R.serializeState(R.initial()));
+  for(let slot=1;slot<=5;slot++)await g.click('slot-save',{slot:String(slot)});
+  const deserialize=R.deserializeState,valid=R.validState;let decoded=0,validated=0;
+  R.deserializeState=(...args)=>{decoded++;return deserialize(...args);};
+  R.validState=(...args)=>{validated++;return valid(...args);};
+  try{
+    await g.click('nav',{page:'settings'});g.h.render();g.h.render();
+    await g.click('nav',{page:'settings'});
+    assert.equal(decoded,0);assert.equal(validated,0);
+    await g.click('slot-load',{slot:'1'});assert.equal(decoded,1);assert.equal(validated,1);
+    await g.click('slot-load-confirm');assert.ok(decoded>=2);assert.ok(validated>=3);
+  }finally{R.deserializeState=deserialize;R.validState=valid;g.storage.close();}
+});
+
+test('legacy slot summaries are backfilled once without rewriting good or damaged snapshots',async()=>{
+  const raw=R.serializeState(R.initial()),slot=JSON.stringify({version:1,savedAt:'2026-10-04T00:00:00Z',data:raw});
+  const g=await boot(raw,undefined,new Map([[slotKey(1),slot],[slotKey(2),'{damaged']]));
+  const deserialize=R.deserializeState;let decoded=0;
+  R.deserializeState=(...args)=>{decoded++;return deserialize(...args);};
+  try{
+    await g.click('nav',{page:'settings'});assert.equal(decoded,1);
+    await g.click('nav',{page:'settings'});g.h.render();assert.equal(decoded,1);
+    assert.equal(await g.storage.read(slotKey(1)),slot);assert.equal(await g.storage.read(slotKey(2)),'{damaged');
+    const views=await g.storage.readSummaries([slotKey(1),slotKey(2)]);
+    assert.equal(views.get(slotKey(1)).week,9);assert.equal(views.get(slotKey(2)).invalid,true);
+  }finally{R.deserializeState=deserialize;g.storage.close();}
+});
+
+test('damaged or unwritable summary metadata cannot prevent loading an intact snapshot',async()=>{
+  const raw=R.serializeState(R.initial()),slot=JSON.stringify({version:1,savedAt:'2026-10-04T00:00:00Z',data:raw});
+  const g=await boot(raw);
+  await g.storage.write(slotKey(1),slot,null,{version:1,week:'damaged'});
+  g.storage.writeSummary=async()=>{throw Error('quota');};
+  await g.click('nav',{page:'settings'});
+  assert.equal(await g.storage.read(slotKey(1)),slot);
+  await g.click('slot-load',{slot:'1'});assert.equal(g.h.modal.type,'slot-load');
+  await g.click('slot-load-confirm');assert.ok(R.validState(g.h.state));
+  assert.equal(await g.storage.read(slotKey(1)),slot);g.storage.close();
 });

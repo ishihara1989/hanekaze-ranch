@@ -6,7 +6,7 @@ const Storage=require('../public/js/ranch-storage.js');
 const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const keys=[R.SAVE_KEY,...Array.from({length:5},(_,i)=>`${R.SAVE_KEY}-slot-${i+1}`)];
 function environment(legacy=new Map()) {
-  const factory=new IDBFactory();let failKey=null;
+  const factory=new IDBFactory(),reads=[];let failKey=null,failStore=null;
   const indexedDB={open(...args){
     const request=factory.open(...args);
     request.addEventListener('success',()=>{
@@ -14,11 +14,12 @@ function environment(legacy=new Map()) {
       db.transaction=(...args)=>{
         const tx=original(...args),objectStore=tx.objectStore.bind(tx);
         tx.objectStore=(...args)=>{
-          const store=objectStore(...args),put=store.put.bind(store);
+          const store=objectStore(...args),put=store.put.bind(store),get=store.get.bind(store);
+          store.get=key=>{reads.push({store:store.name,key});return get(key);};
           store.put=(value,key)=>{
             const request=put(value,key);
             // A successful request does not mean the transaction committed.
-            if(key===failKey)request.addEventListener('success',()=>tx.abort());
+            if(key===failKey&&(failStore===null||store.name===failStore))request.addEventListener('success',()=>tx.abort());
             return request;
           };
           return store;
@@ -29,7 +30,7 @@ function environment(legacy=new Map()) {
     return request;
   }};
   const create=(overrides={})=>Storage.create({indexedDB,legacyStorage:()=>({getItem:key=>legacy.get(key)??null}),channelFactory:()=>null,...overrides});
-  return {create,legacy,factory,failOn:key=>{failKey=key;}};
+  return {create,legacy,factory,reads,failOn:(key,store=null)=>{failKey=key;failStore=store;}};
 }
 
 test('migrates autosave and all slots atomically, including damaged data, retaining legacy backups',async()=>{
@@ -111,4 +112,56 @@ test('unavailable IndexedDB or unreadable legacy storage does not create empty r
   await assert.rejects(e.create({indexedDB:null}).init(keys));
   await assert.rejects(e.create({legacyStorage:()=>{throw Error('denied');}}).init(keys));
   const next=e.create();assert.equal((await next.init(keys)).get(keys[0]),'original');next.close();
+});
+
+test('startup reads only the requested autosave while still migrating every legacy slot',async()=>{
+  const legacy=new Map(keys.map((key,i)=>[key,`save-${i}`])),e=environment(legacy),s=e.create();
+  assert.deepEqual(await s.init(keys,{readKeys:[keys[0]]}),new Map([[keys[0],'save-0']]));
+  s.close();e.reads.length=0;
+  const next=e.create();await next.init(keys,{readKeys:[keys[0]]});
+  assert.equal(e.reads.filter(r=>keys.slice(1).includes(r.key)).length,0);
+  assert.equal(await next.read(keys[5]),'save-5');next.close();
+});
+
+test('slot summaries read no snapshot values and summary failures roll back both stores',async()=>{
+  const e=environment(),s=e.create();await s.init(keys);
+  const summary={version:1,savedAt:'2026-10-04T00:00:00Z',week:9,money:20000,owned:1};
+  await s.write(keys[1],'original',null,summary);e.reads.length=0;
+  const views=await s.readSummaries(keys.slice(1));
+  assert.deepEqual(views.get(keys[1]),summary);assert.equal(views.get(keys[2]),null);
+  assert.ok(e.reads.every(r=>r.store===Storage.SUMMARIES));
+  e.failOn(keys[1],Storage.SUMMARIES);
+  await assert.rejects(s.write(keys[1],'replacement','original',{...summary,week:10}));
+  assert.equal(await s.read(keys[1]),'original');
+  assert.deepEqual((await s.readSummaries([keys[1]])).get(keys[1]),summary);
+  e.failOn(null);await s.write(keys[1],'without-summary','original');
+  assert.equal((await s.readSummaries([keys[1]])).get(keys[1]),undefined);s.close();
+});
+
+test('summary backfill cannot attach stale metadata after another tab overwrites a slot',async()=>{
+  const e=environment(),a=e.create(),b=e.create();await a.init(keys);await b.init(keys);
+  await a.write(keys[1],'old',null);await b.write(keys[1],'new','old');
+  await assert.rejects(a.writeSummary(keys[1],'old',{version:1,invalid:true}),{code:'changed'});
+  assert.equal((await b.readSummaries([keys[1]])).get(keys[1]),undefined);
+  assert.equal(await b.read(keys[1]),'new');a.close();b.close();
+});
+
+test('database upgrade closes old clients and preserves their snapshots',async()=>{
+  const e=environment();let old;
+  await new Promise((resolve,reject)=>{
+    const request=e.factory.open(Storage.DB_NAME,1);
+    request.onupgradeneeded=()=>request.result.createObjectStore(Storage.STORE);
+    request.onerror=()=>reject(request.error);
+    request.onsuccess=()=>{
+      old=request.result;old.onversionchange=()=>old.close();
+      const tx=old.transaction(Storage.STORE,'readwrite');tx.objectStore(Storage.STORE).put('old-snapshot',keys[1]);
+      tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);
+    };
+  });
+  const next=e.create();await next.init(keys,{readKeys:[keys[0]]});
+  assert.equal(await next.read(keys[1]),'old-snapshot');
+  assert.throws(()=>old.transaction(Storage.STORE,'readwrite'),{name:'InvalidStateError'});
+  await assert.rejects(new Promise((resolve,reject)=>{
+    const request=e.factory.open(Storage.DB_NAME,1);request.onerror=()=>reject(request.error);request.onsuccess=resolve;
+  }),{name:'VersionError'});next.close();
 });

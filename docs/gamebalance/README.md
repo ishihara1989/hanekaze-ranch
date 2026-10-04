@@ -15,10 +15,17 @@ node tools/simulate-balance.cjs
 node tools/simulate-balance.cjs --write
 node tools/compare-pacing.cjs --write
 node tools/audit-trait-mapping.cjs --write
+node tools/audit-breeding.cjs --write
 node --test tests/balance.test.cjs tests/trait-mapping.test.cjs
 ```
 
 npmが使える環境では、それぞれ `npm start`、`npm run balance`、`npm run balance:report`。能力マッピングの再生成は `npm run balance:mapping`。全テストは `npm test` または `node --test tests/*.test.cjs`。
+
+羽房最大レベルで他牧場の種牡羽との配合を繰り返す遺伝能力の確認は `npm run balance:breeding -- --write`。[反復配合の検証結果](BREEDING_VALIDATION.md)を参照。既存のNPC履歴キャッシュが必要（未生成なら `npm test` で準備）。監査自体はレースを回さず、固定市場で期待能力最大の相手を選び、各試行で娘1羽を次の母にする。
+
+他牧場の世代交代と種牡羽市場更新を含める場合は `npm run balance:breeding:years -- --write`。[世代交代を含む検証結果](EVOLVING_BREEDING_VALIDATION.md)を参照。NPCの勝敗は遺伝8能力の平均順位で代用し、親選び・年齢・市場更新は本番処理を使う。3年ごとに配合し、娘が3歳になる年のG1相手と比較する。
+
+各G1の実レース確認は `npm run balance:g1 -- --write`。[各G1の3試行結果](G1_RACE_VALIDATION.md)を参照。2・10世代目の牝羽を各母系列1羽ずつ使い、全37G1をそれぞれ3試行。潜在能力と適性を保持し、調教95%、年齢2・3・5歳の本番現在能力で対戦する。背景のNPC世代交代は遺伝順位による近似、対象G1は本番物理と勝利記録で確認する。
 
 - 画面：7羽×7距離の時計と着順、4種類の推移グラフ、400mラップ、個体パラメータの編集、平地／起伏、4つのペース配分、JSON保存。追加の「ユウナギ・2400mで比較する」ボタンで、巡航→スパートが速くなる例を比較できる。
 - [巡航→スパートの実測例](PACING.md)：`compare-pacing.cjs --write`（npmでは `npm run balance:pacing`）で再生成。元の7羽とは別の個体・独立した比較。「選択中の羽にこの例の設定を適用」で編集画面でも試せる。

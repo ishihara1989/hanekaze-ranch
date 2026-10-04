@@ -18,6 +18,11 @@
   // Course aptitude is centered on ordinary (=100), with no weak straight grade.
   const courseRating=score=>score<65?'X':score<90?'△':score<=110?'◯':score<140?'◎':'☆';
   const pick=(items,random)=>items[Math.floor(random()*items.length)];
+  function inheritAllele(pair,random,favorableRate=.5){
+    // Keep ordinary inheritance (including its random stream) unchanged.
+    if(favorableRate===.5)return pick(pair,random);
+    return random()<favorableRate?Math.max(...pair):Math.min(...pair);
+  }
   const pairs=(labels,value=.5)=>Object.fromEntries(Object.keys(labels).map(key=>[key,[value,value]]));
   function basePair(color){
     return color==='purple'?['red','blue']:color==='gray'?['green','rose']:color==='golden'?['yellow','yellow']:[color,color];
@@ -34,11 +39,11 @@
     return {aptitude:pairs(APTITUDES),development:{earlyGrowth:[maturity,maturity],lateDecline:[.5,.5],slowDecline:[.5,.5]},
       body:basePair(b.color||'yellow'),gold:b.color==='golden'?['G','g']:['g','g'],crest:'yellow'};
   }
-  function generate(random,parents=null){
+  function generate(random,parents=null,favorableRate=.5){
     if(parents){
       // Each pair receives exactly one allele from each parent.
-      const aptitude=Object.fromEntries(Object.keys(APTITUDES).map(key=>[key,parents.map(p=>pick(p.aptitude[key],random))]));
-      const development=Object.fromEntries(Object.keys(DEVELOPMENT).map(key=>[key,parents.map(p=>pick(p.development[key],random))]));
+      const aptitude=Object.fromEntries(Object.keys(APTITUDES).map(key=>[key,parents.map(p=>inheritAllele(p.aptitude[key],random,favorableRate))]));
+      const development=Object.fromEntries(Object.keys(DEVELOPMENT).map(key=>[key,parents.map(p=>inheritAllele(p.development[key],random,favorableRate))]));
       const body=parents.map(p=>pick(p.body,random)),gold=parents.map(p=>pick(p.gold,random));
       // A single rare de novo mutation; no repeated expression lottery on reload.
       if(!gold.includes('G')&&random()<GOLD_MUTATION_RATE)gold[random()<.5?0:1]='G';
@@ -87,5 +92,5 @@
     return {aptitude,development,body:[...ROOT_BODY[index]],gold:index===20?['G','g']:['g','g'],crest:Object.keys(CRESTS)[index%6]};
   }
   const strengths=g=>[...Object.keys(APTITUDES).filter(k=>mean(g.aptitude[k])>=.75),...Object.keys(DEVELOPMENT).filter(k=>mean(g.development[k])>=.75)];
-  return {VERSION,SURFACE_APTITUDES,COURSE_APTITUDES,APTITUDES,DEVELOPMENT,COLORS,CRESTS,DOMINANCE,GOLD_MUTATION_RATE,mean,courseRating,expressColor,legacy,generate,growth,growthLabel,valid,source,strengths};
+  return {VERSION,SURFACE_APTITUDES,COURSE_APTITUDES,APTITUDES,DEVELOPMENT,COLORS,CRESTS,DOMINANCE,GOLD_MUTATION_RATE,mean,courseRating,expressColor,legacy,inheritAllele,generate,growth,growthLabel,valid,source,strengths};
 });

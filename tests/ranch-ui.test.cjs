@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
 const R=require('../tools/lib/ranch-fixtures.cjs').R,W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
+const RanchCharacters=require('../public/js/ranch-characters.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 async function boot(saved,failSave=false,failRead=false,autoStart=true){
   const elements=new Map(),handlers={},windowHandlers={},queryLists={},storage=new Map(saved instanceof Map?saved:saved?[[R.SAVE_KEY,saved]]:[]);
@@ -12,7 +13,7 @@ async function boot(saved,failSave=false,failRead=false,autoStart=true){
   const read=async key=>{if(typeof failRead==='function'?failRead(key):failRead)throw Error('denied');return storage.get(key)??null;};
   const write=async (key,value,expected)=>{if(expected!==undefined&&(storage.get(key)??null)!==expected)throw Object.assign(Error('changed'),{code:'changed'});if(typeof failSave==='function'?failSave(key):failSave)throw Error('quota');storage.set(key,value);};
   const store={init:async keys=>new Map(await Promise.all(keys.map(async key=>[key,await read(key)]))),read,readAll:async keys=>new Map(await Promise.all(keys.map(async key=>{try{return [key,await read(key)];}catch{return [key,undefined];}}))),write,restore:async (slot,expected,key,value,expectedAutosave)=>{if(await read(slot)!==expected)throw Object.assign(Error('changed'),{code:'changed'});await write(key,value,expectedAutosave);},subscribe(){}};
-  const ctx=vm.createContext({RanchStorage:{create:()=>store},Ranch:R,RanchObservation,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:selector=>queryLists[selector]||[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
+  const ctx=vm.createContext({RanchStorage:{create:()=>store},Ranch:R,RanchObservation,RanchCharacters,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:selector=>queryLists[selector]||[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
   await vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},setViewer(value){raceViewer=value},advance,render};})();`),ctx);
   if(autoStart&&ctx.hooks.modal?.type==='new-game')await handlers.click({target:{closest:()=>({dataset:{action:'start-confirm'},disabled:false})}});
@@ -21,6 +22,77 @@ async function boot(saved,failSave=false,failRead=false,autoStart=true){
 const html=g=>g.node('#app').innerHTML;
 const slotKey=slot=>`${R.SAVE_KEY}-slot-${slot}`;
 const ranchSnapshot=s=>JSON.stringify({...s,rng:0});
+
+test('reports celebrate completed wins at two levels while ordinary reports and unfinished races stay quiet',async()=>{
+  const g=await boot(),s=g.h.state,b=R.own(s)[0];
+  for(const [level,rank,finished,tier] of [['GI',2,true,'report'],['GI',1,false,'report'],['maiden',1,true,'victory'],['GIII',1,true,'victory'],['GII',1,true,'victory'],['GI',1,true,'g1'],['G1',1,undefined,'g1']]){
+    s.reports=[{id:'tier-report',type:'weekly',week:s.week,title:'今週の報告',text:'おつかれさまでした。',results:[{birdId:b.id,birdName:'アオバ<&>',week:s.week,name:'羽風杯',level,rank,finished,distance:1600,surface:'turf',reward:1200}]}];
+    const before=JSON.stringify(s);await g.click('reports');
+    assert.match(html(g),new RegExp(`class="modal wide report-modal celebration-${tier}"`));
+    if(tier==='report')assert.doesNotMatch(html(g),/victory-banner|result-victory-label/);
+    else {
+      assert.match(html(g),new RegExp(`class="victory-banner celebration-${tier}"`));
+      assert.match(html(g),/アオバ&lt;&amp;&gt;/);assert.doesNotMatch(html(g),/アオバ<&>/);
+      assert.equal(html(g).includes('victory-confetti'),tier==='g1');
+    }
+    assert.equal(JSON.stringify(s),before,'rendering celebration must not alter game data');
+  }
+  s.reports=[{id:'quiet-report',type:'monthly',week:s.week,title:'牧場だより',text:'元気に育っています。',expression:'overjoyed'}];
+  await g.click('reports');assert.match(html(g),/report-modal celebration-report/);assert.doesNotMatch(html(g),/victory-banner/);
+});
+
+test('annual awards celebrate only our winners, with the representative above other awards and race wins',async()=>{
+  const g=await boot(),s=g.h.state,b=R.own(s)[0],other=s.birds.find(x=>x.owner!=='player');
+  const award=(bird,title)=>({year:1,title,birdId:bird.id,name:bird===b?'アオバ<&>':bird.name,farm:'牧場<&>',points:180});
+  const annual=awards=>({id:'annual',type:'annual',week:s.week,title:'一年の報告',text:'おつかれさまでした。',awards});
+  for(const [awards,tier] of [
+    [[award(other,'年度代表羽')],'report'],
+    [[award(b,'最優秀3歳'),award(other,'年度代表羽')],'annual-award'],
+    [[award(b,'最優秀3歳'),award(other,'最優秀ダート'),award(b,'年度代表羽')],'annual-champion']
+  ]){
+    s.reports=[annual(awards)];const before=JSON.stringify(s);await g.click('reports');
+    assert.match(html(g),new RegExp(`report-modal celebration-${tier}`));
+    assert.equal(html(g).includes('award-banner'),tier!=='report');
+    assert.equal(html(g).includes('award-winner-champion'),tier==='annual-champion');
+    assert.match(html(g),/年度表彰の結果/);
+    if(tier!=='report'){
+      const banner=html(g).match(/<section class="award-banner[\s\S]*?<\/section>/)[0];
+      assert.match(banner,/アオバ&lt;&amp;&gt;/);assert.match(banner,/牧場&lt;&amp;&gt;/);
+      assert.doesNotMatch(banner,/最優秀ダート/);
+      assert.equal([...banner.matchAll(/class="award-winner /g)].length,1,'combine multiple awards for the same bird');
+      if(tier==='annual-champion')assert.match(banner,/2部門を受賞/);
+    }
+    assert.equal(JSON.stringify(s),before,'celebrating awards must not change saved data');
+  }
+  const second=R.createBird(s);second.owner='player';second.name='ヒカリ';
+  s.reports=[{id:'weekly',type:'weekly',week:s.week,title:'今週',text:'報告',results:[{birdId:b.id,birdName:b.name,week:s.week,name:'羽風杯',level:'GI',rank:1,distance:1600,surface:'turf',reward:1200}]},annual([award(second,'最優秀牝羽'),award(b,'年度代表羽')])];
+  await g.click('reports');assert.match(html(g),/report-modal celebration-annual-champion/);
+  assert.ok(html(g).indexOf('award-banner')<html(g).indexOf('victory-banner'));
+  const banner=html(g).match(/<section class="award-banner[\s\S]*?<\/section>/)[0];
+  assert.ok(banner.indexOf('アオバ&lt;&amp;&gt;')<banner.indexOf('ヒカリ'),'feature the representative first');
+  assert.equal([...banner.matchAll(/class="award-winner /g)].length,2);
+});
+
+test('multi-week reports feature the greatest victory and each result keeps its own celebration when opened',async()=>{
+  const g=await boot(),s=g.h.state,b=R.own(s)[0];
+  const result=(level,rank,week,name)=>({birdId:b.id,birdName:b.name,week,name,level,rank,finished:true,distance:1600,surface:'turf',reward:1200,field:[{id:b.id,name:b.name,time:90}]});
+  const results=[result('GIII',1,s.week,'小さな重賞'),result('GI',2,s.week+1,'惜しいG1'),result('GI',1,s.week+2,'最高峰の杯'),result('maiden',1,s.week+3,'はじめの一歩')];
+  b.records=results;s.reports=results.map((r,i)=>({id:`week-${i}`,type:'weekly',week:r.week,title:`第${i+1}週`,text:'今週の報告です。',change:1200,results:[r]}));
+  const before=JSON.stringify(s);await g.click('reports');
+  assert.match(html(g),/4週のダイジェスト/);
+  const banner=html(g).match(/<section class="victory-banner[\s\S]*?<\/section>/)[0];
+  assert.match(banner,/G1制覇！/);assert.match(banner,/class="victory-race">G1 最高峰の杯/);
+  assert.match(banner,/小さな重賞/);assert.match(banner,/はじめの一歩/);assert.doesNotMatch(banner,/惜しいG1/);
+  assert.equal([...html(g).matchAll(/result-row celebration-g1/g)].length,1);
+  assert.equal([...html(g).matchAll(/result-row celebration-victory/g)].length,2);
+  for(const [index,tier] of [[0,'victory'],[1,'report'],[2,'g1']]){
+    await g.click('result',{id:b.id,week:String(results[index].week)});
+    assert.match(html(g),new RegExp(`class="modal\\s+celebration-${tier}"`));
+    assert.equal(html(g).includes('victory-banner'),tier!=='report');
+    await g.click('close');assert.equal(g.h.modal.type,'reports');
+  }
+  assert.equal(JSON.stringify(s),before);
+});
 test('notebook shows annual grades and filters short and regional dirt programs without altering the save',async()=>{
   const g=await boot(),before=JSON.stringify(g.h.state);
   await g.click('nav',{page:'notebook'});
@@ -35,6 +107,25 @@ test('notebook shows annual grades and filters short and regional dirt programs 
   assert.equal(JSON.stringify(g.h.state),before);
 });
 async function purchase(g){await g.click('buy-dialog',{id:g.h.state.sale[0]});await g.click('buy-confirm',{id:g.h.state.sale[0]});await g.click('ack');}
+
+test('notebook lists all G1 first victories and shows saved winner names and dates for grade achievements',async()=>{
+  const g=await boot(),s=g.h.state,b=R.own(s)[0];
+  const first={week:9,birdId:b.id,birdName:'ハジメノヒカリ',raceName:'チョコボダービー'};
+  s.firstWins={graded:first,g2:{...first,raceName:'G2競走'},g1:first,derby:first,'g1:チョコボダービー':first};
+  s.milestones.g1=9;s.milestones.derby=9;
+  const before=JSON.stringify(s);
+  await g.click('nav',{page:'notebook'});await g.click('notebook-tab',{tab:'records'});
+  assert.match(html(g),/重賞初制覇/);assert.match(html(g),/G3初制覇/);assert.match(html(g),/G2初制覇/);
+  assert.match(html(g),/ハジメノヒカリ/);assert.match(html(g),/1年 3月 第1週/);
+  const row=key=>html(g).match(new RegExp(`<div class="list-row" data-first-win="${key}">([\\s\\S]*?)<\\/div>`))[1];
+  assert.match(row('g3'),/未勝利/);assert.match(row('g1:チョコボダービー'),/ハジメノヒカリ/);
+  assert.match(row('g1:神竜賞'),/未勝利/);
+  const names=new Set(Array.from({length:R.YEAR},(_,i)=>R.calendar(i+1)).flat().filter(e=>e.level==='GI').map(e=>e.name));
+  assert.equal([...html(g).matchAll(/data-first-win="g1:/g)].length,names.size);
+  assert.equal(JSON.stringify(s),before);
+  s.firstWins.graded.birdName='<script>危険</script>';g.h.render();
+  assert.doesNotMatch(html(g),/<script>危険<\/script>/);assert.match(html(g),/&lt;script&gt;危険&lt;\/script&gt;/);
+});
 
 test('paternal source is always visible on owned cards, details, sale cards and every sire tab without research',async()=>{
   const g=await boot(),s=g.h.state,starter=R.own(s)[0];
@@ -101,7 +192,7 @@ test('research unlocks optional sex-selection fruit, updates the total and revie
 test('mare sale requires the matching confirmation, supports cancellation and persists the proceeds and vacant stall',async()=>{
   const g=await boot();await purchase(g);const b=R.own(g.h.state).find(b=>b.role==='mare');
   await g.click('nav',{page:'birds'});await g.click('detail',{id:b.id});
-  assert.match(html(g),/data-action="sell-mare-dialog"/);assert.match(html(g),/2,800 G/);
+  const price=R.marePrice(b);assert.match(html(g),/data-action="sell-mare-dialog"/);assert.ok(html(g).includes(`${price.toLocaleString()} G`));
   const before=JSON.stringify(g.h.state),saved=g.storage.get(R.SAVE_KEY),money=g.h.state.money;
   await g.click('sell-mare-confirm',{id:b.id});assert.equal(JSON.stringify(g.h.state),before);
   await g.click('sell-mare-dialog',{id:b.id});assert.equal(g.h.modal.type,'sell-mare');
@@ -111,8 +202,8 @@ test('mare sale requires the matching confirmation, supports cancellation and pe
   await g.click('sell-mare-dialog',{id:b.id});await g.click('close');assert.equal(g.h.modal.type,'detail');
   await g.click('sell-mare-dialog',{id:b.id});await g.click('sell-mare-confirm',{id:g.h.state.sale[1]});assert.equal(JSON.stringify(g.h.state),before);
   await g.click('sell-mare-confirm',{id:b.id});assert.equal(g.h.modal,null);assert.equal(g.h.page,'birds');
-  assert.equal(g.h.state.money,money+2800);assert.ok(!R.own(g.h.state).includes(b));assert.match(html(g),/羽房が1枠空きました/);
-  const loaded=await boot(g.storage);assert.equal(loaded.h.state.money,money+2800);assert.ok(!R.own(loaded.h.state).some(x=>x.id===b.id));
+  assert.equal(g.h.state.money,money+price);assert.ok(!R.own(g.h.state).includes(b));assert.match(html(g),/羽房が1枠空きました/);
+  const loaded=await boot(g.storage);assert.equal(loaded.h.state.money,money+price);assert.ok(!R.own(loaded.h.state).some(x=>x.id===b.id));
   const after=JSON.stringify(g.h.state);await g.click('sell-mare-confirm',{id:b.id});assert.equal(JSON.stringify(g.h.state),after);
 });
 
@@ -123,6 +214,36 @@ test('pregnant mares explain why selling is disabled and other birds have no sal
   const before=JSON.stringify(g.h.state);await g.click('sell-mare-dialog',{id:b.id});assert.equal(g.h.modal.type,'detail');assert.equal(JSON.stringify(g.h.state),before);
   for(const bird of [R.own(g.h.state).find(b=>b.role==='racing'),R.bird(g.h.state,g.h.state.sale[1])]) {
     await g.click('detail',{id:bird.id});assert.doesNotMatch(html(g),/data-action="sell-mare-dialog"/);
+  }
+});
+
+test('home stud information totals direct offspring G1 wins and distinct winners across careers and owners',async()=>{
+  const g=await boot();await purchase(g);
+  const s=g.h.state,sire=R.createBird(s,{sex:'M',role:'stud',kind:'home',g1:9});
+  const summary=()=>html(g).match(/<section class="graded-career offspring-career">[\s\S]*?<\/section>/)?.[0];
+  await g.click('detail',{id:sire.id});
+  assert.match(summary(),/産駒GⅠ勝利数 <b>0勝<\/b> \/ GⅠ勝利産駒数 <b>0羽<\/b>/);
+  const child=(options,parents=[sire.id])=>R.createBird(s,{parents,...options});
+  const winner=child({sex:'F',role:'racing',g1:3});
+  child({sex:'M',role:'retired',owner:'public',g1:2});
+  child({sex:'F',role:'archived',owner:'archive',g1:1});
+  child({sex:'M',role:'racing',g1:0,graded:4,wins:4});
+  child({g1:7},[winner.id]);
+  child({g1:8},[winner.id,sire.id]);
+  const before=JSON.stringify(s);
+  await g.click('detail',{id:sire.id});
+  assert.match(summary(),/産駒GⅠ勝利数 <b>6勝<\/b> \/ GⅠ勝利産駒数 <b>3羽<\/b>/);
+  await g.click('close');await g.click('nav',{page:'breed'});await g.click('sire-tab',{tab:'home'});
+  await g.click('select-sire',{id:sire.id});
+  assert.match(summary(),/産駒GⅠ勝利数 <b>6勝<\/b> \/ GⅠ勝利産駒数 <b>3羽<\/b>/);
+  assert.match(html(g),/<small class="offspring-career">産駒GⅠ勝利数 <b>6勝<\/b> \/ GⅠ勝利産駒数 <b>3羽<\/b><\/small>/);
+  assert.equal(JSON.stringify(s),before,'viewing offspring totals must not change saved data');
+  winner.g1++;
+  await g.click('detail',{id:sire.id});
+  assert.match(summary(),/産駒GⅠ勝利数 <b>7勝<\/b> \/ GⅠ勝利産駒数 <b>3羽<\/b>/);
+  await g.click('close');await g.click('nav',{page:'birds'});
+  for(const b of [winner,R.sires(s).find(b=>b.kind==='root'),R.sires(s).find(b=>b.owner==='public')]){
+    await g.click('detail',{id:b.id});assert.equal(summary(),undefined);
   }
 });
 
@@ -471,7 +592,7 @@ test('facility art follows initial, constructed and upgraded levels while empty 
   for(const [key,f] of Object.entries(R.FACILITIES)){
     for(let level=1;level<=f.max;level++){
       g.h.state.facilities[key]=level;g.h.render();
-      assert.ok(html(g).includes(`/assets/facilities/${key}-lv${level}-v1.webp`),`${key} Lv${level}`);
+      assert.ok(html(g).includes(`/assets/facilities/${key}-lv${Math.min(level,f.artMax??f.max)}-v1.webp`),`${key} Lv${level}`);
     }
   }
   g.h.state.facilities.lab=3;g.h.render();
@@ -479,8 +600,26 @@ test('facility art follows initial, constructed and upgraded levels while empty 
   assert.doesNotMatch(html(g),/lab-lv3/);
 });
 
+test('late stall improvements show a fixed price, unchanged capacity and only a gentle birth hint',async()=>{
+  const g=await boot();g.h.state.money=1e9;g.h.state.facilities.stalls=4;
+  await g.click('nav',{page:'facilities'});
+  for(let level=5;level<=9;level++){
+    await g.click('build-dialog',{key:'stalls'});
+    assert.match(html(g),/羽房を改良しますか？/);
+    assert.match(html(g),/50,000,000 G/);assert.match(html(g),new RegExp(`Lv\\. ${level}`));
+    assert.match(html(g),/良いチョコボが少し生まれやすくなります/);
+    assert.doesNotMatch(html(g),/55[%％]|75[%％]|有利な因子|遺伝座位/);
+    await g.click('build-confirm',{key:'stalls'});
+    assert.equal(g.h.state.facilities.stalls,level);
+    assert.deepEqual(JSON.parse(JSON.stringify(R.capacity(g.h.state))),{racing:32,mare:16,stud:16});
+    assert.ok(html(g).includes('/assets/facilities/stalls-lv4-v1.webp'));
+  }
+  const stalls=html(g).match(/<article class="paper facility [\s\S]*?<h2>羽房<\/h2>[\s\S]*?<\/article>/)[0];
+  assert.match(stalls,/Lv\. 9/);assert.match(stalls,/disabled/);
+});
+
 test('purchase and breeding are reviewable before payment, with a clear route back to the weekly loop',async()=>{
-  const g=await boot(),before=g.h.state.money;await g.click('nav',{page:'market'});await g.click('buy-dialog',{id:g.h.state.sale[0]});assert.equal(g.h.state.money,before);assert.match(html(g),/17,200 G/);await g.click('close');assert.equal(g.h.state.money,before);
+  const g=await boot(),before=g.h.state.money,price=R.bird(g.h.state,g.h.state.sale[0]).price;await g.click('nav',{page:'market'});await g.click('buy-dialog',{id:g.h.state.sale[0]});assert.equal(g.h.state.money,before);assert.ok(html(g).includes(`${(before-price).toLocaleString()} G`));await g.click('close');assert.equal(g.h.state.money,before);
   await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');assert.match(html(g),/600 G/);await g.click('breed-confirm');assert.equal(g.h.state.stage,'grow');await g.click('ack');
   await g.h.advance(4);assert.equal(g.h.state.week,13,'monthly letters and first wins are included without stopping the four-week advance');assert.equal(g.h.modal.type,'reports');assert.equal(g.h.state.reports.filter(r=>r.type==='weekly').length,4);assert.ok(g.h.state.reports.some(r=>r.type==='monthly'));assert.ok(g.h.state.reports.some(r=>r.type==='birth'));assert.ok(R.own(g.h.state).some(b=>b.role==='young'));assert.match(html(g),/4週のダイジェスト/);
   const restored=await boot(g.storage.get(R.SAVE_KEY));assert.equal(restored.h.state.week,13);assert.equal(ranchSnapshot(restored.h.state),ranchSnapshot(g.h.state));assert.notEqual(restored.h.state.rng,g.h.state.rng);
@@ -635,6 +774,28 @@ test('public sire search combines text, winning route and ability order with vis
   assert.match(html(g),/長所/);assert.match(html(g),/短所/);assert.match(html(g),/重賞成績/);assert.match(html(g),/血統のGⅠ実績による補正/);assert.match(html(g),/下限 \+/);
   g.node('#sire-query').value='見つからない名前';await g.click('search-sires');
   assert.equal(listedSires(g).length,0);assert.match(html(g),/data-action="breed-dialog" disabled/);
+});
+
+test('public offspring order uses the current mother and updates when she changes while preserving the sire',async()=>{
+  const g=await boot();await purchase(g);
+  const s=g.h.state,first=R.own(s).find(b=>b.role==='mare');
+  const second=R.createBird(s,{sex:'F',role:'mare'},[R.sires(s).find(b=>b.owner==='public'),first]);
+  await g.click('nav',{page:'breed'});await g.click('sire-tab',{tab:'public'});
+  assert.match(html(g),/<option value="offspring"[^>]*>子の能力期待値が高い順<\/option>/);
+  const selected=selectedSire(g),rng=s.rng;
+  await g.change('sire-sort','offspring');
+  const expected=dam=>R.searchSires(s,{sort:'offspring',dam}).filter(b=>b.owner==='public').map(b=>b.id);
+  const firstOrder=expected(first);
+  assert.deepEqual(listedSires(g).map(b=>b.id),firstOrder);assert.equal(selectedSire(g),selected);
+  assert.match(html(g),/選択中の母との配合で、競走能力8項目/);
+  await g.change('dam-choice',second.id);
+  const secondOrder=expected(second);assert.notDeepEqual(secondOrder,firstOrder);
+  assert.deepEqual(listedSires(g).map(b=>b.id),secondOrder);assert.equal(selectedSire(g),selected);
+  await g.click('sire-tab',{tab:'root'});assert.equal(listedSires(g).length,32);
+  await g.click('sire-tab',{tab:'public'});assert.deepEqual(listedSires(g).map(b=>b.id),secondOrder);
+  second.bredYear=R.date(s.week).year;g.h.render();
+  assert.deepEqual(listedSires(g).map(b=>b.id),firstOrder,'the available mother is resolved before sorting');
+  assert.equal(s.rng,rng);
 });
 
 test('public sire genetic filters can be added, combined, edited, removed and cleared without saving',async()=>{

@@ -29,11 +29,13 @@ test('automatic beginner entry settles a general-only field and preserves its bo
   assert.deepEqual(R.deserializeState(R.serializeState(s)),s);
 });
 
-test('general entrants fill vacancies without persistent identities, pedigrees or breeding RNG',()=>{
+test('ordinary opponents and general entrants have no persistent identities or breeding RNG',()=>{
   const s=scratch(),e=R.calendar(s.week).find(e=>e.level==='new');
+  const before=structuredClone(s);
   const first=R.worldRoster(s,e),major=first.filter(b=>!b.filler),fillers=first.filter(b=>b.filler);
   assert.equal(first.length,11);assert.equal(major.length,R.MAJOR_FARMS.length);assert.equal(fillers.length,5);
-  for(const b of major){assert.equal(R.bird(s,b.id),b);assert.equal(b.parents.length,2);}
+  assert.deepEqual(s,before);
+  for(const b of major){assert.equal(R.bird(s,b.id),undefined);assert.equal(b.temporary,true);assert.deepEqual(b.parents,[]);}
   for(const b of fillers){
     assert.equal(R.bird(s,b.id),undefined);assert.equal(b.genome,undefined);assert.equal(b.parents,undefined);
     assert.equal(b.records,undefined);assert.equal(b.farm,undefined);assert.equal(R.farmName(b,s),'一般参加');
@@ -49,7 +51,7 @@ test('general entrants fill vacancies without persistent identities, pedigrees o
   assert.equal(R.worldRoster(s,e,{slots:10}).length,10);assert.deepEqual(s,saved);
   const next={...e,week:e.week+1,id:`${e.id}:next`};s.week++;
   const later=R.worldRoster(s,next);
-  assert.deepEqual(later.filter(b=>!b.filler).map(b=>b.id),major.map(b=>b.id));
+  assert.ok(later.filter(b=>!b.filler).every(b=>!major.some(m=>m.id===b.id)));
   assert.ok(later.filter(b=>b.filler).every(b=>!fillers.some(f=>f.id===b.id)));
 });
 
@@ -98,9 +100,10 @@ test('farm runners beat general entrants through physics across classes, courses
   }
 });
 
-test('settlement stores only result snapshots for general entrants and real careers for farm runners',()=>{
+test('G1 settlement stores only general snapshots and real careers for farm runners',()=>{
   const s=R.initial(),b=R.own(s)[0];s.money=1000000;
-  const e=R.calendar(s.week).find(e=>e.level==='new'),result=R.race(s,b,e);
+  s.week=13;Object.assign(b,{birthYear:-3,races:4,wins:4});
+  const e=R.calendar(s.week).find(e=>e.level==='GI'),result=R.race(s,b,e);
   assert.equal(result.field.length,12);
   const fillers=result.field.filter(r=>r.filler),major=result.field.filter(r=>!r.filler&&r.id!==b.id);
   assert.ok(fillers.length);assert.ok(fillers.every(r=>R.bird(s,r.id)===undefined));
@@ -114,7 +117,7 @@ test('settlement stores only result snapshots for general entrants and real care
   for(const sire of R.sires(s).filter(b=>b.farm))assert.ok(sire.records.some(r=>r.rank===1&&r.level==='GI'&&!r.field[0].filler));
 });
 
-test('two player birds share one ordinary field and settle farm careers once',()=>{
+test('two player birds share one ordinary field without creating persistent opponents',()=>{
   const s=R.initial(),first=R.own(s)[0];Object.assign(s,{stage:'running',money:1000000,reports:[]});
   const second=structuredClone(first);second.id=`bird-${s.serial++}`;second.name='ハネカゼノツバサ';s.birds.push(second);
   const e=R.calendar(s.week).find(e=>e.level==='new'&&e.surface==='turf'&&e.distance===1400);
@@ -126,6 +129,6 @@ test('two player birds share one ordinary field and settle farm careers once',()
   assert.deepEqual(first.records[0].replay,second.records[0].replay);
   assert.notEqual(first.records[0].rank,second.records[0].rank);
   assert.equal(first.records[0].field.length,12);
-  for(const b of majors){assert.equal(b.races,1);assert.equal(b.records.length,1);assert.equal(b.records[0].name,e.name);}
+  for(const b of majors){assert.equal(b.temporary,true);assert.equal(b.races,0);assert.equal(b.records.length,0);assert.equal(R.bird(s,b.id),undefined);}
   assert.ok(R.validState(s));
 });

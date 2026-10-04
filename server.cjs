@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const files = {'/':'index.html','/index.html':'index.html','/css/style.css':'css/style.css','/js/game.js':'js/game.js','/js/model.js':'js/model.js','/js/world.js':'js/world.js','/js/world-views.js':'js/world-views.js'};
 for (const file of ['chocobo-preview.html','js/chocobo-preview.js','js/chocobo-animation.js',
-  'js/ranch-portraits.js','css/ranch-portraits.css','chocobo-portrait-preview.html','js/chocobo-portrait-preview.js',
+  'js/ranch-portraits.js','css/ranch-portraits.css','js/ranch-characters.js','css/ranch-characters.css','chocobo-portrait-preview.html','js/chocobo-portrait-preview.js',
   ...['adult','yearling','chick'].map(stage=>`assets/chocobo-portraits/${stage}-v1.png`),
   ...['adult','yearling','chick'].map(stage=>`assets/chocobo-portraits/${stage}-idle-v3.png`),
   'chocobo-sprite-preview.html',...['run-yellow.png','run-blue.png','run-rainbow-crest.png'].map(file=>`assets/chocobo-sprite-study/${file}`),
@@ -30,6 +30,8 @@ for (const file of ['chocobo-preview.html','js/chocobo-preview.js','js/chocobo-a
   'race-2d-preview.html','race-2d-backgrounds.html',...['manifest-v1.json','prompts-v1.json',...['tenku','oukyu','mitsurin','sunahama','iseki','haikou'].map(id=>id+'-v1.png')].map(file=>'assets/race-2d-backgrounds/'+file),'js/race-2d-course.js','js/race-2d-graphics.js','js/race-viewer-2d.js','js/race-2d-preview.js','css/race-2d-preview.css',
   'assets/commentators/lamia.png','assets/commentators/sahagin.png',
   'assets/moogle/trainer.png',
+  'assets/home-backgrounds/preview.html',
+  ...['spring','summer','autumn','winter'].map(season=>`assets/home-backgrounds/${season}-v1.webp`),
   ...Object.entries(require('./public/js/ranch-engine.js').FACILITIES).flatMap(([key,f])=>Array.from({length:f.max},(_,i)=>`assets/facilities/${key}-lv${i+1}-v1.webp`)),
   ...['neutral','talk','happy','motivated','sad','disappointed','overjoyed','ambiguous-smile'].map(expression=>`assets/shiroma/shiroma-${expression}.png`),
   'balance-lab.html','css/balance-lab.css','js/race-physics.js','js/balance-presets.js','js/balance-runner.js','js/balance-worker.js','js/balance-lab.js',

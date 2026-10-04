@@ -56,7 +56,7 @@
   const MANAGEMENT = {robustness:'丈夫さ', recovery:'回復力'};
   const TRAINING = {speed:.15, cardio:.45, power:.35, reserve:.30, legs:.45, economy:.40, start:.50, resilience:.35};
   const FACILITIES = {
-    stalls:{name:'羽房',cost:25000,costs:[0,25000,35000,12000000],max:4,description:'羽房を増やします。最大で幼羽・競走羽32羽、繁殖牝羽・種牡羽各16羽。'},
+    stalls:{name:'羽房',cost:25000,costs:[0,25000,35000,12000000,50000000,50000000,50000000,50000000,50000000],max:9,artMax:4,description:'Lv.4まで羽房が増え、幼羽・競走羽32羽、繁殖牝羽・種牡羽各16羽まで迎えられます。Lv.5以降は環境を整え、良いチョコボが少し生まれやすくなります。'},
     course:{name:'コース',cost:18000000,max:3,description:'調教の効果が上がります。'},
     hill:{name:'坂路',cost:22000000,max:3,description:'瞬発力とスパート容量を鍛えます。'},
     pool:{name:'プール',cost:20000000,max:3,description:'脚への負担を抑えながら心肺を育てます。'},
@@ -128,7 +128,24 @@
   const DEFECTS=Object.freeze(Breeding.catalog(ROOTS));
   const DEFECT_LABELS={...TRAIT_LABELS,frailty:'虚弱体質',temper:'気性難'};
   const own = s => s.birds.filter(b => b.owner === 'player' && !['retired','archived'].includes(b.role));
-  const bird = (s, id) => s.birds.find(b => b.id === id);
+  // An index lives only for one synchronous operation. External edits between
+  // operations never need dirty flags; appended birds and annual array replacement
+  // are picked up before a lookup within that operation.
+  const birdLookups=new WeakMap();
+  function withBirdLookup(s,work) {
+    if(birdLookups.has(s))return work();
+    const context={birds:null,length:0,byId:new Map()};birdLookups.set(s,context);
+    try{return work();}finally{birdLookups.delete(s);}
+  }
+  function bird(s,id) {
+    const context=birdLookups.get(s);
+    if(!context)return s.birds.find(b=>b.id===id);
+    if(context.birds!==s.birds||context.length>s.birds.length){context.birds=s.birds;context.length=0;context.byId.clear();}
+    for(;context.length<s.birds.length;context.length++){
+      const b=s.birds[context.length];if(!context.byId.has(b.id))context.byId.set(b.id,b);
+    }
+    return context.byId.get(id);
+  }
   function paternalRoot(s,b,lookup=id=>bird(s,id)) {
     const seen=new Set();let source=null;
     // Follow the full male line, independently of the five-generation pedigree view.
@@ -149,7 +166,8 @@
   const age = (s, b) => b.kind === 'root' || b.kind === 'founder' ? null : date(s.week).year - b.birthYear;
   const random = s => { s.rng = (Math.imul(s.rng, 1664525) + 1013904223) >>> 0; return s.rng / 4294967296; };
   const pick = (s, items) => items[Math.floor(random(s) * items.length)];
-  const capacity = s => ({racing:8 * s.facilities.stalls, mare:4 * s.facilities.stalls, stud:4 * s.facilities.stalls});
+  const capacity = s => ({racing:8 * Math.min(4,s.facilities.stalls), mare:4 * Math.min(4,s.facilities.stalls), stud:4 * Math.min(4,s.facilities.stalls)});
+  const favorableInheritanceRate = s => .5 + .05 * clamp((s.facilities?.stalls??1)-4,0,5);
   const racingCount = s => own(s).filter(b => ['young','racing'].includes(b.role)).length + own(s).filter(b => b.pregnancy).length;
   // Legacy lab upgrades remain saved, but disclosure now depends on the monuments.
   const labLevel = s => s.facilities.lab ? 1 + Number(s.facilities.statue > 0) + Number(s.facilities.museum > 0) : 0;
@@ -170,11 +188,40 @@
     s.milestones[key] = s.week;
     report(s, 'event', title, text, {expression:'overjoyed', ...extra});
   }
-  function genome(s, parents, distance, release, frequency=.25) {
+  function firstWinKeys(r) {
+    const keys=['win'];
+    if(['GI','GII','GIII'].includes(r.level))keys.push('graded');
+    if(r.level==='GIII')keys.push('g3');
+    if(r.level==='GII')keys.push('g2');
+    if(r.level==='GI'){
+      keys.push('g1',`g1:${r.name}`);
+      if(r.name==='チョコボダービー')keys.push('derby');
+    }
+    return keys;
+  }
+  function recordFirstWin(s,r,birdId,birdName) {
+    if(r.rank!==1||r.finished===false)return;
+    for(const key of firstWinKeys(r))if(!Object.hasOwn(s.firstWins,key))
+      s.firstWins[key]={week:r.week,birdId,birdName,raceName:r.name};
+  }
+  function restoreFirstWins(s) {
+    if(s.firstWins!==undefined)return;
+    s.firstWins={};
+    // Reports contain only our runners; replay ownership also survives a sale.
+    const results=[...s.journal,...s.reports].flatMap(report=>report.results||[]);
+    for(const b of s.birds)for(const r of b.records){
+      const runner=r.replay?.runners.find(x=>x.id===b.id);
+      if(runner?runner.player:!b.farm&&['player','archive'].includes(b.owner))
+        results.push({...r,birdId:b.id,birdName:runner?.name||r.field.find(x=>x.id===b.id)?.name||b.name});
+    }
+    results.filter(r=>r.week>=9).sort((a,b)=>a.week-b.week)
+      .forEach(r=>recordFirstWin(s,r,r.birdId,r.birdName));
+  }
+  function genome(s, parents, distance, release, frequency=.25, favorableRate=.5) {
     const genes = {};
     for (const key of [...Mapping.ABILITIES.map(a => a.key), ...Object.keys(MANAGEMENT)]) {
       genes[key] = Array.from({length:32}, (_, i) => parents
-        ? [pick(s, parents[0].genome.quality[key][i]), pick(s, parents[1].genome.quality[key][i])]
+        ? parents.map(p=>Genetics.inheritAllele(p.genome.quality[key][i],()=>random(s),favorableRate))
         : [Number(random(s) < frequency), Number(random(s) < frequency)]);
     }
     return {quality:genes,
@@ -200,8 +247,9 @@
     return {illnessChance:Math.min(.02,.002+frailty*.0005),recoveryWeeks:3+Math.min(4,Math.ceil(frailty/4))};
   }
   function createBird(s, options = {}, parents = null) {
-    const g = options.genome ?? genome(s, parents, options.distance ?? 0, options.release ?? 0, options.alleleFrequency ?? .25);
-    g.traits ??= Genetics.generate(()=>random(s),parents?.map(p=>p.genome.traits));
+    const favorableRate=parents&&(options.owner??'player')==='player'&&(options.kind??'home')==='home'?favorableInheritanceRate(s):.5;
+    const g = options.genome ?? genome(s, parents, options.distance ?? 0, options.release ?? 0, options.alleleFrequency ?? .25,favorableRate);
+    g.traits ??= Genetics.generate(()=>random(s),parents?.map(p=>p.genome.traits),favorableRate);
     const color=Genetics.expressColor(g.traits.body,g.traits.gold);
     if(color===null)return null;
     g.defects??=parents?Breeding.inheritDefects(parents,()=>random(s)):{};
@@ -259,7 +307,7 @@
     {name:'メテオ牧場',prefix:'メテオ',quality:.67},
     {name:'アルテマ牧場',prefix:'アルテマ',quality:.70},
   ];
-  const farmName=(b,s)=>b?.filler?'一般参加':b?.owner==='player'?(s?.naming?.ranchName||DEFAULT_NAMING.ranchName):b?.farm||'他の牧場';
+  const farmName=(b,s)=>b?.filler||b?.temporary?'一般参加':b?.owner==='player'?(s?.naming?.ranchName||DEFAULT_NAMING.ranchName):b?.farm||'他の牧場';
   const rating=value=>value<60?'X':value<80?'△':value<100?'◯':value<120?'◎':'☆';
   const geneticRating=value=>value<65?'X':value<80?'△':value<95?'◯':value<110?'◎':'☆';
   const geneticEffectRating=value=>value<-10?'X':value<-2?'△':value<=2?'◯':value<=10?'◎':'☆';
@@ -317,6 +365,36 @@
     for(const group of ['aptitude','development'])for(const [key,pair] of Object.entries(b.genome.traits[group]))values[key]=50+100*mean(pair);
     return Object.fromEntries(Object.entries(ranges).map(([key,range])=>[key,{...range,value:values[key]}]));
   }
+  function breedingExpectation(s,sire,dam) {
+    if(!sire||!dam)return {};
+    const parents=[sire,dam],plan=crossPlan(s,sire,dam),rate=favorableInheritanceRate(s);
+    const mutation=(group,key,locus)=>plan.find(p=>p.group===group&&p.key===key&&p.locus===locus)?.rate||0;
+    const favorable=pair=>pair[0]===pair[1]?pair[0]:rate;
+    const penalties={};
+    for(const id of new Set([...parents.flatMap(p=>Object.keys(p.genome.defects)),...plan.filter(p=>p.group==='defects').map(p=>p.key)])){
+      let penalty=0;
+      for(let i=0;i<Breeding.DEFECT_LOCI;i++){
+        const active=parents.map(p=>mean(p.genome.defects[id]?.[i]||[0,0])).reduce((n,p)=>n*p,1);
+        const chance=mutation('defects',id,i);
+        penalty+=(active*(1-chance)+chance)*Breeding.DEFECT_STEP;
+      }
+      const trait=DEFECTS[id].trait,effects=Breeding.SPECIAL[trait]||{[trait]:1};
+      for(const [key,weight] of Object.entries(effects))penalties[key]=(penalties[key]||0)+penalty*weight;
+    }
+    const distance=mean(parents.map(p=>mean(p.genome.distance))),release=mean(parents.map(p=>mean(p.genome.release)));
+    const bonus=pedigreeBonus(s,sire,dam);
+    return Object.fromEntries(Mapping.ABILITIES.map(a=>{
+      const inherited=Array.from({length:32},(_,i)=>{
+        const alleles=parents.reduce((n,p)=>n+favorable(p.genome.quality[a.key][i]),0),chance=mutation('quality',a.key,i);
+        return alleles*(1-chance)+2*chance;
+      }).reduce((n,value)=>n+value,0);
+      const center=clamp(50+1.25*inherited+a.distance*distance+a.release*release,50,150);
+      // Estimate the birth lottery at its expected inherited centre. Boundary
+      // rejection and individual segregation can shift the actual offspring mean.
+      const value=clamp(center+(bonus[a.key].lower+bonus[a.key].upper)/2,50,150)-(penalties[a.key]||0);
+      return [a.key,clamp(value,50,150)];
+    }));
+  }
   function profile(b) {
     const values={...b.potential,...b.management,...b.inborn};
     const sorted=Object.entries(values).sort((a,b)=>b[1]-a[1]);
@@ -332,14 +410,19 @@
     const score=50+100*mean(b.genome.traits[group][trait]);
     return (Object.hasOwn(Genetics.COURSE_APTITUDES,trait)?Genetics.courseRating:geneticRating)(score);
   }
-  function searchSires(s,{query='',route='',sort='fee',geneticFilters=[]}={}) {
+  function searchSires(s,{query='',route='',sort='fee',geneticFilters=[],dam=null}={}) {
     const routeMatch=b=>!route||b.records.some(r=>r.level==='GI'&&r.rank===1&&(route==='dirt'?r.surface==='dirt':r.surface==='turf'&&(route==='sprint'?r.distance<=1400:route==='mile'?r.distance>1400&&r.distance<=1800:route==='long'?r.distance>=2800:r.distance>1800&&r.distance<2800)));
     const text=query.trim().toLocaleLowerCase();
     const score=b=>b.potential[sort]??b.management[sort]??b.inborn[sort]??(Genetics.APTITUDES[sort]?50+100*mean(b.genome.traits.aptitude[sort]):0);
     const filters=geneticFilters.filter(f=>f.trait);
     const geneticMatch=b=>filters.every(f=>['X','△','◯','◎','☆'].includes(f.rating)&&geneticTraitRating(b,f.trait)===f.rating);
-    return sires(s).filter(b=>routeMatch(b)&&geneticMatch(b)&&`${b.name} ${farmName(b,s)} ${b.records.filter(r=>r.rank===1).map(r=>r.name).join(' ')}`.toLocaleLowerCase().includes(text))
-      .sort((a,b)=>sort==='fee'?breedFee(a)-breedFee(b):sort==='g1'?b.g1-a.g1:score(b)-score(a));
+    const candidates=sires(s).filter(b=>routeMatch(b)&&geneticMatch(b)&&`${b.name} ${farmName(b,s)} ${b.records.filter(r=>r.rank===1).map(r=>r.name).join(' ')}`.toLocaleLowerCase().includes(text));
+    if(sort==='offspring'){
+      if(!dam)return candidates.sort((a,b)=>breedFee(a)-breedFee(b));
+      const scores=new Map(candidates.map(b=>[b.id,mean(Object.values(breedingExpectation(s,b,dam)))]));
+      return candidates.sort((a,b)=>scores.get(b.id)-scores.get(a.id)||breedFee(a)-breedFee(b));
+    }
+    return candidates.sort((a,b)=>sort==='fee'?breedFee(a)-breedFee(b):sort==='g1'?b.g1-a.g1:score(b)-score(a));
   }
   const g1Points=e=>e.surface==='dirt'?60:e.distance<=1400?70:e.minAge===2||/オニオン|光の戦士/.test(e.name)?80:e.sex||e.sexRestricted?100:e.distance>=2800?140:/ダービー|ワールドカップ|バハムート/.test(e.name)?180:120;
   // JRA 2026 counterparts, with a 100-million floor for the game's juvenile G1s.
@@ -427,8 +510,34 @@
     if(e.distance>=2800)return 'long';
     return 'middle';
   }
+  const eventKey=e=>`${date(e.week).week}:${e.id.replace(/^\d+:/,'')}`;
+  let worldRoutes=null;
+  function worldRoute(e) {
+    if(!worldRoutes) {
+      const stakes=Array.from({length:YEAR},(_,i)=>calendar(i+1)).flat().filter(e=>/^G/.test(e.level));
+      worldRoutes=new Map(stakes.filter(e=>e.level==='GI').map(e=>[eventKey(e),e]));
+      const prepared=new Set();
+      // One lead-in per G1 division each year, sharing its actual racing birds.
+      // All other lower grades are generated only when the player enters.
+      for(const target of stakes.filter(e=>e.level==='GI')) {
+        const group=worldGroup(target);
+        if(prepared.has(group))continue;
+        const years=target.maxAge===3?3:target.maxAge===2?2:5,sex=target.sex||'M';
+        const candidates=stakes.filter(r=>r.level!=='GI'&&!worldRoutes.has(eventKey(r))&&
+          target.week-r.week>=4&&target.week-r.week<=12&&r.surface===target.surface&&
+          years>=r.minAge&&years<=r.maxAge&&(!r.sex||r.sex===sex)&&
+          Math.abs(r.distance-target.distance)<=600&&
+          !stakes.some(g=>g.level==='GI'&&worldGroup(g)===group&&Math.abs(g.week-r.week)<4));
+        candidates.sort((a,b)=>Math.abs(a.distance-target.distance)-Math.abs(b.distance-target.distance)||
+          Number(b.level==='GII')-Number(a.level==='GII')||b.week-a.week);
+        if(candidates.length){worldRoutes.set(eventKey(candidates[0]),target);prepared.add(group);}
+      }
+    }
+    return worldRoutes.get(eventKey(e));
+  }
+  const worldEvents=week=>calendar(week).filter(e=>worldRoute(e));
   const npcSource=(farm,group,sex)=>ROOTS[(MAJOR_FARMS.indexOf(farm)*5+[...group].reduce((n,c)=>n+c.charCodeAt(0),0)+(sex==='F'?1:0))%ROOTS.length];
-  function npcParents(s,farm,e,birthYear,frequency=farm.quality) {
+  function npcParents(s,farm,e,birthYear,frequency=farm.quality,characterMean=null) {
     const group=`${e.surface}-${e.distance>=2600?'long':e.distance<=1800?'short':'middle'}-${/^G/.test(e.level)?'major':e.level}`;
     const distance=e.distance>=2800?.9:e.distance>=2200?.5:e.distance<=1600?-.8:0;
     const selected=[];
@@ -442,7 +551,8 @@
       const source=npcSource(farm,group,sex);
       g.defects={[`${source.lineage}-weak`]:Array.from({length:Breeding.DEFECT_LOCI},()=>[0,1])};
       const base=createBird(s,{name:generatedName(s,farm.prefix,'',sex),owner:'archive',farm:farm.name,role:'archived',kind:'general',
-        sex,birthYear:birthYear-5,bornWeek:(birthYear-6)*YEAR+9,genome:g,breedingGroup:group,npcFoundation:true,lineage:source.lineage});
+        sex,birthYear:birthYear-5,bornWeek:(birthYear-6)*YEAR+9,genome:g,breedingGroup:group,npcFoundation:true,lineage:source.lineage,
+        ...(characterMean===null?{}:{inborn:Object.fromEntries(Object.keys(PERSONALITY).map(key=>[key,characterMean-8+random(s)*16]))})});
       base.genome.traits.aptitude[e.surface]=[1,1];base.genome.traits.development.earlyGrowth=[1,1];base.growth='early';
       selected.push(base);
     }
@@ -473,22 +583,34 @@
         courseTraits:{aptitude:Object.fromEntries(Object.keys(Genetics.APTITUDES).map(key=>[key,[.5,.5]]))}};
     });
   }
+  function createWorldRunners(s,e,group) {
+    const year=date(s.week).year;
+    return MAJOR_FARMS.map(farm=>{
+      const birthYear=year-(e.maxAge===3?3:e.maxAge===2?2:5),frequency={new:.10,maiden:.10,c1:.22,c2:.3,c3:.38,open:.45}[e.level]??farm.quality;
+      const parents=npcParents(s,farm,e,birthYear,frequency);
+      const b=createBird(s,{name:generatedName(s,farm.prefix,'',e.sex||(e.level==='GI'?'M':'F')),owner:'npc',farm:farm.name,season:year,worldGroup:group,breedingGroup:parents[0].breedingGroup,
+        role:'racing',kind:'general',registered:true,sex:e.sex||(e.level==='GI'?'M':'F'),birthYear,bornWeek:(birthYear-1)*YEAR+9},parents);
+      // A failed gold egg is an absent runner, never a rerolled genotype.
+      if(!b)return null;
+      b.training=Object.fromEntries(Mapping.ABILITIES.map(a=>[a.key,/^G/.test(e.level)?.95:['new','maiden'].includes(e.level)?.25:.65]));
+      return b;
+    }).filter(Boolean);
+  }
   function worldRoster(s,e,{slots=11}={}) {
     if(e.opponents==='general')return fillerRoster(s,e,[],slots);
-    const year=date(s.week).year,group=worldGroup(e);
-    let runners=s.birds.filter(b=>b.owner==='npc'&&b.season===year&&b.worldGroup===group);
-    if(!runners.length) {
-      const farms=MAJOR_FARMS;
-      runners=farms.map((farm,i)=>{
-        const birthYear=year-(e.maxAge===3?3:e.maxAge===2?2:5),frequency={new:.10,maiden:.10,c1:.22,c2:.3,c3:.38,open:.45}[e.level]??farm.quality;
-        const parents=npcParents(s,farm,e,birthYear,frequency);
-        const b=createBird(s,{name:generatedName(s,farm.prefix,'',e.sex||(e.level==='GI'?'M':'F')),owner:'npc',farm:farm.name,season:year,worldGroup:group,breedingGroup:parents[0].breedingGroup,
-          role:'racing',kind:'general',registered:true,sex:e.sex||(e.level==='GI'?'M':'F'),birthYear,bornWeek:(birthYear-1)*YEAR+9},parents);
-        // A failed gold egg is an absent runner, never a rerolled genotype.
-        if(!b)return null;
-        b.training=Object.fromEntries(Mapping.ABILITIES.map(a=>[a.key,/^G/.test(e.level)?.95:['new','maiden'].includes(e.level)?.25:.65]));
-        return b;
-      }).filter(Boolean);
+    const route=worldRoute(e),year=date(s.week).year,group=worldGroup(route||e);
+    let runners;
+    if(route) {
+      runners=s.birds.filter(b=>b.owner==='npc'&&b.season===year&&b.worldGroup===group);
+      if(!runners.length)runners=createWorldRunners(s,route,group);
+    } else {
+      // An event-local stream isolates opponents from saved breeding RNG and
+      // the pedigree/market. Preserve the established class strength and physics.
+      let seed=0x47554553;
+      for(const char of `${e.week}:${e.id}`)seed=(Math.imul(seed,31)^char.charCodeAt(0))>>>0;
+      const scratch={...s,rng:seed,serial:s.serial,birds:s.birds.slice()};
+      runners=createWorldRunners(scratch,e,group).map((b,i)=>({...b,
+        id:`guest-${e.week}-${seed}-${i}`,owner:'guest',temporary:true,parents:[],farm:undefined}));
     }
     const major=runners.filter(b=>age(s,b)>=e.minAge&&age(s,b)<=e.maxAge&&(!e.sex||b.sex===e.sex)).slice(0,slots);
     return [...major,...fillerRoster(s,e,major,Math.max(0,slots-major.length))];
@@ -499,7 +621,7 @@
     const runs=simulateField(s,drawGates(s,entrants,e),e,players.length>0).sort((a,b)=>Number(b.finished)-Number(a.finished)||(a.finished?a.time-b.time:b.state.distance-a.state.distance));
     const field=runs.map(({id,name,time,finished,farm,filler})=>({id,name,time,finished,farm,...(filler?{filler:true}:{})}));
     runs.forEach((run,i)=>{
-      if(run.filler)return;
+      if(run.filler||run.temporary)return;
       const b=bird(s,run.id);if(b.owner==='player')return;
       const rank=i+1,reward=(run.finished?e.purse[i]||0:0)+e.allowance;
       b.records.push({week:s.week,year:date(s.week).year,name:e.name,level:e.level,distance:e.distance,surface:e.surface,trackId:e.trackId,rank,reward,time:run.time,finished:run.finished,field,sexRestricted:!!e.sex});
@@ -529,7 +651,7 @@
       for(let year=1;year<=5;year++) {
         for(let week=(year-1)*YEAR+1;week<=year*YEAR;week++) {
           scratch.week=week;
-          for(const e of calendar(week).filter(e=>/^G/.test(e.level)))runWorldEvent(scratch,e);
+          for(const e of worldEvents(week))runWorldEvent(scratch,e);
         }
         retireWorld(scratch,year);
       }
@@ -618,6 +740,10 @@
     for(const b of s.birds)for(const r of b.records)updateRecord(r);
     for(const report of [...s.reports,...s.journal])for(const r of report.results||[])updateRecord(r);
     for(const award of s.awards)if(renamed.has(award.birdId))award.name=renamed.get(award.birdId);
+    restoreFirstWins(s);
+    if(s.mareMarketVersion!==1)expandMareMarket(s,s.marketYear);
+    // Reprice only unsold lots; purchased birds, finances and breeding RNG stay intact.
+    for(const id of s.sale){const b=bird(s,id);if(b?.owner==='sale')b.price=marePrice(b);}
     return s;
   }
   function refreshMarket(s) {
@@ -626,28 +752,44 @@
     s.marketYear = year;
     s.birds.filter(b => b.owner === 'sale').forEach(b => {b.role = 'archived'; b.owner = 'archive';});
     s.sale = [
-      ['ハルノコムギ',.0,-.2,'おだやかで、周りにつられず自分のペースを保てる子です。',2800],
-      ['ミズノシズク',.8,.4,'長く歩いても、まだ先へ行きたそうですね。',3200],
-      ['アカネノハネ',-.8,.65,'走り始めると、とても軽やか。少し元気いっぱいです。',3200],
-    ].map(([name,distance,release,comment,price],i) => {
+      ['ハルノコムギ',.0,-.2,'おだやかで、周りにつられず自分のペースを保てる子です。'],
+      ['ミズノシズク',.8,.4,'長く歩いても、まだ先へ行きたそうですね。'],
+      ['アカネノハネ',-.8,.65,'走り始めると、とても軽やか。少し元気いっぱいです。'],
+    ].map(([name,distance,release,comment],i) => {
       const father=s.birds.find(b=>b.kind==='root'&&b.lineage===`root-${[13,2,1][i]}`);
       const scratch={week:s.week,rng:random(s)*4294967296,serial:1,birds:[]};
       const unknown=createBird(scratch,{distance,release});
       unknown.id=null;
       const traits=i===0?{control:98,drive:75,wisdom:86}:i===1?{drive:87,control:80}:{drive:105,control:68};
       for(const [key,value] of Object.entries(traits))unknown.genome.character[key]=Array(2).fill(clamp(2*value-mean(father.genome.character[key]),50,150));
-      const b=createBird(s,{name:year===1?name:generatedName(s,'ハネカゼ','','F'),sex:'F',role:'mare',owner:'sale',kind:'general',birthYear:year-4,bornWeek:(year-5)*YEAR+9,parents:[father.id,null],comment,price},[father,unknown]);
-      Object.assign(b.inborn,traits);Object.assign(b.personality,traits);return b.id;
+      const b=createBird(s,{name:year===1?name:generatedName(s,'ハネカゼ','','F'),sex:'F',role:'mare',owner:'sale',kind:'general',birthYear:year-4,bornWeek:(year-5)*YEAR+9,parents:[father.id,null],comment},[father,unknown]);
+      Object.assign(b.inborn,traits);Object.assign(b.personality,traits);b.price=marePrice(b);return b.id;
     });
+    expandMareMarket(s,year);
     s.birds.filter(b => b.owner==='public' && b.role==='stud' && year-b.retiredYear>=5).forEach(b => b.role='archived');
-    const retired=s.birds.filter(b=>b.sex==='F'&&b.farm&&b.owner==='archive'&&b.retiredYear===year-1&&b.graded>0).sort((a,b)=>b.earnings-a.earnings);
-    const graduates=[...retired.filter(b=>b.g1).slice(0,2),...retired.filter(b=>!b.g1).slice(0,2)];
-    for(const b of graduates){b.owner='sale';b.role='mare';b.price=marePrice(b);b.comment='他牧場で走り、重賞の実績を残した繁殖牝羽です。';s.sale.push(b.id);}
+  }
+  function expandMareMarket(s,year) {
+    // Imported breeding stock bridges the market by genetic merit alone. These
+    // birds have real inherited parents and no invented racing achievements.
+    const stock={...s,rng:(0x53414c45+year)>>>0};
+    for(const [tier,frequency] of [.50,.65,.82].entries())for(const surface of ['turf','dirt']){
+      const farm=MAJOR_FARMS[tier*2+(surface==='dirt'?1:0)],distance=surface==='dirt'?1400:2400;
+      const parents=npcParents(stock,farm,{surface,distance,level:`sale-${tier}`},year-4,frequency,90+tier*10);
+      const b=createBird(stock,{name:generatedName(stock,farm.prefix,'','F'),sex:'F',role:'mare',owner:'sale',kind:'general',farm:farm.name,
+        birthYear:year-4,bornWeek:(year-5)*YEAR+9,comment:'他牧場で繁殖用に育てられた未出走の牝羽です。'},parents);
+      if(b){b.price=marePrice(b);s.sale.push(b.id);}
+    }
+    s.serial=stock.serial;
+    const listed=new Set(s.sale),retired=s.birds.filter(b=>!listed.has(b.id)&&b.sex==='F'&&b.farm&&b.owner==='archive'&&b.retiredYear===year-1&&b.races>0&&year-b.birthYear<20).sort((a,b)=>b.earnings-a.earnings);
+    const categories=[b=>b.g1>0,b=>!b.g1&&b.graded>0,b=>!b.graded&&b.races>0];
+    const graduates=categories.flatMap(matches=>retired.filter(matches).slice(0,Math.max(0,4-s.sale.map(id=>bird(s,id)).filter(matches).length)));
+    for(const b of graduates){b.owner='sale';b.role='mare';b.price=marePrice(b);b.comment=b.graded?'他牧場で走り、重賞の実績を残した繁殖牝羽です。':'他牧場で競走生活を終え、繁殖入りした牝羽です。';s.sale.push(b.id);}
+    s.mareMarketVersion=1;
   }
 
   function initial(seed = 20260930,settings={},history) {
     if(typeof seed==='object'){settings=seed;seed=20260930;}
-    const s = {version:VERSION,naming:namingSettings(settings),geneticsVersion:Genetics.VERSION,breedingVersion:Breeding.VERSION,week:9,money:20000,debt:0,rng:seed>>>0,serial:1,birds:[],sale:[],marketYear:0,stage:'buy',reports:[],journal:[],ledger:[],milestones:{},awards:[],founderOffers:[],
+    const s = {version:VERSION,naming:namingSettings(settings),geneticsVersion:Genetics.VERSION,breedingVersion:Breeding.VERSION,week:9,money:20000,debt:0,rng:seed>>>0,serial:1,birds:[],sale:[],marketYear:0,stage:'buy',reports:[],journal:[],ledger:[],milestones:{},firstWins:{},awards:[],founderOffers:[],
       facilities:Object.fromEntries(Object.keys(FACILITIES).map(k => [k,['stalls','meadow'].includes(k)?1:0])),difficulty:'normal',lastAnnual:0};
     refreshRoots(s);
     ensureWorld(s,history);
@@ -669,7 +811,35 @@
     const prestige=wins.reduce((n,r)=>n+g1Points(r),0);
     return Math.min(80000000,3000000+prestige*100000);
   };
-  const marePrice=b=>b.g1?100000000+b.records.filter(r=>r.rank===1&&r.level==='GI').reduce((n,r)=>n+g1Points(r)*1000000,0):b.graded?10000000+b.graded*5000000:2800;
+  function mareValuation(b) {
+    const {base}=geneticBreakdown(b),penalties=Breeding.penalties(b.genome,DEFECTS);
+    // 16 inherited body, management and character values. Birth variation,
+    // training and learned character never change breeding value.
+    const geneticMean=mean(Object.entries(base).map(([key,value])=>value-(penalties[key]||0)));
+    const geneticValue=Math.min(80000000,3000*10**((geneticMean-76.7)/12));
+    const aptitude=b.genome.traits.aptitude,development=b.genome.traits.development;
+    const score=pair=>mean(pair),distance=mean(b.genome.distance);
+    const surfaceFactor=1+.06*(score(aptitude.turf)-score(aptitude.dirt));
+    const distanceFactor=1-.05*Math.max(0,-distance)+.03*Math.max(0,distance);
+    const courseFactor=Object.keys(Genetics.COURSE_APTITUDES).reduce((n,key)=>n*(1+.04*(score(aptitude[key])-.5)*2),1);
+    const cushionFactor=['lowCushion','highCushion'].reduce((n,key)=>n*(1+.02*(score(aptitude[key])-.5)*2),1);
+    const developmentFactor=Object.keys(Genetics.DEVELOPMENT).reduce((n,key)=>n*(1+.02*(score(development[key])-.5)*2),1);
+    const aptitudeFactor=surfaceFactor*distanceFactor*courseFactor*cushionFactor*developmentFactor;
+    const wins=b.records.filter(r=>r.rank===1&&r.finished!==false),g1Wins=wins.filter(r=>r.level==='GI');
+    let careerValue=0;
+    if(b.g1)careerValue=100000000*(g1Wins.length?mean(g1Wins.map(r=>raceLoad(r))):1)+g1Wins.reduce((n,r)=>n+g1Points(r)*1000000,0);
+    else if(b.graded){
+      const graded=wins.filter(r=>/^G/.test(r.level));
+      careerValue=(10000000+b.graded*5000000)*(graded.length?mean(graded.map(r=>raceLoad(r))):1);
+    } else {
+      const values={new:12000,maiden:10000,c1:40000,c2:150000,c3:600000,open:2000000};
+      careerValue=wins.reduce((best,r)=>Math.max(best,(values[r.level]||0)*raceLoad(r)),0);
+      careerValue+=Math.min(10,b.wins)*5000;
+    }
+    const price=Math.max(1000,Math.round((geneticValue+careerValue)*aptitudeFactor/100)*100);
+    return {geneticMean,geneticValue,careerValue,aptitudeFactor,price};
+  }
+  const marePrice=b=>mareValuation(b).price;
   const breedFee = b => b.owner==='player'?0:studFee(b);
   function buy(s, id) {
     if (!saleOpen(s)) throw Error('繁殖牝羽セールは2月〜3月です。');
@@ -786,12 +956,19 @@
     b.role=role;b.kind='home';b.retiredYear=date(s.week).year;b.hall=b.g1>=3;
     report(s,'event',`${b.name}、次の世代へ`,`${b.races}戦${b.wins}勝。おつかれさまでした。${b.hall?'殿堂入りも決まりました。':''}これからは${role==='stud'?'種牡羽':'繁殖牝羽'}として、この牧場を支えてもらいましょう。`,{expression:'happy'});
   }
-  function classFor(b) {return b.races===0?'new':b.wins===0?'maiden':b.wins===1?'c1':b.wins===2?'c2':b.wins===3?'c3':'open';}
+  function classFor(s,b) {
+    if(b.graded>0||b.g1>0||b.records.some(r=>r.rank===1&&r.finished!==false&&(r.level==='open'||/^G/.test(r.level))))return 'open';
+    if(b.races===0)return 'new';
+    if(b.wins===0)return 'maiden';
+    const years=age(s,b),openWins=years===2?1:years===3?(date(s.week).month<=6?2:3):4;
+    return b.wins>=openWins?'open':`c${b.wins}`;
+  }
   function eligible(s,b,e) {
     const years=age(s,b);
     if (b.role!=='racing'||!b.registered||years<e.minAge||years>e.maxAge||(e.sex&&e.sex!==b.sex)) return false;
-    if (/^G/.test(e.level)) return b.wins>=2;
-    return e.level===classFor(b)||(e.level==='maiden'&&b.races===0);
+    const level=classFor(s,b);
+    if (/^G/.test(e.level)) return level==='open';
+    return e.level===level||(e.level==='maiden'&&b.races===0);
   }
   const TRAINING_MENUS={balanced:{label:'総合調教',keys:[]},speed:{label:'最高速・立ち上がり',keys:['speed','start']},stamina:{label:'心肺・脚持久力',keys:['cardio','legs']},power:{label:'瞬発力・スパート容量',keys:['power','reserve']}};
   function scheduledGap(b,week) {
@@ -824,7 +1001,8 @@
     const [minDistance,maxDistance]=tendency>.3?[2200,3600]:tendency<-.3?[1000,1600]:[1600,2200];
     const bestSurface=Math.max(mean(b.genome.traits.aptitude.turf),mean(b.genome.traits.aptitude.dirt));
     const candidates=[];
-    for(let week=s.week;week<s.week+12;week++) {
+    // Include three extra weeks to compare races blocked by a late target.
+    for(let week=s.week;week<s.week+15;week++) {
       if (!scheduledGap(b,week)||b.schedule?.[week]) continue;
       for(const e of calendar(week)) if(eligible({...s,week},b,e)) {
         if(e.distance<minDistance||e.distance>maxDistance||mean(b.genome.traits.aptitude[e.surface])<bestSurface-.15)continue;
@@ -833,29 +1011,38 @@
         candidates.push({event:e,score:Math.abs(e.distance-preferred)/800+(week-s.week)*.13+8*(1-footing.traction)-(b.policy==='challenge'&&graded?3:0)-(e.opponents==='general'?.1:0)});
       }
     }
+    if(b.policy==='steady')for(const c of candidates)if(/^G/.test(c.event.level))c.score-=2;
+    const targets=candidates.filter(c=>c.event.week<s.week+12);
+    let target;
     if(b.policy==='steady') {
-      const ordinary=candidates.filter(c=>!/^G/.test(c.event.level)).sort((a,b)=>a.score-b.score)[0];
+      const ordinary=targets.filter(c=>!/^G/.test(c.event.level)).sort((a,b)=>a.score-b.score)[0];
       // Only assess stakes that could improve on the ordinary-race plan.
-      const stakes=candidates.filter(c=>/^G/.test(c.event.level)&&s.money>=c.event.fee)
-        .map(c=>({...c,score:c.score-2})).sort((a,b)=>a.score-b.score);
+      const stakes=targets.filter(c=>/^G/.test(c.event.level)&&s.money>=c.event.fee).sort((a,b)=>a.score-b.score);
       for(const c of stakes){
         if(ordinary&&c.score>=ordinary.score)break;
-        if(raceOutlook(s,b,c.event).contender)return c.event;
+        if(raceOutlook(s,b,c.event).contender){target=c;break;}
       }
-      return ordinary?.event||null;
-    }
-    return candidates.sort((a,b)=>a.score-b.score)[0]?.event||null;
+      target??=ordinary;
+    }else target=targets.sort((a,b)=>a.score-b.score)[0];
+    if(!target)return null;
+    // Higher grades can outweigh a short wait, but only when racing the target
+    // would prevent entering them. A race exactly four weeks later remains open.
+    const priority=c=>c.score-({GI:2,GII:1}[c.event.level]||0);
+    const alternatives=candidates.filter(c=>c.event.week>=target.event.week&&c.event.week<target.event.week+4&&
+      s.money>=c.event.fee&&priority(c)<priority(target)).sort((a,b)=>priority(a)-priority(b));
+    for(const c of alternatives)if(b.policy!=='steady'||!/^G/.test(c.event.level)||raceOutlook(s,b,c.event).contender)return c.event;
+    return target.event;
   }
   const outlookRosters=new WeakMap(),outlookTimes=new Map();
   function raceOutlook(s,b,e) {
-    const snapshot={...s,week:e.week},year=date(e.week).year,group=worldGroup(e);
-    let rivals=s.birds.filter(r=>r.owner==='npc'&&r.season===year&&r.worldGroup===group);
+    const snapshot={...s,week:e.week},year=date(e.week).year,route=worldRoute(e),group=worldGroup(route||e);
+    let rivals=route?s.birds.filter(r=>r.owner==='npc'&&r.season===year&&r.worldGroup===group):[];
     if(!rivals.length) {
       // Preview generation may append birds, so keep it outside the real save/RNG.
       const revision=`${s.rng}:${s.serial}:${s.birds.length}`;
       let cache=outlookRosters.get(s);
       if(!cache||cache.revision!==revision){cache={revision,groups:new Map()};outlookRosters.set(s,cache);}
-      const key=`${year}:${group}`;
+      const key=route?`${year}:${group}`:e.id;
       if(!cache.groups.has(key))cache.groups.set(key,worldRoster({...snapshot,birds:s.birds.slice()},e));
       rivals=cache.groups.get(key);
     }
@@ -917,7 +1104,7 @@
   }
   function simulateField(s,birds,e,trace=false) {
     return Race.simulate(birds.map((b,lane)=>({...raceEntry(s,b,e),lane})),e,{trace,track:e.track||Calendar.TRACKS[e.trackId]||{}}).map((run,lane)=>
-      ({...run,lane,color:birds[lane].color,crest:birds[lane].crest,player:birds[lane].owner==='player',farm:farmName(birds[lane],s),...(birds[lane].filler?{filler:true}:{})}));
+      ({...run,lane,color:birds[lane].color,crest:birds[lane].crest,player:birds[lane].owner==='player',farm:farmName(birds[lane],s),...(birds[lane].filler?{filler:true}:{}),...(birds[lane].temporary?{temporary:true}:{})}));
   }
   function simulateBird(s,b,e,trace=false) {
     return simulateField(s,[b],e,trace)[0];
@@ -934,11 +1121,15 @@
     return entrants;
   }
   function race(s,b,e,sharedRuns=null) {
+    return withBirdLookup(s,()=>settleRace(s,b,e,sharedRuns));
+  }
+  function settleRace(s,b,e,sharedRuns) {
     e=economyEvent(e);
     if(!b||!e||e.week!==s.week||b.lastRace===s.week||!eligible(s,b,e))throw Error('この週には出走できません。');
     if(s.money<e.fee)return null;
+    restoreFirstWins(s);
     if(!sharedRuns){
-      if(s.birds.some(x=>x.farm&&x.records.some(r=>r.week===s.week&&r.name===e.name)))throw Error('この競走は確定済みです。');
+      if(s.birds.some(x=>x.records.some(r=>r.week===s.week&&r.name===e.name)))throw Error('この競走は確定済みです。');
       sharedRuns=runWorldEvent(s,e,[b]);
     }
     pay(s,-e.fee,`${b.name} 出走経費`);
@@ -954,6 +1145,7 @@
     b.strain=clamp(b.strain+durability*(3+22*run.state.fatigue),0,100);
     if(e.level==='GI') b.fans+=rank===1?1200:150;
     if(rank===1&&run.finished) {
+      recordFirstWin(s,result,b.id,b.name);
       b.wins++;if(/^G/.test(e.level))b.graded++;
       milestone(s,'win','はじめての勝利！',`${b.name}、やったね！ 牧場の初勝利です！`,{notes:['研究所を建設できるようになりました。']});
       if(e.level==='GI') {
@@ -1026,14 +1218,20 @@
     s.reports.shift();
   }
   function advance(s) {
+    return withBirdLookup(s,()=>advanceWeek(s));
+  }
+  function advanceWeek(s) {
     if(s.reports.length)throw Error('シロマの報告を確認してから、次の週へ進みましょう。');
     if(['buy','breed'].includes(s.stage))throw Error(s.stage==='buy'?'最初の繁殖牝羽を迎えましょう。':'最初の配合をしてみましょう。');
     const oldWeek=s.week,d=date(s.week),balance=s.money,results=[],notes=[];
     ensureWorld(s);
     // Choose once before NPC results/generation change the forecast during this week.
     const plannedRaces=new Map(own(s).map(b=>[b.id,nextRace(s,b)]));
-    for(const e of calendar(s.week).filter(e=>/^G/.test(e.level))) {
-      const settled=s.birds.flatMap(b=>b.records.filter(r=>r.week===s.week&&r.name===e.name&&r.rank===1).map(r=>({b,r})))[0];
+    const events=worldEvents(s.week),settledEvents=new Map();
+    if(events.length)for(const b of s.birds)for(const r of b.records)
+      if(r.week===s.week&&r.rank===1&&!settledEvents.has(r.name))settledEvents.set(r.name,{b,r});
+    for(const e of events) {
+      const settled=settledEvents.get(e.name);
       if(settled){if(e.level==='GI')notes.push(`GⅠ ${e.name}：${farmName(settled.b,s)}の${settled.b.name}が優勝。`);continue;}
       let funds=s.money;
       const players=own(s).filter(b=>{const ok=plannedRaces.get(b.id)?.id===e.id&&b.condition>=75&&b.strain<25&&!b.health&&funds>=e.fee;if(ok)funds-=e.fee;return ok;});
@@ -1041,10 +1239,10 @@
       for(const b of players){const result=race(s,b,e,runs);if(result)results.push({...result,birdId:b.id,birdName:b.name});}
       if(e.level==='GI'){const winner=runs[0];notes.push(`GⅠ ${e.name}：${winner.farm}の${winner.name}が優勝。`);}
     }
-    // Ordinary races also share one field, so a farm career is settled only once
-    // when several player birds are scheduled for the same event.
-    const ordinaryEvents=new Map([...plannedRaces.values()].filter(e=>e?.week===s.week&&!/^G/.test(e.level)).map(e=>[e.id,e]));
-    for(const e of ordinaryEvents.values()){
+    // Untracked grades and ordinary races run only with player entrants, sharing
+    // one temporary field even when several player birds enter the same event.
+    const playerEvents=new Map([...plannedRaces.values()].filter(e=>e?.week===s.week&&!worldRoute(e)).map(e=>[e.id,e]));
+    for(const e of playerEvents.values()){
       let funds=s.money;
       const players=own(s).filter(b=>{const ok=plannedRaces.get(b.id)?.id===e.id&&b.condition>=75&&b.strain<25&&!b.health&&funds>=e.fee;if(ok)funds-=e.fee;return ok;});
       if(!players.length)continue;
@@ -1137,6 +1335,10 @@
     if(!['birds','sale','reports','journal','ledger','awards','founderOffers'].every(k=>Array.isArray(s[k]))||!s.milestones||!Number.isInteger(s.marketYear)||!Number.isInteger(s.lastAnnual))return false;
     if(s.birds.length>50000||new Set(s.birds.map(b=>b.id)).size!==s.birds.length)return false;
     const byId=new Map(s.birds.map(b=>[b.id,b]));
+    if(s.firstWins!==undefined&&(!s.firstWins||typeof s.firstWins!=='object'||Array.isArray(s.firstWins)||
+      !Object.entries(s.firstWins).every(([key,r])=>(['win','graded','g3','g2','g1','derby'].includes(key)||key.startsWith('g1:')&&key.length<=100)&&
+        r&&Number.isInteger(r.week)&&r.week>=9&&r.week<=s.week&&byId.has(r.birdId)&&
+        typeof r.birdName==='string'&&r.birdName.length>0&&r.birdName.length<=40&&typeof r.raceName==='string'&&r.raceName.length<=100)))return false;
     if(!s.birds.every(b=>Array.isArray(b.parents)&&b.parents.length<=2&&b.parents.every(id=>id===null||byId.has(id))))return false;
     const visited=new Set(),active=new Set();
     for(const b of s.birds){
@@ -1175,12 +1377,19 @@
   // only at the storage boundary; the simulation always uses ordinary arrays.
   function serializeState(s) {
     const fields=[],indices=new Map(),replays=[],replayIndices=new Map(),pack=loci=>loci.map(p=>p[0]*2+p[1]).join('');
+    // Identity avoids serializing the same shared value repeatedly. Content
+    // deduplication still handles equal but independent copies from old saves.
+    // These maps are discarded after each full save, so later edits are included.
+    const fieldObjects=new Map(),replayObjects=new Map();
+    const intern=(value,objects,byContent,values)=>{
+      if(objects.has(value))return objects.get(value);
+      const key=JSON.stringify(value);let index=byContent.get(key);
+      if(index===undefined){index=values.length;byContent.set(key,index);values.push(value);}
+      objects.set(value,index);return index;
+    };
     const record=r=>{
-      const key=JSON.stringify(r.field);let index=indices.get(key);
-      if(index===undefined){index=fields.length;indices.set(key,index);fields.push(r.field);}
-      const result={...r,field:index};
-      if(r.replay){const key=JSON.stringify(r.replay);let index=replayIndices.get(key);
-        if(index===undefined){index=replays.length;replayIndices.set(key,index);replays.push(r.replay);}result.replay=index;}
+      const result={...r,field:intern(r.field,fieldObjects,indices,fields)};
+      if(r.replay)result.replay=intern(r.replay,replayObjects,replayIndices,replays);
       return result;
     };
     const birds=s.birds.map(b=>({...b,genome:{...b.genome,
@@ -1210,5 +1419,5 @@
     for(const report of [...(s.reports||[]),...(s.journal||[])])for(const r of report.results||[])unpackRecord(r);
     delete s.packedGenomes;delete s.raceFields;delete s.raceReplays;return s;
   }
-  return {worldHistory,raceOutlook,geneticTraitRating,paternalRoot,lineageFounder,BREEDING_FRUITS,breedingCost,Names,DEFAULT_NAMING,namingSettings,unavailableNames,breedingPreview,breedingOpen,abilityProgress,TRAINING_MENUS,raceOptions,setSchedule,weeklyPlan,upcomingSchedule,validBirdName,generatedName,crossRisk,crossReason,constitution,serializeState,deserializeState,Breeding,DEFECTS,DEFECT_LABELS,pedigree,breedingCrosses,crossPlan,createBird,worldRoster,calendar,g1Points,pedigreeBonus,rating,geneticRating,geneticEffectRating,geneticBreakdown,geneticScores,profile,farmName,MAJOR_FARMS,searchSires,marePrice,VERSION,SAVE_KEY,YEAR,GESTATION,PERSONALITY,MANAGEMENT,FACILITIES,ROOTS,TITLES,EIGHT,Mapping,Genetics,Ground,date,when,initial,refreshRoots,upgradeState,own,bird,age,capacity,racingCount,labLevel,quality,saleOpen,sires,studFee,breedFee,buy,sellMareReason,sellMare,releaseStudReason,releaseStud,breedingReason,breed,observe,currentAbilities,facilityCost,facilityReason,build,setPasture,setPolicy,rename,retire,classFor,nextRace,eligible,simulateBird,simulateField,race,founderEligible,promote,acknowledge,advance,validState};
+  return {worldHistory,raceOutlook,geneticTraitRating,paternalRoot,lineageFounder,BREEDING_FRUITS,breedingCost,Names,DEFAULT_NAMING,namingSettings,unavailableNames,breedingExpectation,breedingPreview,breedingOpen,abilityProgress,TRAINING_MENUS,raceOptions,setSchedule,weeklyPlan,upcomingSchedule,validBirdName,generatedName,crossRisk,crossReason,constitution,serializeState,deserializeState,Breeding,DEFECTS,DEFECT_LABELS,pedigree,breedingCrosses,crossPlan,createBird,worldRoster,calendar,g1Points,pedigreeBonus,rating,geneticRating,geneticEffectRating,geneticBreakdown,geneticScores,profile,farmName,MAJOR_FARMS,searchSires,marePrice,VERSION,SAVE_KEY,YEAR,GESTATION,PERSONALITY,MANAGEMENT,FACILITIES,ROOTS,TITLES,EIGHT,Mapping,Genetics,Ground,date,when,initial,refreshRoots,upgradeState,own,bird,age,capacity,racingCount,labLevel,quality,saleOpen,sires,studFee,breedFee,buy,sellMareReason,sellMare,releaseStudReason,releaseStud,breedingReason,breed,observe,currentAbilities,facilityCost,facilityReason,build,setPasture,setPolicy,rename,retire,classFor,nextRace,eligible,simulateBird,simulateField,race,founderEligible,promote,acknowledge,advance,validState};
 });

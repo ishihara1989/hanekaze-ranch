@@ -142,6 +142,20 @@ test('search combines ranch or winning race names with route and prioritized tra
   assert.equal(R.searchSires(s,{query:'存在しない名前'}).length,0);
 });
 
+test('offspring order combines search filters and ranks the selected pairing without consuming randomness',()=>{
+  const s=R.initial(),dam=R.bird(s,s.sale[0]),before=JSON.stringify(s);
+  const average=b=>Object.values(R.breedingExpectation(s,b,dam)).reduce((n,v)=>n+v,0)/8;
+  const sorted=R.searchSires(s,{sort:'offspring',dam});
+  assert.ok(sorted.every((b,i)=>!i||average(sorted[i-1])>=average(b)));
+  const target=sorted.find(b=>b.records.some(r=>r.level==='GI'&&r.rank===1&&r.surface==='dirt'));
+  const rating=R.geneticTraitRating(target,'power');
+  const filtered=R.searchSires(s,{sort:'offspring',dam,route:'dirt',query:target.farm,geneticFilters:[{trait:'power',rating}]});
+  assert.ok(filtered.includes(target));
+  assert.deepEqual(filtered,sorted.filter(b=>b.farm===target.farm&&R.geneticTraitRating(b,'power')===rating&&b.records.some(r=>r.level==='GI'&&r.rank===1&&r.surface==='dirt')));
+  assert.deepEqual(R.searchSires(s,{sort:'offspring'}),R.searchSires(s,{sort:'fee'}));
+  assert.equal(JSON.stringify(s),before);
+});
+
 test('sire genetic search uses inherited aggregate ratings and combines all conditions with text and route',()=>{
   const s=R.initial(),original=JSON.stringify(s);
   const candidate=publicSires(s).find(b=>b.records.some(r=>r.level==='GI'&&r.rank===1&&r.surface==='dirt'));

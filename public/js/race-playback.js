@@ -54,7 +54,10 @@ export class RacePlayback {
       shown.slice(start,start+5).forEach((r,i)=>{const row=document.createElement('li');row.className=[r.player?'is-player':'',r.id===paddock?.runner.id?'is-paddock-focus':''].filter(Boolean).join(' ');
         if(paddock)row.setAttribute('aria-current',String(r.id===paddock.runner.id));
         const rank=document.createElement('span');rank.textContent=String(racing?i+1:r.lane+1);const name=document.createElement('b');name.textContent=r.name;
-        const gap=document.createElement('small');gap.textContent=!racing?(r.id===paddock?.runner.id?'紹介中':`${r.lane+1}番`):r.finished?'入線':i===0?'先頭':`${Math.max(0,order[0].distance-r.distance).toFixed(1)}m`;
+        const gap=document.createElement('small');gap.textContent=!racing?(r.id===paddock?.runner.id?'紹介中':`${r.lane+1}番`):
+          r.finished?(i===0?format(r.time):`${R.finishGap(this.replay,r.id).toFixed(1)}m`):
+          i===0?'先頭':`${Math.max(0,order[0].distance-r.distance).toFixed(1)}m`;
+        if(racing&&r.finished)gap.setAttribute('title',i===0?'走破タイム':'前の着順の羽がゴールした時点の残り距離');
         row.append(rank,name,gap);list.append(row);});this.lastListTime=this.time;this.listPhase=phase;this.lastPaddockIndex=paddock?.index;
     }
     this.$('[data-viewer-seek]').value=this.time;

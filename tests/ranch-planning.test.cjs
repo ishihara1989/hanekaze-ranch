@@ -6,6 +6,13 @@ const Observation=require('../public/js/ranch-observation.js');
 const copy=x=>JSON.parse(JSON.stringify(x));
 const read=s=>{while(s.reports.length)R.acknowledge(s);};
 const ranch=()=>{const s=R.initial();s.stage='running';return {s,b:R.own(s)[0]};};
+const openContender=()=>{
+  const {s,b}=ranch();Object.assign(s,{week:11,money:1000000000,reports:[]});
+  Object.assign(b,{birthYear:-3,wins:4,races:4,lastRace:7});
+  b.genome.distance=[0,0];b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
+  for(const key in b.potential){b.potential[key]=150;b.training[key]=1;}
+  return {s,b,g2:R.calendar(11).find(e=>e.name==='金色リヴァイアサン賞'),g1:R.calendar(13).find(e=>e.name==='リヴァイアサン記念')};
+};
 
 test('breeding only permits all eight spring weeks, including boundaries and later years',()=>{
   for(const week of [8,9,12,13,16,17,48,49,56,57,64,65]){
@@ -70,6 +77,43 @@ test('aptitude and development forecasts include segregation and possible or gua
   check({min:62.5,max:150});
   dam.parents=[root.id,null];
   check({min:150,max:150});
+});
+
+test('offspring expectation accounts for favorable inheritance, body traits, latent defects and honours without sampling',()=>{
+  const s=R.initial(),sire=R.sires(s)[0],dam=R.bird(s,s.sale[0]);
+  sire.parents=[];dam.parents=[];sire.records=[];dam.records=[];
+  for(const parent of [sire,dam]){
+    parent.genome.defects={};parent.genome.distance=[0,0];parent.genome.release=[0,0];
+    for(const {key} of R.Mapping.ABILITIES)parent.genome.quality[key]=Array.from({length:32},()=>[0,1]);
+  }
+  const before=JSON.stringify(s),base=R.breedingExpectation(s,sire,dam);
+  assert.equal(JSON.stringify(s),before);
+  for(const {key} of R.Mapping.ABILITIES)assert.equal(base[key],90);
+  s.facilities.stalls=9;
+  assert.equal(R.breedingExpectation(s,sire,dam).power,110);
+  s.facilities.stalls=1;
+  const defect=Object.keys(R.DEFECTS).find(id=>R.DEFECTS[id].trait==='power');
+  for(const parent of [sire,dam])parent.genome.defects[defect]=Array.from({length:4},()=>[0,1]);
+  assert.equal(R.breedingExpectation(s,sire,dam).power,88,'each latent locus has a 25% expression chance');
+  sire.genome.release=[1,1];dam.genome.distance=[1,1];
+  assert.equal(R.breedingExpectation(s,sire,dam).power,86,'body effects use expected inherited alleles');
+  sire.records=[{rank:1,level:'GI',surface:'turf',distance:1200,name:'テスト杯'}];
+  const bonus=R.pedigreeBonus(s,sire,dam).power;
+  assert.equal(R.breedingExpectation(s,sire,dam).power,86+(bonus.lower+bonus.upper)/2);
+});
+
+test('offspring expectation weights cross mutations by probability instead of preview extremes',()=>{
+  const s=R.initial(),root=R.sires(s)[0],sire=R.createBird(s,{sex:'M'}),dam=R.createBird(s,{sex:'F'}),middle=R.createBird(s,{});
+  const key=R.ROOTS.find(p=>p.lineage===root.lineage).primary;
+  for(const parent of [sire,dam]){
+    parent.records=[];parent.genome.defects={};parent.genome.distance=[0,0];parent.genome.release=[0,0];
+    parent.genome.quality[key]=Array.from({length:32},()=>[0,0]);
+  }
+  root.records=[];middle.records=[];
+  sire.parents=[root.id,null];middle.parents=[root.id,null];dam.parents=[middle.id,null];
+  const plan=R.crossPlan(s,sire,dam),bonus=R.pedigreeBonus(s,sire,dam)[key];
+  const expected=50+plan.filter(p=>p.group==='quality'&&p.key===key).reduce((n,p)=>n+2.5*p.rate,0)+(bonus.lower+bonus.upper)/2;
+  assert.ok(expected>50);assert.equal(R.breedingExpectation(s,sire,dam)[key],expected);
 });
 
 test('ability progress separates development, age loss and remaining potential and keeps the value calculation',()=>{
@@ -142,4 +186,51 @@ test('resting this week still exposes a later booking without permitting an auto
   R.setSchedule(s,b.id,s.week+4,{mode:'race',eventId:event.id});R.setSchedule(s,b.id,s.week,{mode:'rest'});
   assert.equal(R.nextRace(s,b).id,event.id);assert.equal(R.weeklyPlan(s,b).mode,'rest');
   assert.equal(R.upcomingSchedule(s,b)[4].event.id,event.id);
+});
+
+test('both policies skip an earlier G2 for a suitable G1 blocked by the four-week interval',()=>{
+  for(const policy of ['steady','challenge']){
+    const {s,b,g2,g1}=openContender();b.policy=policy;
+    assert.equal(R.raceOutlook(s,b,g1).contender,true);
+    const before=JSON.stringify(s),rows=R.upcomingSchedule(s,b);
+    assert.equal(R.nextRace(s,b).id,g1.id);assert.equal(JSON.stringify(s),before);
+    assert.deepEqual(rows.slice(0,3).map(r=>r.mode),['training','training','race']);assert.equal(rows[2].event.id,g1.id);
+    const loaded=R.deserializeState(R.serializeState(s));assert.equal(R.nextRace(loaded,R.bird(loaded,b.id)).id,g1.id);
+    R.advance(s);read(s);assert.equal(b.lastRace,7);assert.equal(b.races,4);
+    assert.equal(R.nextRace(s,b).id,g1.id);R.advance(s);read(s);R.advance(s);
+    assert.equal(b.lastRace,g1.week);assert.equal(b.records.at(-1).name,g1.name);
+    assert.ok(!b.records.some(r=>r.name===g2.name));
+  }
+});
+
+test('a G1 three weeks away replaces G2, but an exact four-week gap keeps both races available',()=>{
+  for(const policy of ['steady','challenge']){
+    const {s,b,g1}=openContender();b.policy=policy;s.week=10;
+    assert.equal(R.nextRace(s,b).id,g1.id,'three weeks after the earlier target');
+    s.week=9;b.lastRace=5;
+    const prep=R.nextRace(s,b);assert.equal(prep.week,9);assert.equal(prep.level,'GII');
+    b.lastRace=9;s.week=10;assert.equal(R.nextRace(s,b).id,g1.id,'four weeks after the prep');
+  }
+});
+
+test('steady policy keeps a winnable G2 when the upcoming G1 has stronger rivals',()=>{
+  const {s,b,g2,g1}=openContender();s.week=g1.week;
+  for(const rival of R.worldRoster(s,g1).filter(r=>!r.filler)){
+    for(const key in rival.potential){rival.potential[key]=150;rival.training[key]=1;}
+    rival.genome.traits.aptitude.turf=[1,1];
+  }
+  s.week=g2.week;
+  assert.equal(R.raceOutlook(s,b,g1).contender,false);assert.equal(R.raceOutlook(s,b,g2).contender,true);
+  const before=JSON.stringify(s);assert.equal(R.nextRace(s,b).id,g2.id);assert.equal(JSON.stringify(s),before);
+});
+
+test('automatic upgrades preserve manual bookings and ignore unavailable G1 races',()=>{
+  for(const policy of ['steady','challenge']){
+    const {s,b,g2,g1}=openContender();b.policy=policy;
+    R.setSchedule(s,b.id,g2.week,{mode:'race',eventId:g2.id});assert.equal(R.nextRace(s,b).id,g2.id);
+    R.setSchedule(s,b.id,g2.week,{mode:'auto'});
+    R.setSchedule(s,b.id,g1.week,{mode:'rest'});assert.equal(R.nextRace(s,b).id,g2.id);
+    R.setSchedule(s,b.id,g1.week,{mode:'auto'});
+    s.money=g2.fee;assert.ok(s.money<g1.fee);assert.equal(R.nextRace(s,b).id,g2.id);
+  }
 });

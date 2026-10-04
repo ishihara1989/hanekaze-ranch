@@ -189,8 +189,10 @@ test('sale mares inherit a real source father; all racing and market NPCs inheri
     assert.ok(R.pedigree(s,b).some(row=>row.depth>=1));
   }
   assert.ok(npcs.some(b=>b.parents.some(id=>R.bird(s,id).parents.length)));
+  const before=copy(s);
   const ordinary=R.worldRoster(s,R.calendar(s.week).find(e=>e.level==='new'));
-  assert.ok(ordinary.filter(b=>!b.filler).every(b=>s.birds.includes(b)&&b.parents.length===2));
+  assert.deepEqual(s,before);
+  assert.ok(ordinary.filter(b=>!b.filler).every(b=>!s.birds.includes(b)&&b.temporary&&b.parents.length===0));
   assert.ok(ordinary.filter(b=>b.filler).every(b=>!s.birds.includes(b)&&b.genome===undefined));
   const saved=R.serializeState(s);assert.deepEqual(R.deserializeState(saved),s);assert.ok(R.validState(R.deserializeState(saved)));
   const bytes=Buffer.byteLength(saved,'utf8');

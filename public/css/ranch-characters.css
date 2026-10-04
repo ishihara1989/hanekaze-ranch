@@ -1,0 +1,13 @@
+/* Fit the selected source region inside the actual frame, including after resize. */
+.character-portrait{display:block;container-type:size;overflow:hidden;--portrait-align-y:1}
+.character-portrait[data-framing="head"]{--portrait-align-y:0}
+.character-portrait[data-framing="face"]{--portrait-align-y:.5}
+.character-portrait>img{
+  --art-unit:min(calc(100cqw / var(--focus-width)),calc(100cqh / var(--focus-height)));
+  position:absolute;max-width:none;
+  width:calc(var(--art-width) * var(--art-unit));height:calc(var(--art-height) * var(--art-unit));
+  left:calc(50% - (var(--focus-x) + var(--focus-width) / 2) * var(--art-unit));
+  top:calc((100cqh - var(--focus-height) * var(--art-unit)) * var(--portrait-align-y) - var(--focus-y) * var(--art-unit));
+}
+.letter-portrait .character-portrait,.report-modal .letter-portrait .character-portrait,
+.avatar .portrait.character-portrait{inset:0;width:100%;height:100%;transform:none}

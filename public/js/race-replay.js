@@ -69,6 +69,12 @@
     return replay.runners.map(r=>({...r,...sample(r,time)})).sort((a,b)=>
       Number(b.finished)-Number(a.finished)||(a.finished?a.time-b.time:b.distance-a.distance)||a.lane-b.lane);
   }
+  // Each margin is measured when the immediately preceding finisher crossed.
+  function finishGap(replay,id){
+    const finishers=replay.runners.filter(r=>r.finished).sort((a,b)=>a.time-b.time||a.lane-b.lane),
+      index=finishers.findIndex(r=>r.id===id);
+    return index>0?Math.max(0,replay.distance-sample(finishers[index],finishers[index-1].time).distance):null;
+  }
   // The result stays at the official finish. Only the visible bird runs on.
   // Two seconds at finishing speed, then six seconds of smooth deceleration.
   function visualSample(runner,time){
@@ -85,11 +91,14 @@
       title:['勝利の記念撮影','GⅢ 優勝セレモニー','GⅡ 優勝セレモニー','GⅠ 栄光の表彰式'][tier]};
   }
   function timeline(record){
-    const raceEnd=Math.max(...record.replay.runners.map(r=>r.time));
+    const fullRaceEnd=Math.max(...record.replay.runners.map(r=>r.time)),
+      finishers=record.replay.runners.filter(r=>r.finished).sort((a,b)=>a.time-b.time||a.lane-b.lane),
+      lastShown=finishers[Math.min(4,finishers.length-1)],
+      raceEnd=lastShown?Math.min(fullRaceEnd,lastShown.time+3):fullRaceEnd;
     const awarded=record.rank===1&&record.finished!==false;
     const gate=PADDOCK.intro+record.replay.runners.length*PADDOCK.runnerSeconds,race=gate+6;
     return {paddock:0,gate,race,result:race+raceEnd,award:awarded?race+8+raceEnd:null,
-      end:race+8+raceEnd+(awarded?16:0),raceEnd};
+      end:race+8+raceEnd+(awarded?16:0),raceEnd,fullRaceEnd};
   }
   // One immutable pre-race snapshot per entrant; results and samples are never
   // consulted by the paddock assessment, including when watching a saved race.
@@ -201,7 +210,9 @@
   // Official standings stay separate from the visible run-out after the finish.
   function frame(record,track={},time=0){
     const clock=timeline(record),at=clamp(time,0,clock.end),stage=phase(record,at),
-      raceTime=Math.max(0,at-clock.race),racing=stage==='race'||stage==='result',
+      // At the cut, skip the unseen tail and show the complete recorded result.
+      raceTime=Math.max(0,at-clock.race)+(['result','award'].includes(stage)?clock.fullRaceEnd-clock.raceEnd:0),
+      racing=stage==='race'||stage==='result',
       order=standings(record.replay,raceTime),runners=record.replay.runners.map(entry=>{
         const state=racing?visualSample(entry,raceTime):{distance:0,lateral:entry.lane,speed:0,stopped:true},
           p=position(state.distance,state.lateral,record,track);
@@ -408,5 +419,5 @@
       add(t.award+6,'sahagin','表彰台で翼を振って、応援に応えています。牧場にとって大切な一勝ですね。');}
     return cues.sort((a,b)=>a.at-b.at);
   }
-  return {MODES,COLORS,METRES,PADDOCK,capture,valid,validPaddock,paddockOrder,paddockAt,paddockAssessments,paddockComment,sample,visualSample,standings,ceremony,timeline,phase,course,position,frame,cameraShot,commentary};
+  return {MODES,COLORS,METRES,PADDOCK,capture,valid,validPaddock,paddockOrder,paddockAt,paddockAssessments,paddockComment,sample,visualSample,standings,finishGap,ceremony,timeline,phase,course,position,frame,cameraShot,commentary};
 });

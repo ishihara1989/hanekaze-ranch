@@ -57,10 +57,10 @@ test('future plans apply next calendar year age restrictions and keep the four-w
   b.birthYear=-8;assert.equal(R.nextRace(s,b),null);
 });
 
-test('steady policy targets winnable stakes with two wins, falls back against stronger rivals and preserves previews',()=>{
+test('steady policy targets winnable stakes in open class, falls back against stronger rivals and preserves previews',()=>{
   const s=R.initial(),b=R.own(s)[0];
   Object.assign(s,{week:13,money:1000000});
-  Object.assign(b,{birthYear:-3,wins:2,races:2,policy:'steady',lastRace:9});
+  Object.assign(b,{birthYear:-3,wins:4,races:4,policy:'steady',lastRace:9});
   b.genome.distance=[0,0];b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
   for(const key in b.potential){b.potential[key]=150;b.training[key]=1;}
   const before=JSON.stringify(s),event=R.nextRace(s,b);
@@ -77,17 +77,17 @@ test('steady policy targets winnable stakes with two wins, falls back against st
   assert.equal(R.raceOutlook(s,b,event).contender,false);
   assert.ok(!/^G/.test(R.nextRace(s,b).level),'weak bird returns to its ordinary class');
   for(const key in b.potential)b.potential[key]=150;
-  b.wins=1;assert.ok(!/^G/.test(R.nextRace(s,b).level),'two wins remain necessary');
-  b.wins=2;s.money=1000;assert.ok(!/^G/.test(R.nextRace(s,b).level),'unaffordable stakes do not block ordinary races');
+  b.wins=3;assert.ok(!/^G/.test(R.nextRace(s,b).level),'four-year-olds need four wins without open or graded victories');
+  b.wins=4;s.money=1000;assert.ok(!/^G/.test(R.nextRace(s,b).level),'unaffordable stakes do not block ordinary races');
 });
 
 test('steady stakes forecasts respect the live field, distance, surface, race spacing and health',()=>{
   const s=R.initial(),b=R.own(s)[0];
   Object.assign(s,{week:13,money:1000000,stage:'running',reports:[]});
-  Object.assign(b,{birthYear:-3,wins:2,races:2,lastRace:9});
+  Object.assign(b,{birthYear:-3,wins:4,races:4,lastRace:9});
   b.genome.distance=[0,0];b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
   for(const key in b.potential){b.potential[key]=150;b.training[key]=1;}
-  const e=R.nextRace(s,b);assert.ok(/^G/.test(e.level));
+  const e=R.calendar(s.week).find(e=>e.level==='GI');assert.ok(e);
   const rivals=R.worldRoster(s,e);
   for(const r of rivals){for(const key in r.potential){r.potential[key]=50;r.training[key]=1;}}
   const easy=R.raceOutlook(s,b,e);assert.equal(easy.contender,true);
@@ -101,6 +101,7 @@ test('steady stakes forecasts respect the live field, distance, surface, race sp
     Object.assign(b,patch);assert.equal(R.weeklyPlan(s,b).mode,'rest');
   }
   Object.assign(b,{condition:100,strain:0,health:0});
+  for(const r of rivals)for(const key in r.potential)r.potential[key]=50;
   // The real weekly advance must enter the selected shared stakes field.
   const selected=R.nextRace(s,b);R.advance(s);
   assert.equal(selected.week,13);assert.ok(/^G/.test(selected.level));

@@ -14,7 +14,7 @@ test('annual public roster replaces exactly ten; expired sires retain their pedi
     for(const id of previous.filter(id=>!current.includes(id))){assert.equal(R.bird(s,id).role,'archived');assert.ok(R.bird(s,id).records.length);}
     previous=current;
   }
-  const bytes=Buffer.byteLength(R.serializeState(s),'utf8');
+  const raw=R.serializeState(s),bytes=Buffer.byteLength(raw,'utf8'),loaded=R.deserializeState(raw);
+  assert.deepEqual(loaded,s);assert.ok(R.validState(loaded));
   assert.ok(R.validState(s));assert.ok(bytes<20*1024*1024,`six-year save exceeds backup import limit: ${bytes}`);
 });
-

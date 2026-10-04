@@ -163,6 +163,7 @@ test('version 1 saves gain neutral course genes while preserving birds, RNG and 
   assert.deepEqual(restored.birds.filter(b=>b.kind==='root').map(b=>b.id),before.birds.filter(b=>b.kind==='root').map(b=>b.id));
   for(const old of before.birds.filter(b=>b.kind!=='root')){
     const expected=copy(old);for(const key of Object.keys(G.COURSE_APTITUDES))expected.genome.traits.aptitude[key]=[.5,.5];
+    if(expected.owner==='sale')expected.price=R.marePrice(expected);
     assert.deepEqual(R.bird(restored,old.id),expected);
   }
   restored.facilities.lab=1;

@@ -19,7 +19,7 @@ function harness(){
 }
 const record={birdId:'own',distance:1200,rank:2,time:60,finished:true,level:'open',name:'試走',
   field:[{id:'rival',name:'ライバル',time:50,finished:true},{id:'own',name:'アオバ',time:60,finished:true}],
-  replay:{runners:[{id:'own',name:'アオバ',lane:0,player:true,time:60,finished:true,samples:[[0,0,20,0],[60,1200,20,0]]},
+  replay:{distance:1200,runners:[{id:'own',name:'アオバ',lane:0,player:true,time:60,finished:true,samples:[[0,0,20,0],[60,1200,20,0]]},
     {id:'rival',name:'ライバル',lane:1,player:false,time:50,finished:true,samples:[[0,0,24,0],[50,1200,24,0]]}]}};
 
 test('shared playback restores controls, updates standings after a rewind, and removes every listener',async()=>{
@@ -46,6 +46,32 @@ test('shared playback restores controls, updates standings after a rewind, and r
     const hidden=new RacePlayback(h.root,record,{}, {...options,paused:false,time:1000,focusId:'missing'});
     assert.equal(hidden.paused,true);assert.equal(hidden.time,hidden.timeline.end);assert.equal(hidden.focusId,'own');hidden.dispose();
     assert.equal(JSON.stringify(record),before);
+  }finally{for(const [key,value] of Object.entries(original)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
+});
+
+test('finish HUD shows the winning time and the fixed margin to the preceding finisher, including after rewinding',async()=>{
+  const original={RaceReplay:globalThis.RaceReplay,document:globalThis.document,window:globalThis.window,matchMedia:globalThis.matchMedia};
+  const h=harness();Object.assign(globalThis,{RaceReplay:Replay,document:h.document,window:{},matchMedia:()=>({matches:false})});
+  try{
+    const {RacePlayback}=await import('../public/js/race-playback.js');
+    const third={id:'third',name:'ミドリ',lane:2,time:80,finished:true,samples:[[0,0,15,0],[80,1200,15,0]]},
+      source={...record,field:[...record.field,third],replay:{...record.replay,runners:[...record.replay.runners,third]}},
+      before=JSON.stringify(source),viewer=new RacePlayback(h.root,source,{}, {paused:true});
+    const show=time=>{
+      viewer.time=viewer.timeline.race+time;
+      viewer.updateOverlay('race',Replay.standings(source.replay,time),time);
+      return h.element('[data-live-order]').children.map(row=>row.children[2].textContent);
+    };
+    assert.deepEqual(show(40),['先頭','160.0m','360.0m']);
+    assert.deepEqual(show(50),['0:50.00','200.0m','450.0m']);
+    assert.deepEqual(show(60),['0:50.00','200.0m','300.0m']);
+    assert.deepEqual(show(80),['0:50.00','200.0m','300.0m']);
+    assert.deepEqual(show(90),['0:50.00','200.0m','300.0m']);
+    assert.deepEqual(show(40),['先頭','160.0m','360.0m']);
+    viewer.time=viewer.timeline.result;
+    const frame=viewer.readFrame();viewer.updateOverlay(frame.phase,frame.order,frame.raceTime);
+    assert.deepEqual(h.element('[data-live-order]').children.map(row=>row.children[2].textContent),['0:50.00','200.0m','300.0m']);
+    viewer.dispose();assert.equal(JSON.stringify(source),before);
   }finally{for(const [key,value] of Object.entries(original)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });
 

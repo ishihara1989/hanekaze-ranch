@@ -19,8 +19,8 @@ test('loading an existing ranch refreshes the old sale introduction without chan
   assert.deepEqual(loaded,expected);assert.ok(R.validState(loaded));
 });
 test('purchase and breeding charge exactly once, reserve a foal stall, and produce inherited genes',()=>{
-  const s=R.initial(),mother=R.bird(s,s.sale[0]),father=R.sires(s)[0];R.buy(s,mother.id);assert.equal(s.money,17200);assert.equal(s.stage,'breed');
-  assert.throws(()=>R.buy(s,mother.id));read(s);R.breed(s,mother.id,father.id);assert.equal(s.money,16600);assert.equal(R.racingCount(s),2);assert.throws(()=>R.breed(s,mother.id,father.id));
+  const s=R.initial(),mother=R.bird(s,s.sale[0]),father=R.sires(s)[0],price=R.marePrice(mother);R.buy(s,mother.id);assert.equal(s.money,20000-price);assert.equal(s.stage,'breed');
+  assert.throws(()=>R.buy(s,mother.id));read(s);R.breed(s,mother.id,father.id);assert.equal(s.money,20000-price-600);assert.equal(R.racingCount(s),2);assert.throws(()=>R.breed(s,mother.id,father.id));
   const genes=copy(mother.genome);progress(s,4);const child=R.own(s).find(b=>b.role==='young');assert.ok(child);assert.equal(s.week,13);assert.equal(R.age(s,child),0);assert.equal(R.racingCount(s),2);assert.equal(mother.pregnancy,null);
   for(const key in child.genome.quality)for(let i=0;i<32;i++){assert.ok(father.genome.quality[key][i].includes(child.genome.quality[key][i][0]));assert.ok(genes.quality[key][i].includes(child.genome.quality[key][i][1]));}
   assert.ok(s.reports.some(r=>r.type==='birth'));assert.ok(R.validState(s));
@@ -61,7 +61,14 @@ test('winning unlocks one-time conversations, fan bonuses and research; race set
 });
 test('facility caps, cash guards and separate bird capacities are enforced',()=>{
   const s=founded();assert.match(R.facilityReason(s,'lab'),/レース初勝利/);assert.throws(()=>R.build(s,'lab'));
-  s.money=200000000;for(let i=0;i<3;i++)R.build(s,'stalls');assert.deepEqual(R.capacity(s),{racing:32,mare:16,stud:16});assert.throws(()=>R.build(s,'stalls'),/最大/);
+  s.money=300000000;for(let i=0;i<3;i++)R.build(s,'stalls');assert.deepEqual(R.capacity(s),{racing:32,mare:16,stud:16});
+  for(let level=5;level<=9;level++){
+    assert.equal(R.facilityCost(s,'stalls'),50000000);const money=s.money;R.build(s,'stalls');
+    assert.equal(s.money,money-50000000);assert.equal(s.facilities.stalls,level);
+    assert.deepEqual(R.capacity(s),{racing:32,mare:16,stud:16});assert.ok(R.validState(s));
+  }
+  assert.throws(()=>R.build(s,'stalls'),/最大/);assert.equal(R.validState({...s,facilities:{...s.facilities,stalls:10}}),false);
+  assert.deepEqual(R.deserializeState(R.serializeState(s)),s);
   s.money=0;assert.throws(()=>R.build(s,'pool'),/ギル/);assert.equal(s.facilities.pool,0);
 });
 test('pasture affects learning; training stays below inherited potential and recovery works',()=>{
@@ -87,7 +94,7 @@ test('monthly goods decay over five years and hall of fame sales never reach zer
 });
 test('reports block accidental progression; corrupt or malicious backup fields fail closed',()=>{
   const s=R.initial();R.buy(s,s.sale[0]);assert.throws(()=>R.advance(s),/報告/);assert.ok(R.validState(s));
-  for(const edit of [x=>x.money=NaN,x=>x.birds[0].potential.cardio=151,x=>x.reports[0].expression='" onerror="alert(1)',x=>x.reports[0].results='bad',x=>x.birds[0].id='" onclick="x',x=>x.facilities.stalls=5,x=>x.birds[0].genome.quality=null]) {
+  for(const edit of [x=>x.money=NaN,x=>x.birds[0].potential.cardio=151,x=>x.reports[0].expression='" onerror="alert(1)',x=>x.reports[0].results='bad',x=>x.birds[0].id='" onclick="x',x=>x.facilities.stalls=10,x=>x.birds[0].genome.quality=null]) {
     const malformed=copy(s);edit(malformed);assert.equal(R.validState(malformed),false);
   }
 });

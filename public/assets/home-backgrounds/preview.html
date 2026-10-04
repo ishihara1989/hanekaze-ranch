@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>羽風牧場 — 四季の背景</title>
+  <link rel="stylesheet" href="../../css/ranch.css">
+  <style>
+    .preview{max-width:1200px;margin:auto;padding:28px}
+    .preview h1{font-size:24px;margin-bottom:8px}
+    .preview>p{margin-bottom:18px;color:var(--muted)}
+    .season-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}
+    .season-choice{padding:0;overflow:hidden;border:2px solid transparent;border-radius:8px;background:var(--paper);color:var(--ink)}
+    .season-choice[aria-pressed="true"]{border-color:var(--green)}
+    .season-choice img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover}
+    .season-choice span{display:block;padding:8px}
+    @media(max-width:650px){.preview{padding:20px 17px}.season-choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+  </style>
+</head>
+<body>
+<main class="preview">
+  <h1>牧場の四季</h1>
+  <p>季節を選ぶと、シロマと重ねた背景を確認できます。</p>
+  <section class="home-scene">
+    <img id="background" class="landscape" src="spring-v1.webp" width="1536" height="1024" alt="" aria-hidden="true" fetchpriority="high">
+    <img class="portrait shiroma" src="../shiroma/shiroma-neutral.png" alt="シロマ">
+    <div class="dialogue"><div class="dialogue-top"><span class="speaker">シロマ</span><span id="season" class="tag">春 · 3〜5月</span></div><p>今週も、のんびりいきましょう。</p><div class="dialogue-actions"><button type="button" class="button primary" disabled>次の週へ <span>→</span></button></div></div>
+  </section>
+  <div class="season-choices" aria-label="季節を選択">
+    <button class="season-choice" data-season="spring" aria-pressed="true"><img src="spring-v1.webp" alt="桜と若草の牧場"><span>春 · 3〜5月</span></button>
+    <button class="season-choice" data-season="summer" aria-pressed="false"><img src="summer-v1.webp" alt="緑と青空の牧場"><span>夏 · 6〜8月</span></button>
+    <button class="season-choice" data-season="autumn" aria-pressed="false"><img src="autumn-v1.webp" alt="紅葉の牧場"><span>秋 · 9〜11月</span></button>
+    <button class="season-choice" data-season="winter" aria-pressed="false"><img src="winter-v1.webp" alt="雪景色の牧場"><span>冬 · 12〜2月</span></button>
+  </div>
+</main>
+<script>
+  document.querySelectorAll('[data-season]').forEach(button=>button.addEventListener('click',()=>{
+    document.querySelector('#background').src=`${button.dataset.season}-v1.webp`;
+    document.querySelector('#season').textContent=button.querySelector('span').textContent;
+    document.querySelectorAll('[data-season]').forEach(choice=>choice.setAttribute('aria-pressed',String(choice===button)));
+  }));
+</script>
+</body>
+</html>

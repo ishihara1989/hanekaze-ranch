@@ -79,7 +79,8 @@ test('registration rejects protected or simultaneous duplicate names without any
 test('NPC racers and foundation birds use the matching gender stock until exhaustion',()=>{
   const s=R.initial();
   for(const sex of ['M','F']){
-    const event={...R.calendar(9).find(e=>/^G/.test(e.level)),sex:sex==='F'?'F':undefined,id:`name-test-${sex}`,minAge:3,maxAge:3,distance:1800,surface:'turf',level:'GI'};
+    s.week=sex==='F'?14:15;
+    const event=R.calendar(s.week).find(e=>e.name===(sex==='F'?'クリスタル賞':'神竜賞'));
     for(const b of R.worldRoster(s,event).filter(b=>!b.filler)){
       const affix=R.MAJOR_FARMS.find(f=>f.name===b.farm).prefix;assert.ok(b.name.startsWith(affix));assert.ok(R.Names[sex].includes(b.name.slice(affix.length)));
       for(const id of b.parents){const p=R.bird(s,id);if(p.npcFoundation)assert.ok(R.Names[p.sex].includes(p.name.slice(affix.length)));}
