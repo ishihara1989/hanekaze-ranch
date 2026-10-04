@@ -6,18 +6,10 @@ import tempfile
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from lib.static_site import EntryPage, collect_files, local_reference
-from lib.static_site import release_text as portable_text
+from lib.static_site import EntryPage, collect_files, local_reference, release_text
 
 
 REPO = Path(__file__).resolve().parent.parent
-
-
-def release_text(name, text):
-    text = portable_text(name, text)
-    if name == "js/race-viewer.js":
-        text = text.replace("new THREE.WebGLRenderer({", "new THREE.WebGLRenderer({preserveDrawingBuffer:true,")
-    return text
 
 
 def build_zip(source, output):

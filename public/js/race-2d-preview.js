@@ -1,6 +1,6 @@
 // A detached ranch produces ordinary recorded races; this page never saves.
 const R=globalThis.Ranch,Replay=globalThis.RaceReplay,root=document.querySelector('.race-viewer');
-const tracks=globalThis.RanchWorld.TRACKS,state=R.initial(),baseEvent={week:state.week,distance:2400,level:'open',minAge:2,maxAge:9};
+const tracks=globalThis.RanchWorld.TRACKS,state=R.initial(),baseEvent={id:'race-2d-preview',week:state.week,distance:2400,level:'open',minAge:2,maxAge:9};
 const birds=[R.own(state)[0],...R.worldRoster(state,{...baseEvent,trackId:'tenku',surface:'turf'})].slice(0,12);
 const colors=['golden','blue','red','white','green','black','rose','purple','yellow','gray'];
 birds.forEach((b,i)=>{b.color=colors[i%colors.length];b.crest=['yellow','blue','red','white','black','rainbow'][i%6];});
@@ -20,7 +20,7 @@ function recording(track){
       field:runs.map(({id,name,time,finished})=>({id,name,time,finished})),replay:Replay.capture(runs,event)};
   records.set(track.id,record);return record;
 }
-let viewer,renderer='2d',generation=0;
+let viewer,generation=0;
 async function show(){
   const token=++generation,source=tracks[courseSelect.value],record=recording(source),
     options={...viewer?.snapshot(),time:Math.min(viewer?.time??(query.get('phase')==='race'?Replay.timeline(record).race+10:0),Replay.timeline(record).end),pitch:Number(pitchSelect.value)};
@@ -31,17 +31,14 @@ async function show(){
   root.setAttribute('aria-label',`${source.name}の試走`);
   const status=root.querySelector('.race-loading');status.hidden=false;status.textContent='競走場とチョコボを準備しています…';
   root.querySelectorAll('[data-needs-viewer]').forEach(el=>el.disabled=true);
-  root.querySelector('.race-sections').hidden=renderer!=='2d';pitchLabel.hidden=renderer!=='2d';
-  root.querySelectorAll('[data-preview-renderer]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.previewRenderer===renderer)));
   const direction=root.querySelector('[data-preview-direction]'),standardRight=source.theme.includes('右回り'),
     right=direction.value==='auto'?standardRight:direction.value==='right',track={...source,theme:`${source.surface==='dirt'?'ダート':'芝'}・${right?'右回り':'左回り'}`};
   direction.querySelector('[value="auto"]').textContent=`標準：${standardRight?'右回り ←':'左回り →'}`;
   try{
-    const module=await import(renderer==='2d'?'./race-viewer-2d.js':'./race-viewer.js');if(token!==generation)return;
+    const module=await import('./race-viewer-2d.js');if(token!==generation)return;
     viewer=module.mount(root,record,track,options);
   }catch(error){if(token===generation){console.error(error);status.textContent='観戦を読み込めませんでした。ページを再読み込みしてください。';}}
 }
-root.querySelectorAll('[data-preview-renderer]').forEach(button=>button.addEventListener('click',()=>{renderer=button.dataset.previewRenderer;show();}));
 root.querySelector('[data-preview-direction]').addEventListener('change',show);
 courseSelect.addEventListener('change',()=>{root.querySelector('[data-preview-direction]').value='auto';show();});
 window.addEventListener('pagehide',()=>{generation++;viewer?.dispose();});

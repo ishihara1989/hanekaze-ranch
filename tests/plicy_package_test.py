@@ -46,16 +46,14 @@ class PackageTests(unittest.TestCase):
             names = set(archive.namelist())
             self.assertEqual(names, set(self.names))
             self.assertIn("index.html", names)
-            self.assertIn("vendor/three/LICENSE", names)
-            self.assertIn("vendor/three/GLTFLoader.js", names)
-            self.assertIn("vendor/three/BufferGeometryUtils.js", names)
             self.assertIn("js/race-viewer-2d.js", names)
-            self.assertIn("js/race-viewer.js", names)
+            self.assertNotIn("js/race-viewer.js", names)
+            self.assertFalse(any(name.startswith(("vendor/", "assets/chocobo/", "assets/chocobo-v3/"))
+                                 or name.endswith((".glb", ".blend")) for name in names))
             self.assertFalse(any(name.startswith("public/") or "preview" in name
                                  or name.endswith((".blend", ".zip", ".md")) for name in names))
             self.assertNotIn("js/game.js", names)
             self.assertNotIn("js/balance-lab.js", names)
-            self.assertNotIn("vendor/three/OrbitControls.js", names)
             manifest = json.loads(archive.read("assets/chocobo-sprite-study/v5/manifest.json"))
             self.assertEqual(set(manifest["motions"]), {"walk", "spurt", "podium"})
             for motion in [manifest, *manifest["motions"].values()]:
@@ -68,27 +66,25 @@ class PackageTests(unittest.TestCase):
             page = package.EntryPage(archive.read("index.html").decode("utf-8"))
             for ref in page.references + list(page.import_map.values()):
                 self.assertIn(package.local_reference(ref), names)
-            viewer = archive.read("js/race-viewer.js").decode("utf-8")
-            self.assertIn("preserveDrawingBuffer:true", viewer)
-            self.assertNotIn("preserveDrawingBuffer:true", (self.source / "js/race-viewer.js").read_text(encoding="utf-8"))
+            self.assertEqual(page.import_map, {})
 
     def test_urls_keep_the_game_subdirectory(self):
         base = "https://example.test/games/42/index.html"
         ui = package.release_text("js/ranch-ui.js", (self.source / "js/ranch-ui.js").read_text(encoding="utf-8"))
-        self.assertIn("import(mode==='2d'?'./race-viewer-2d.js':'./race-viewer.js')", ui)
+        self.assertIn("import('./race-viewer-2d.js')", ui)
         self.assertEqual(urljoin(urljoin(base, "js/ranch-ui.js"), "./race-viewer-2d.js"),
                          "https://example.test/games/42/js/race-viewer-2d.js")
-        viewer = package.release_text("js/race-viewer.js", (self.source / "js/race-viewer.js").read_text(encoding="utf-8"))
-        self.assertIn("from '../vendor/three/GLTFLoader.js'", viewer)
-        self.assertEqual(urljoin(urljoin(base, "js/race-viewer.js"), "../vendor/three/GLTFLoader.js"),
-                         "https://example.test/games/42/vendor/three/GLTFLoader.js")
+        viewer = package.release_text("js/race-viewer-2d.js", (self.source / "js/race-viewer-2d.js").read_text(encoding="utf-8"))
+        self.assertIn("from './race-playback.js'", viewer)
+        self.assertEqual(urljoin(urljoin(base, "js/race-viewer-2d.js"), "./race-playback.js"),
+                         "https://example.test/games/42/js/race-playback.js")
         portraits = package.release_text("js/ranch-portraits.js", (self.source / "js/ranch-portraits.js").read_text(encoding="utf-8"))
         self.assertIn("'./assets/chocobo-portraits/'", portraits)
         self.assertEqual(urljoin(base, "./assets/chocobo-portraits/adult-idle-v3.png"),
                          "https://example.test/games/42/assets/chocobo-portraits/adult-idle-v3.png")
 
     def test_missing_dependency_keeps_previous_zip(self):
-        for name in ("index.html", "js/race-viewer.js", "vendor/three/BufferGeometryUtils.js",
+        for name in ("index.html", "js/race-viewer-2d.js", "js/race-playback.js",
                      "assets/chocobo-sprite-study/v5/spurt/body-blue.png"):
             with self.subTest(name=name):
                 path = self.source / name

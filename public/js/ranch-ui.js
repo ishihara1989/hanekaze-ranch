@@ -221,12 +221,12 @@
   }
   function finishOrder(r,id){return `<ol class="finish-order">${r.field.map((x,i)=>`<li class="${x.id===id?'mine':''}"><span>${i+1}</span><b>${esc(x.name)}</b><span>${x.finished===false?'未完走':`${Math.floor(x.time/60)}:${(x.time%60).toFixed(2).padStart(5,'0')}`}</span></li>`).join('')}</ol>`;}
   function viewerMarkup(r,id){
-    const awarded=r.rank===1&&r.finished!==false,mode=modal.renderer||'2d',playback=modal.playback||{};
-    return `<div class="race-viewer"><header class="race-viewer-head"><div><h2 id="dialog-title">${esc(raceLabel(r))}</h2><p>${R.when(r.week)} / ${esc(tracks[r.trackId]?.name||'競走場')} / ${r.distance}m / ${groundText(r)}</p></div><div class="race-renderer-controls" aria-label="観戦の表示方式">${[['2d','2D'],['3d','3D']].map(([key,label])=>`<button class="button quiet" data-action="watch-mode" data-renderer="${key}" aria-pressed="${mode===key}">${label}</button>`).join('')}</div></header>
+    const awarded=r.rank===1&&r.finished!==false,playback=modal.playback||{};
+    return `<div class="race-viewer"><header class="race-viewer-head"><div><h2 id="dialog-title">${esc(raceLabel(r))}</h2><p>${R.when(r.week)} / ${esc(tracks[r.trackId]?.name||'競走場')} / ${r.distance}m / ${groundText(r)}</p></div></header>
       <div class="race-stage"><div class="race-loading" role="status">競走場とチョコボを準備しています…</div><div class="race-hud"><div><span data-race-phase>パドック</span><b data-race-clock>0:00.00</b><small data-race-remaining></small><small data-race-camera>パドック</small></div><div><ol class="race-live-order" data-live-order aria-label="現在の上位5羽"></ol></div></div>
         <div class="race-commentary"><div class="race-commentator speaking" data-commentator="lamia"><img src="assets/commentators/lamia.png" alt="実況のラミア"><span>ラミア / 実況</span></div><div class="race-commentary-copy"><span data-commentary-speaker>ラミア / 実況</span><p data-commentary-text>パドックから、レースの模様をお届けします！</p></div><div class="race-commentator" data-commentator="sahagin"><img src="assets/commentators/sahagin.png" alt="解説のサハギン"><span>サハギン / 解説</span></div></div>
       </div>
-      <div class="race-controls"><button class="button primary" data-viewer="pause" data-needs-viewer disabled aria-pressed="false">Ⅱ 一時停止</button><button class="button outline" data-viewer="restart" data-needs-viewer disabled>↺ 最初から</button><label>再生速度<select data-viewer-speed data-needs-viewer disabled>${[[.5,'0.5×'],[1,'1×'],[2,'2×'],[4,'4×']].map(([value,label])=>`<option value="${value}" ${value===(playback.rate??1)?'selected':''}>${label}</option>`).join('')}</select></label>${mode==='2d'?`<label>動き<select data-viewer-pitch data-needs-viewer disabled aria-label="動きのテンポ">${[[1,'ゆったり'],[1.5,'ふつう'],[2,'きびきび']].map(([value,label])=>`<option value="${value}" ${value===(playback.pitch??2)?'selected':''}>${label}</option>`).join('')}</select></label>`:''}<label>注目羽<select data-viewer-focus data-needs-viewer disabled>${r.replay.runners.slice().sort((a,b)=>a.lane-b.lane).map(x=>`<option value="${esc(x.id)}" ${x.id===(playback.focusId??id)?'selected':''}>${x.lane+1}番 ${esc(x.name)}</option>`).join('')}</select></label><div class="race-camera-controls" aria-label="カメラ切替">${[['broadcast','中継'],['follow','追走'],['overview','全景'],['finish','ゴール']].map(([key,label])=>`<button class="button quiet" data-viewer="camera" data-camera="${key}" aria-pressed="${key===(playback.cameraMode??'broadcast')}" data-needs-viewer disabled>${label}</button>`).join('')}</div></div>
+      <div class="race-controls"><button class="button primary" data-viewer="pause" data-needs-viewer disabled aria-pressed="false">Ⅱ 一時停止</button><button class="button outline" data-viewer="restart" data-needs-viewer disabled>↺ 最初から</button><label>再生速度<select data-viewer-speed data-needs-viewer disabled>${[[.5,'0.5×'],[1,'1×'],[2,'2×'],[4,'4×']].map(([value,label])=>`<option value="${value}" ${value===(playback.rate??1)?'selected':''}>${label}</option>`).join('')}</select></label><label>動き<select data-viewer-pitch data-needs-viewer disabled aria-label="動きのテンポ">${[[1,'ゆったり'],[1.5,'ふつう'],[2,'きびきび']].map(([value,label])=>`<option value="${value}" ${value===(playback.pitch??2)?'selected':''}>${label}</option>`).join('')}</select></label><label>注目羽<select data-viewer-focus data-needs-viewer disabled>${r.replay.runners.slice().sort((a,b)=>a.lane-b.lane).map(x=>`<option value="${esc(x.id)}" ${x.id===(playback.focusId??id)?'selected':''}>${x.lane+1}番 ${esc(x.name)}</option>`).join('')}</select></label><div class="race-camera-controls" aria-label="カメラ切替">${[['broadcast','中継'],['follow','追走'],['overview','全景'],['finish','ゴール']].map(([key,label])=>`<button class="button quiet" data-viewer="camera" data-camera="${key}" aria-pressed="${key===(playback.cameraMode??'broadcast')}" data-needs-viewer disabled>${label}</button>`).join('')}</div></div>
       <div class="race-paddock-controls" data-paddock-controls aria-label="パドックの出走羽紹介"><button class="button quiet" data-viewer="paddock-prev" data-needs-viewer disabled>← 前の羽</button><span data-paddock-progress>1 / ${r.replay.runners.length}羽</span><button class="button quiet" data-viewer="paddock-next" data-needs-viewer disabled>次の羽 →</button><button class="button outline" data-viewer="paddock-skip" data-needs-viewer disabled>発走へ進む</button></div>
       <div class="race-seek"><input type="range" min="0" max="1" value="0" step=".1" data-viewer-seek data-needs-viewer disabled aria-label="観戦の再生位置"><span data-viewer-time>0:00.00</span></div><div class="race-chapters" aria-label="場面へ移動">${[['paddock','パドック'],['gate','出走'],['race','レース'],['result','決着'],...(awarded?[['award','表彰']]:[])].map(([key,label])=>`<button class="button quiet" data-viewer="phase" data-phase="${key}" data-needs-viewer disabled>${label}</button>`).join('')}</div>
       <div class="race-voice-controls"><button class="button outline" data-viewer="voice" aria-pressed="false">実況音声</button><small data-voice-status>実況字幕 ON / 音声 OFF</small></div>
@@ -475,11 +475,11 @@
     if(pickerOpen&&$('#sire-picker'))$('#sire-picker').open=true;
     if(modal?.type==='replay'){
       const b=R.bird(state,modal.id),r=b?.records.find(x=>x.week===modal.week),root=$('.race-viewer');
-      const mode=modal.renderer||'2d',available=mode==='2d'?typeof window.CanvasRenderingContext2D!=='undefined':typeof window.WebGLRenderingContext!=='undefined';
-      if(r?.replay&&root&&available)import(mode==='2d'?'/js/race-viewer-2d.js':'/js/race-viewer.js').then(module=>{
+      const available=typeof window.CanvasRenderingContext2D!=='undefined';
+      if(r?.replay&&root&&available)import('/js/race-viewer-2d.js').then(module=>{
         if(generation===viewerGeneration)raceViewer=module.mount(root,{...r,birdId:b.id},tracks[r.trackId]||{},modal.playback||{});
       }).catch(error=>{if(generation===viewerGeneration){console.error(error);const status=$('.race-loading');if(status)status.textContent='観戦を読み込めませんでした。結果は下で確認できます。';}});
-      else{const status=$('.race-loading');if(status)status.textContent='このブラウザでは選択した観戦方式を表示できません。別の表示方式を選んでください。結果は下で確認できます。';}
+      else{const status=$('.race-loading');if(status)status.textContent='このブラウザではレース観戦を表示できません。Canvas対応のブラウザで開き直してください。結果は下で確認できます。';}
     }
   }
   function openModal(value) {if(modal&&['reports','detail','result'].includes(modal.type)&&['detail','result','replay'].includes(value.type))value.parent=modal;returnFocus=document.activeElement;modal=value;render();requestAnimationFrame(()=>($('[data-autofocus]')||$('.modal-close')||$('.modal'))?.focus());}
@@ -598,11 +598,6 @@
       }
       if(action==='promote'){R.promote(state,id);state.reports=state.reports.filter(r=>r.type!=='founder'||r.birdId!==id);page='home';}
       if(action==='result'){openModal({type:'result',id,week:Number(target.dataset.week)});return;}
-      if(action==='watch-mode'&&modal?.type==='replay'){
-        const mode=target.dataset.renderer;if(!['2d','3d'].includes(mode)||(mode===(modal.renderer||'2d')&&raceViewer?.ready))return;
-        modal.renderer=mode;modal.playback={...modal.playback,...raceViewer?.snapshot()};
-        render();$(`[data-action="watch-mode"][data-renderer="${mode}"]`)?.focus({preventScroll:true});return;
-      }
       if(action==='watch-race'){
         const r=R.bird(state,id)?.records.find(x=>x.week===Number(target.dataset.week));
         if(!r?.replay)throw Error('このレースは観戦できません。');

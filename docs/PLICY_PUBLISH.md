@@ -35,15 +35,14 @@ hanekaze-ranch-plicy.zip
 ├── index.html
 ├── css/
 ├── js/
-├── vendor/three/       # Three.jsとその依存、MITライセンス
-└── assets/            # 牧場・人物・施設・2Dスプライト・3Dモデルなど
+└── assets/            # 牧場・人物・施設・2Dスプライトなど
 ```
 
-スクリプトは `index.html` が参照するCSS・JS、import mapとモジュールの依存、動的に切り替えるレース観戦モジュール、実行用素材を収録します。2D素材の各羽色・額羽色・歩行・スパート・表彰も含めます。
+スクリプトは `index.html` が参照するCSS・JS、モジュールの依存、動的に読み込む2Dレース観戦モジュール、実行用素材を収録します。2D素材の各羽色・額羽色・歩行・スパート・表彰も含めます。
 
 試作・プレビューページ、旧ゲームUI、バランスラボ、Blender制作ファイル、生成プロンプト、元画像・マスク、素材ZIP、テスト、セーブデータ、`node_modules/`、`server.cjs` は含めません。
 
-ZIP内のHTML・JSでは、`/assets/`・`/js/`・`/vendor/` で始まる参照を用途に応じた相対パスへ変換します。WebGL観戦には撮影用の `preserveDrawingBuffer: true` を付けます。`public/` の原本は変更しません。新しい素材カテゴリを導入した場合は、共通処理 `tools/lib/static_site.py` の `ASSETS`・`ASSET_PATTERNS` も確認してください。
+ZIP内のHTML・JSでは、`/assets/`・`/js/` で始まる参照を用途に応じた相対パスへ変換します。`public/` の原本は変更しません。新しい素材カテゴリを導入した場合は、共通処理 `tools/lib/static_site.py` の `ASSETS`・`ASSET_PATTERNS` も確認してください。
 
 ## 2. ZIPから動作を確認する
 
@@ -57,7 +56,7 @@ python -m http.server 4174 --bind 127.0.0.1 --directory tmp/plicy-preview
 `http://127.0.0.1:4174/` を開きます。サーバーはCtrl+Cで終了できます。`index.html` のダブルクリックではなくHTTP経由で確認してください。観戦モジュールやJSON取得にはブラウザの制約があります。
 
 - 新規開始、初期案内、週送り、配合、施設画面、人物・ポートレート・背景画像の表示。
-- レース観戦の2D・3D切り替え、背景・羽色・歩行・スパート・表彰。
+- 2Dレース観戦の背景・羽色・歩行・スパート・表彰。
 - オートセーブ、手動保存、再読み込み後の再開、JSON書き出し・読み込み。
 - ブラウザ開発者ツールのConsoleにエラーがなく、Networkでゲーム素材の404が出ないこと。
 
@@ -77,11 +76,11 @@ python -m http.server 4174 --bind 127.0.0.1 --directory tmp/plicy-preview
 
 ## このゲームで先に確認する点
 
-**`index.html`だけではPLiCyへの適合は確定しません。** [公式HTML5 FAQ](https://plicy.net/ToolFAQ/HTML5)には、JSの同梱、起動ページを `index.html` にすることに加え、ゲーム画面をCanvasで出力することが記載されています。WebGLでは `preserveDrawingBuffer: true` が撮影に必要です。
+**`index.html`だけではPLiCyへの適合は確定しません。** [公式HTML5 FAQ](https://plicy.net/ToolFAQ/HTML5)には、JSの同梱、起動ページを `index.html` にすることに加え、ゲーム画面をCanvasで出力することが記載されています。
 
 羽風牧場のメインUIはHTML/CSSで、Canvasはレース観戦中に生成されます。そのため、現在のZIPでPLiCyの処理・プレイ画面・サムネイル撮影まで正常に使えるかは実機確認が必要です。レース観戦中に撮影するとCanvasは存在しますが、牧場UIや実況字幕などCanvas外の要素まで写るとは限りません。撮影や登録が通らない場合は[PLiCyのお問い合わせ](https://plicy.net/InfoConnection)でHTML主体のゲームの扱いを確認してください。このスクリプトは画面全体をCanvas化するものではありません。
 
-ゲームが使うES modules・import map・JSON取得・WebP画像・GLBモデルと、IndexedDBによる保存についても、PLiCyの変換後の環境で確認してください。ローカルHTTPで動いても、アップロード後の動作を保証するものではありません。
+ゲームが使うES modules・JSON取得・WebP画像と、IndexedDBによる保存についても、PLiCyの変換後の環境で確認してください。ローカルHTTPで動いても、アップロード後の動作を保証するものではありません。
 
 ## 更新するとき
 

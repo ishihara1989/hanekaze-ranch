@@ -1,0 +1,69 @@
+{
+  "palette": {
+    "yellow": {
+      "main": "#f3b92a",
+      "light": "#fcd565",
+      "dark": "#d7861a"
+    },
+    "red": {
+      "main": "#d9432f",
+      "light": "#f07b5c",
+      "dark": "#9c2720"
+    },
+    "blue": {
+      "main": "#3d7ed2",
+      "light": "#7fb3ee",
+      "dark": "#28508f"
+    },
+    "green": {
+      "main": "#4c9a59",
+      "light": "#8ccb88",
+      "dark": "#2d6440"
+    },
+    "rose": {
+      "main": "#ec8ea6",
+      "light": "#f9bfcd",
+      "dark": "#c05b7a"
+    },
+    "white": {
+      "main": "#eceae3",
+      "light": "#ffffff",
+      "dark": "#b4bdc3"
+    },
+    "black": {
+      "main": "#2b2d39",
+      "light": "#4a4e5f",
+      "dark": "#16171e"
+    },
+    "purple": {
+      "main": "#8a5db8",
+      "light": "#b893de",
+      "dark": "#593784"
+    },
+    "gray": {
+      "main": "#9ba1a7",
+      "light": "#c7ccd0",
+      "dark": "#6a7075"
+    },
+    "golden": {
+      "main": "#e0a526",
+      "light": "#f8d56a",
+      "dark": "#ad7210"
+    }
+  },
+  "crests": {
+    "yellow": "#ffcf3c",
+    "red": "#e0352b",
+    "blue": "#3b7ee0",
+    "white": "#f6f4ee",
+    "black": "#24252d",
+    "rainbow": [
+      "#e0474f",
+      "#f09a3a",
+      "#f2d24a",
+      "#6cc26a",
+      "#4d9ee0",
+      "#9b6fd6"
+    ]
+  }
+}

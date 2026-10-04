@@ -2,7 +2,7 @@
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
 const Genetics = require('../public/js/ranch-genetics.js');
-const palette = require('../public/assets/chocobo-v3/manifest.json');
+const palette = require('../public/assets/chocobo-sprite-study/palette.json');
 const modulePaths = [process.env.NODE_PATH, process.env.USERPROFILE && path.join(process.env.USERPROFILE, '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules')].filter(Boolean);
 const { PNG } = require(require.resolve('pngjs', { paths: [__dirname, ...modulePaths] }));
 const sharp = require(require.resolve('sharp', { paths: [__dirname, ...modulePaths] }));

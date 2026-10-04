@@ -2,7 +2,7 @@ const R=globalThis.RaceReplay;
 const phases={paddock:'パドック',gate:'ゲートイン',race:'レース',result:'決着',award:'表彰式'};
 const format=t=>`${Math.floor(t/60)}:${(t%60).toFixed(2).padStart(5,'0')}`;
 
-// Playback, standings and commentary are shared by both renderers.
+// Playback controls, standings and commentary for recorded races.
 export class RacePlayback {
   constructor(root,record,track,options={}){
     this.root=root;this.record=record;this.track=track;this.replay=record.replay;

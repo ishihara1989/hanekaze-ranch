@@ -42,14 +42,14 @@ test('closing during asset loading cannot revive a viewer; cached art is shared 
     assert.equal(images.length,baseImageCount+motionCount);const broken=images.find(image=>image.path.endsWith('/v5/body-blue.png'));
     broken.onerror();images.filter(image=>image!==broken&&image.path.endsWith('body-blue.png')).forEach(image=>image.onload());await flush();
     assert.equal(failed.ready,false);assert.equal(errors.filter(error=>error instanceof Error&&error.message==='body-blue.png').length,1);
-    assert.match(failed.status.textContent,/2D観戦を開始できません/);failed.dispose();
+    assert.match(failed.status.textContent,/レース観戦を開始できません/);assert.doesNotMatch(failed.status.textContent,/3D|選び直す/);failed.dispose();
     const retryRoot=root(),retry=new RaceViewer2D(retryRoot,blue,track);await flush();
     assert.equal(images.length,baseImageCount+motionCount+1,'only failed art is fetched again');images.at(-1).onload();await flush();
     assert.equal(retry.ready,true);retry.dispose();
     const red={...record,replay:{runners:[{...runner,color:'red'}]}},spurtRoot=root(),spurtFailed=new RaceViewer2D(spurtRoot,red,track);await flush();
     assert.equal(images.length,baseImageCount+2*motionCount+1);const brokenSpurt=images.find(image=>image.path.endsWith('/spurt/body-red.png'));
     brokenSpurt.onerror();images.filter(image=>image!==brokenSpurt&&image.path.endsWith('body-red.png')).forEach(image=>image.onload());await flush();
-    assert.equal(spurtFailed.ready,false);assert.match(spurtFailed.status.textContent,/2D観戦を開始できません/);spurtFailed.dispose();
+    assert.equal(spurtFailed.ready,false);assert.match(spurtFailed.status.textContent,/レース観戦を開始できません/);spurtFailed.dispose();
     const spurtRetryRoot=root(),spurtRetry=new RaceViewer2D(spurtRetryRoot,red,track);await flush();
     assert.equal(images.length,baseImageCount+2*motionCount+2,'failed last-spurt art retries without reloading other motions');images.at(-1).onload();await flush();
     assert.equal(spurtRetry.ready,true);spurtRetry.dispose();

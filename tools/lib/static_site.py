@@ -10,8 +10,6 @@ IMPORTS = re.compile(
     r"(?:^\s*import\s+(?:[^;]*?\s+from\s+)?|\bimport\s*\(\s*)[\"']([^\"']+)[\"']",
     re.MULTILINE,
 )
-# The viewer selector uses import(mode === '2d' ? '/js/...' : '/js/...').
-DYNAMIC_SCRIPTS = re.compile(r"[\"'](/js/[^\"']+\.js)[\"']")
 ASSET_PATTERNS = (
     "assets/facilities/*-v1.webp",
     "assets/race-2d-backgrounds/*-v1.png",
@@ -20,10 +18,6 @@ ASSETS = (
     "assets/moogle/trainer.png",
     "assets/commentators/lamia.png",
     "assets/commentators/sahagin.png",
-    "assets/chocobo-v3/manifest.json",
-    "assets/chocobo-v3/chocobo-v3.glb",
-    "assets/chocobo/chocobo-racer.glb",  # The 3D viewer's fallback model.
-    "vendor/three/LICENSE",
     *[f"assets/chocobo-portraits/{stage}-idle-v3.png" for stage in ("chick", "yearling", "adult")],
     *[f"assets/home-backgrounds/{season}-v1.webp" for season in ("spring", "summer", "autumn", "winter")],
     *[f"assets/shiroma/shiroma-{expression}.png" for expression in (
@@ -98,7 +92,7 @@ def collect_files(source):
         path = add(name)
         if path.suffix == ".js":
             text = path.read_text(encoding="utf-8")
-            for ref in IMPORTS.findall(text) + DYNAMIC_SCRIPTS.findall(text):
+            for ref in IMPORTS.findall(text):
                 if ref in page.import_map:
                     pending.append(local_reference(page.import_map[ref]))
                 elif ref.startswith(("/", "./", "../")):

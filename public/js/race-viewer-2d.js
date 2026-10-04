@@ -47,7 +47,7 @@ export class RaceViewer2D extends RacePlayback {
     this.stage.prepend(this.canvas);this.ctx=this.canvas.getContext('2d');
     this.init().catch(error=>{
       if(this.disposed)return;console.error(error);this.status.hidden=false;this.status.setAttribute('role','alert');
-      this.status.textContent='2D観戦を開始できませんでした。「2D」を選び直すか、3Dに切り替えてください。結果は下で確認できます。';
+      this.status.textContent='レース観戦を開始できませんでした。一度閉じて、もう一度観戦を開いてください。結果は下で確認できます。';
     });
   }
   async init(){

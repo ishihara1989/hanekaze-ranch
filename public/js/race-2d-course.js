@@ -1,4 +1,4 @@
-/* Outside-track orthographic projection of the same metre positions as 3D. */
+/* Outside-track orthographic projection of recorded metre positions. */
 (function(root,factory){
   const api=typeof module==='object'&&module.exports?factory(require('./race-replay.js')):factory(root.RaceReplay);
   if(typeof module==='object'&&module.exports)module.exports=api;else root.Race2DCourse=api;

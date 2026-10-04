@@ -578,46 +578,47 @@ test('losing races omit the podium chapter and pre-feature records still play or
   await g.click('close');delete r.replay;await g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/観戦できません/);assert.doesNotMatch(html(g),/data-action="watch-race"/);
 });
 
-test('all venue records open 2D and can switch renderer without changing a saved race',async()=>{
+test('all venue records open 2D without renderer controls or changes to a saved race',async()=>{
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');await g.click('breed-confirm');await g.click('ack');await g.h.advance(1);
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);r.trackId='tenku';
   await g.click('result',{id:b.id,week:String(r.week)});assert.match(html(g),/観戦する/);
   const before=JSON.stringify(g.h.state);await g.click('watch-race',{id:b.id,week:String(r.week)});
-  assert.doesNotMatch(html(g),/2D 試作|data-viewer="section"/);assert.match(html(g),/data-renderer="2d" aria-pressed="true"/);
+  assert.doesNotMatch(html(g),/2D 試作|data-viewer="section"|data-renderer|watch-mode|3D/);
   assert.match(html(g),/data-viewer-pitch/);assert.match(html(g),/value="2" selected/);
-  await g.click('watch-mode',{renderer:'3d'});assert.doesNotMatch(html(g),/data-viewer-pitch/);
-  assert.match(html(g),/data-renderer="3d" aria-pressed="true"/);assert.equal(JSON.stringify(g.h.state),before);
-  await g.click('watch-mode',{renderer:'2d'});assert.match(html(g),/data-viewer-pitch/);assert.equal(JSON.stringify(g.h.state),before);
+  assert.equal(JSON.stringify(g.h.state),before);
   for(const trackId of ['oukyu','sunahama','haikou','mitsurin','iseki']){
     await g.click('close');r.trackId=trackId;r.surface=['mitsurin','iseki'].includes(trackId)?'turf':'dirt';const saved=JSON.stringify(g.h.state);
     await g.click('watch-race',{id:b.id,week:String(r.week)});
-    assert.match(html(g),/data-renderer="2d" aria-pressed="true"/);assert.match(html(g),/data-viewer-pitch/);
+    assert.doesNotMatch(html(g),/data-renderer|watch-mode|3D/);assert.match(html(g),/data-viewer-pitch/);
     assert.equal(JSON.stringify(g.h.state),saved);
   }
   await g.click('close');delete r.trackId;await g.click('watch-race',{id:b.id,week:String(r.week)});
-  assert.match(html(g),/data-renderer="2d" aria-pressed="true"/,'records without venue metadata use the 2D fallback');
+  assert.match(html(g),/data-viewer-pitch/,'records without venue metadata use the 2D fallback');
+  assert.doesNotMatch(g.node('.race-loading').textContent,/別の表示方式/);
 });
 
-test('renderer changes and page navigation retain playback choices, dispose the viewer and never save the ranch',async()=>{
+test('page navigation retains 2D playback choices, disposes the viewer and never saves the ranch',async()=>{
   const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});await g.click('breed-dialog');await g.click('breed-confirm');await g.click('ack');await g.h.advance(1);
   const b=R.own(g.h.state).find(b=>b.records.length),r=b.records.at(-1);
   await g.click('watch-race',{id:b.id,week:String(r.week)});
   const before=JSON.stringify(g.h.state),saved=g.storage.get(R.SAVE_KEY),focusId=r.replay.runners[1].id;
   const playback={time:51.25,paused:true,rate:4,focusId,cameraMode:'follow',speaking:true,pitch:1.5};
   let disposed=0;g.h.setViewer({ready:true,snapshot:()=>playback,dispose(){disposed++;}});
-  await g.click('watch-mode',{renderer:'2d'});assert.equal(disposed,0,'the active renderer is not restarted');
-  await g.click('watch-mode',{renderer:'3d'});assert.equal(disposed,1);
+  await g.windowEvent('pagehide');assert.equal(disposed,1);
   assert.deepEqual(JSON.parse(JSON.stringify(g.h.modal.playback)),playback);
+  await g.windowEvent('pageshow',{persisted:true});assert.equal(g.h.modal.type,'replay');
   assert.match(html(g),/value="4" selected/);assert.match(html(g),new RegExp(`value="${focusId}" selected`));
   assert.match(html(g),/data-camera="follow" aria-pressed="true"/);
-  const second={...playback,time:52,rate:2,cameraMode:'finish'};delete second.pitch;
+  assert.match(html(g),/value="1.5" selected/);
+  const second={...playback,time:52,rate:2,cameraMode:'finish',pitch:2};
   g.h.setViewer({ready:true,snapshot:()=>second,dispose(){disposed++;}});
-  await g.click('watch-mode',{renderer:'2d'});assert.equal(disposed,2);
-  assert.equal(g.h.modal.playback.pitch,1.5);assert.equal(g.h.modal.playback.time,52);
-  assert.match(html(g),/value="1.5" selected/);assert.match(html(g),/data-camera="finish" aria-pressed="true"/);
-  g.h.setViewer({snapshot:()=>({...playback,time:65}),dispose(){disposed++;}});
-  await g.windowEvent('pagehide');assert.equal(disposed,3);assert.equal(g.h.modal.playback.time,65);
-  await g.windowEvent('pageshow',{persisted:true});assert.equal(g.h.modal.type,'replay');
+  await g.windowEvent('pagehide');assert.equal(disposed,2);
+  await g.windowEvent('pageshow',{persisted:true});
+  assert.equal(g.h.modal.playback.pitch,2);assert.equal(g.h.modal.playback.time,52);
+  assert.match(html(g),/value="2" selected/);assert.match(html(g),/data-camera="finish" aria-pressed="true"/);
+  assert.match(html(g),/value="2" selected>2×/);
+  g.h.setViewer({dispose(){disposed++;}});await g.click('close');assert.equal(disposed,3);
+  assert.notEqual(g.h.modal?.type,'replay');
   assert.equal(JSON.stringify(g.h.state),before);assert.equal(g.storage.get(R.SAVE_KEY),saved);
 });
 test('new UI exposes one tutorial action, hides numeric traits and renders every deliberate destination',async()=>{
