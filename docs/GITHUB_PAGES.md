@@ -4,13 +4,15 @@
 
 ## 初回だけ必要な設定
 
-1. この変更をコミットし、GitHubの `main` ブランチへpushします。
-2. [リポジトリのPages設定](https://github.com/ishihara1989/hanekaze-ranch/settings/pages)を開きます。
-3. **Build and deployment → Source** を **GitHub Actions** にします。
+1. [リポジトリのPages設定](https://github.com/ishihara1989/hanekaze-ranch/settings/pages)を開きます。
+2. **Build and deployment → Source** を **GitHub Actions** にして、Pagesを有効にします。この設定にはリポジトリの管理権限が必要です。
+3. 変更をコミットし、GitHubの `main` ブランチへpushします。
 4. [Actions](https://github.com/ishihara1989/hanekaze-ranch/actions)で **Deploy GitHub Pages** を開きます。初回pushが設定前に失敗した場合は **Re-run all jobs** で再実行するか、**Run workflow** から `main` を選んで実行します。
 5. `build` と `deploy` の成功を確認し、デプロイ結果に表示されたURLを開きます。
 
 公開元の設定とデプロイに必要な権限は[GitHub公式のカスタムワークフロー案内](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)に従っています。個人アクセストークンや独自のSecrets登録は不要です。リポジトリ側でActionsが無効な場合は、Settings → Actions → Generalで有効にしてください。
+
+`Configure Pages` を実行するビルドジョブには `pages: read`、公開ジョブには `pages: write` と `id-token: write` を指定しています。読み取り権限だけではPagesサイトの初回作成はできないため、上の設定を先に行ってください。
 
 ## 自動公開の流れ
 
@@ -53,7 +55,7 @@ python -m unittest discover -s tests -p '*_test.py'
 
 ## 公開に失敗した場合
 
-- `Configure Pages` で失敗する: PagesのSourceがGitHub Actionsになっているか確認し、ワークフローを再実行します。
+- `Configure Pages` が `Get Pages site failed` / `Not Found` で失敗する: [Pages設定](https://github.com/ishihara1989/hanekaze-ranch/settings/pages)でSourceを **GitHub Actions** にし、ビルドジョブに `pages: read` があることを確認して再実行します。`enablement: true` で自動作成する方法は通常の `GITHUB_TOKEN` 以外の管理用トークンが必要なので、このワークフローでは使いません。[アクションの公式入力仕様](https://github.com/actions/configure-pages/blob/v5/action.yml)。
 - `deploy` が承認待ちになる: Settings → Environments → github-pagesに承認ルールがあるか確認します。承認ルールがなければ通常は自動で進みます。
 - 素材不足でビルドが失敗する: Actionsのログに出たファイルがGitへ追加され、pushに含まれているか確認します。
 - 更新が見えない: 対象pushの `deploy` が成功していることを確認し、ブラウザを再読み込みします。
