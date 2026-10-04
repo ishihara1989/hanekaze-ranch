@@ -583,7 +583,7 @@
       if(action==='filter')birdFilter=target.dataset.filter;
       if(action==='notebook-tab')notebookTab=target.dataset.tab;
       if(action==='retire-dialog'){openModal({type:'retire',id});return;}
-      if(action==='retire-confirm'){R.retire(state,id);modal=null;page='home';}
+      if(action==='retire-confirm'){R.retire(state,id);modal=null;page='birds';}
       if(action==='sell-mare-dialog'||action==='release-stud-dialog'){
         const b=R.bird(state,id),reason=action==='sell-mare-dialog'?R.sellMareReason(state,b):R.releaseStudReason(state,b);
         if(reason)throw Error(reason);
