@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
 const R=require('../tools/lib/ranch-fixtures.cjs').R,W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
+const RanchLibrary=require('../public/js/ranch-library.js');
 const RanchCharacters=require('../public/js/ranch-characters.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 async function boot(saved,failSave=false,failRead=false,autoStart=true){
@@ -13,7 +14,7 @@ async function boot(saved,failSave=false,failRead=false,autoStart=true){
   const read=async key=>{if(typeof failRead==='function'?failRead(key):failRead)throw Error('denied');return storage.get(key)??null;};
   const write=async (key,value,expected)=>{if(expected!==undefined&&(storage.get(key)??null)!==expected)throw Object.assign(Error('changed'),{code:'changed'});if(typeof failSave==='function'?failSave(key):failSave)throw Error('quota');storage.set(key,value);};
   const store={init:async keys=>new Map(await Promise.all(keys.map(async key=>[key,await read(key)]))),read,readAll:async keys=>new Map(await Promise.all(keys.map(async key=>{try{return [key,await read(key)];}catch{return [key,undefined];}}))),write,restore:async (slot,expected,key,value,expectedAutosave)=>{if(await read(slot)!==expected)throw Object.assign(Error('changed'),{code:'changed'});await write(key,value,expectedAutosave);},subscribe(){}};
-  const ctx=vm.createContext({RanchStorage:{create:()=>store},Ranch:R,RanchObservation,RanchCharacters,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:selector=>queryLists[selector]||[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
+  const ctx=vm.createContext({RanchStorage:{create:()=>store},Ranch:R,RanchObservation,RanchLibrary,RanchCharacters,RanchPortraits,RanchWorld:W,console,document:{querySelector:node,querySelectorAll:selector=>queryLists[selector]||[],addEventListener:(k,f)=>handlers[k]=f,body:node('body'),activeElement:node('active')},localStorage:{getItem:k=>{if(typeof failRead==='function'?failRead(k):failRead)throw Error('denied');return storage.get(k)??null;},setItem:(k,v)=>{if(typeof failSave==='function'?failSave(k):failSave)throw Error('quota');storage.set(k,v);}},requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 1;},window:{scrollTo(){},addEventListener:(k,f)=>windowHandlers[k]=f}});
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
   await vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},get saveOK(){return saveOK},get page(){return page},setViewer(value){raceViewer=value},advance,render};})();`),ctx);
   if(autoStart&&ctx.hooks.modal?.type==='new-game')await handlers.click({target:{closest:()=>({dataset:{action:'start-confirm'},disabled:false})}});
@@ -108,6 +109,52 @@ test('notebook shows annual grades and filters short and regional dirt programs 
 });
 async function purchase(g){await g.click('buy-dialog',{id:g.h.state.sale[0]});await g.click('buy-confirm',{id:g.h.state.sale[0]});await g.click('ack');}
 
+test('library follows the notebook and reading every article leaves ranch, RNG and autosave untouched',async()=>{
+  const g=await boot(),before=JSON.stringify(g.h.state),saved=g.storage.get(R.SAVE_KEY);
+  await g.click('nav',{page:'library'});
+  assert.match(html(g),/data-page="notebook"[\s\S]*data-page="library"/);
+  assert.match(html(g),/<h1>図書館<\/h1>/);assert.match(html(g),/2\. 競走羽を増やして賞金を稼ぐ/);
+  for(const entry of RanchLibrary.entries){
+    await g.click('library-article',{article:entry.id});
+    assert.match(html(g),new RegExp(`data-article="${entry.id}" aria-current="true"`));
+    assert.equal(g.h.page,'library');assert.equal(JSON.stringify(g.h.state),before);
+  }
+  assert.equal(g.storage.get(R.SAVE_KEY),saved);
+  await g.click('library-article',{article:'unknown'});assert.equal(g.storage.get(R.SAVE_KEY),saved);
+});
+
+test('library search supports body text, multiple terms, Enter, clearing and safe empty results',async()=>{
+  const g=await boot(),before=JSON.stringify(g.h.state),saved=g.storage.get(R.SAVE_KEY);
+  await g.click('nav',{page:'library'});
+  g.node('#library-query').value='始祖 7勝';await g.click('library-search');
+  assert.match(html(g),/1項目/);assert.match(html(g),/id="library-title">始祖入りの条件/);
+  assert.match(html(g),/合計7勝以上/);
+  g.node('#library-query').value='GⅠ 3羽';
+  await g.key('Enter',{target:{id:'library-query',value:'GⅠ 3羽',matches:()=>true}});
+  assert.match(html(g),/始祖入りの条件/);
+  g.node('#library-query').value='<script>"&';await g.click('library-search');
+  assert.match(html(g),/該当する項目がありません/);assert.match(html(g),/&lt;script&gt;&quot;&amp;/);
+  assert.doesNotMatch(html(g),/<script>/);
+  await g.change('library-query','');assert.equal(g.storage.get(R.SAVE_KEY),saved);
+  await g.click('library-clear');assert.match(html(g),/16項目/);
+  assert.equal(JSON.stringify(g.h.state),before);assert.equal(g.storage.get(R.SAVE_KEY),saved);
+});
+
+test('rule explanations live in the library and contextual links open the right article without spending',async()=>{
+  const g=await boot(),before=JSON.stringify(g.h.state),saved=g.storage.get(R.SAVE_KEY);
+  assert.doesNotMatch(html(g),/まずはセールで|次は、お父さん/);
+  await g.click('nav',{page:'market'});
+  assert.doesNotMatch(html(g),/価格は遺伝する能力の平均/);
+  await g.click('library-open',{article:'economy'});assert.match(html(g),/価格は遺伝する能力の平均/);
+  await g.click('nav',{page:'notebook'});assert.doesNotMatch(html(g),/2歳は1勝、3歳6月/);
+  await g.click('library-open',{article:'racing'});assert.match(html(g),/オープンに必要な勝利数/);
+  await g.click('nav',{page:'facilities'});await g.click('build-dialog',{key:'stalls'});
+  assert.equal(g.h.modal.type,'build');assert.doesNotMatch(html(g),/有利な因子を受け継ぐ/);
+  await g.click('library-open',{article:'facilities'});
+  assert.equal(g.h.modal,null);assert.equal(g.h.page,'library');assert.match(html(g),/Lv\.5で55%/);
+  assert.equal(JSON.stringify(g.h.state),before);assert.equal(g.storage.get(R.SAVE_KEY),saved);
+});
+
 test('notebook lists all G1 first victories and shows saved winner names and dates for grade achievements',async()=>{
   const g=await boot(),s=g.h.state,b=R.own(s)[0];
   const first={week:9,birdId:b.id,birdName:'ハジメノヒカリ',raceName:'チョコボダービー'};
@@ -154,7 +201,7 @@ test('founder offers show their source and the predecessor being replaced in the
   const report={id:`report-${s.serial++}`,week:s.week,type:'founder',title:'始祖入りのオファー',text:'推薦されました。',birdId:candidate.id,expression:'overjoyed'};
   s.reports.push(report);s.journal.push({...report});
   await g.click('nav',{page:'notebook'});await g.click('notebook-tab',{tab:'records'});
-  assert.match(html(g),new RegExp(`${source.name}系`));assert.match(html(g),/始祖は各源流につき1羽/);
+  assert.match(html(g),new RegExp(`${source.name}系`));assert.match(html(g),/data-action="library-open" data-article="founders"/);
   assert.match(html(g),/コウケイが始祖入りすると、センパイと交代し、先代は供用を終えます/);
   await g.click('nav',{page:'home'});await g.click('reports');
   assert.match(html(g),/この源流の始祖：センパイ/);assert.match(html(g),/センパイと交代/);
@@ -600,14 +647,14 @@ test('facility art follows initial, constructed and upgraded levels while empty 
   assert.doesNotMatch(html(g),/lab-lv3/);
 });
 
-test('late stall improvements show a fixed price, unchanged capacity and only a gentle birth hint',async()=>{
+test('late stall improvements show a fixed price, unchanged capacity and a link to the library',async()=>{
   const g=await boot();g.h.state.money=1e9;g.h.state.facilities.stalls=4;
   await g.click('nav',{page:'facilities'});
   for(let level=5;level<=9;level++){
     await g.click('build-dialog',{key:'stalls'});
     assert.match(html(g),/羽房を改良しますか？/);
     assert.match(html(g),/50,000,000 G/);assert.match(html(g),new RegExp(`Lv\\. ${level}`));
-    assert.match(html(g),/良いチョコボが少し生まれやすくなります/);
+    assert.match(html(g),/ふかふかの寝床/);assert.match(html(g),/data-action="library-open" data-article="facilities"/);
     assert.doesNotMatch(html(g),/55[%％]|75[%％]|有利な因子|遺伝座位/);
     await g.click('build-confirm',{key:'stalls'});
     assert.equal(g.h.state.facilities.stalls,level);
@@ -787,7 +834,7 @@ test('public offspring order uses the current mother and updates when she change
   const expected=dam=>R.searchSires(s,{sort:'offspring',dam}).filter(b=>b.owner==='public').map(b=>b.id);
   const firstOrder=expected(first);
   assert.deepEqual(listedSires(g).map(b=>b.id),firstOrder);assert.equal(selectedSire(g),selected);
-  assert.match(html(g),/選択中の母との配合で、競走能力8項目/);
+  assert.doesNotMatch(html(g),/選択中の母との配合で、競走能力8項目/);assert.match(html(g),/data-action="library-open" data-article="breeding"/);
   await g.change('dam-choice',second.id);
   const secondOrder=expected(second);assert.notDeepEqual(secondOrder,firstOrder);
   assert.deepEqual(listedSires(g).map(b=>b.id),secondOrder);assert.equal(selectedSire(g),selected);
@@ -931,7 +978,7 @@ test('home links to the mare sale only while it is open; off-season breeding is 
   const g=await boot();await purchase(g);const s=g.h.state;s.week=17;await g.click('nav',{page:'home'});
   assert.doesNotMatch(html(g),/data-page="market"/);
   s.stage='running';s.week=R.YEAR+5;g.h.render();
-  assert.match(html(g),/繁殖牝羽セールが開かれています/);assert.match(html(g),/class="home-scene"[\s\S]*data-page="market"/);
+  assert.match(html(g),/町から、にぎやかな羽音/);assert.match(html(g),/class="home-scene"[\s\S]*data-page="market"/);
   s.stage='breed';s.week=17;g.h.render();
   await g.click('nav',{page:'breed'});assert.match(html(g),/breeding-season closed|breeding-confirm unavailable/);
   assert.match(html(g),/data-action="breed-dialog" disabled/);assert.match(html(g),/生まれる子の遺伝効果|data-preview-trait="power"/);

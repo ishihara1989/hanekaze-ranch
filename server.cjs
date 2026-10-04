@@ -25,7 +25,7 @@ for (const file of ['chocobo-preview.html','js/chocobo-preview.js','js/chocobo-a
     ...['yellow','red','blue','green','rose','white','black','purple','gray','golden'].map(color=>`body-${color}.png`),
     ...['yellow','red','blue','white','black','rainbow'].map(color=>`crest-${color}.png`)].map(file=>`assets/chocobo-sprite-study/v5/podium/${file}`),
   'genetics-preview.html','js/genetics-preview.js','css/genetics-preview.css','js/ranch-observation.js',
-  'css/ranch.css','js/ranch-engine.js','js/ranch-ui.js','js/ranch-storage.js','js/ranch-names.js','js/trait-mapping.js','js/ranch-genetics.js','js/ranch-ground.js','js/race-course.js','js/ranch-race.js','js/ranch-breeding.js',
+  'css/ranch.css','js/ranch-engine.js','js/ranch-ui.js','js/ranch-library.js','js/ranch-storage.js','js/ranch-names.js','js/trait-mapping.js','js/ranch-genetics.js','js/ranch-ground.js','js/race-course.js','js/ranch-race.js','js/ranch-breeding.js',
   'css/race-viewer.css','js/race-replay.js','js/race-viewer.js','js/race-playback.js',
   'race-2d-preview.html','race-2d-backgrounds.html',...['manifest-v1.json','prompts-v1.json',...['tenku','oukyu','mitsurin','sunahama','iseki','haikou'].map(id=>id+'-v1.png')].map(file=>'assets/race-2d-backgrounds/'+file),'js/race-2d-course.js','js/race-2d-graphics.js','js/race-viewer-2d.js','js/race-2d-preview.js','css/race-2d-preview.css',
   'assets/commentators/lamia.png','assets/commentators/sahagin.png',

@@ -5,6 +5,7 @@ const fs=require('node:fs'),vm=require('node:vm');
 const {IDBFactory}=require('fake-indexeddb');
 const R=require('../tools/lib/ranch-fixtures.cjs').R,W=require('../public/js/world.js');
 const RanchObservation=require('../public/js/ranch-observation.js');
+const RanchLibrary=require('../public/js/ranch-library.js');
 const RanchCharacters=require('../public/js/ranch-characters.js');
 const RanchPortraits={...require('../public/js/ranch-portraits.js'),hydrate(){}};
 const Storage=require('../public/js/ranch-storage.js');
@@ -19,7 +20,7 @@ async function boot(raw,seeds=[12345,67890,13579],slots=new Map()){
     return elements.get(key);
   };
   const storage=Storage.create({indexedDB:new IDBFactory(),legacyStorage:()=>({getItem:key=>key===R.SAVE_KEY?raw:slots.get(key)??null}),channelFactory:()=>null});
-  const ctx=vm.createContext({Ranch:R,RanchWorld:W,RanchObservation,RanchCharacters,RanchPortraits,RanchStorage:{create:()=>storage},console,
+  const ctx=vm.createContext({Ranch:R,RanchWorld:W,RanchObservation,RanchLibrary,RanchCharacters,RanchPortraits,RanchStorage:{create:()=>storage},console,
     crypto:{getRandomValues(values){values[0]=seeds[entropyCalls++]??24680;return values;}},
     document:{querySelector:node,querySelectorAll:()=>[],addEventListener:(name,fn)=>handlers[name]=fn,body:node('body'),activeElement:node('active')},
     requestAnimationFrame:fn=>fn(),setTimeout:fn=>{fn();return 1;},window:{scrollTo(){},addEventListener(){}}});

@@ -848,7 +848,7 @@
     if (own(s).filter(b=>b.role==='mare').length>=capacity(s).mare) throw Error('繁殖牝羽の羽房がいっぱいです。');
     pay(s,-b.price,`${b.name}を購入`); b.owner='player';
     if (s.stage==='buy') s.stage='breed';
-    milestone(s,'purchase','最初の仲間を迎えました',`${b.name}、ようこそ${s.naming?.ranchName||DEFAULT_NAMING.ranchName}へ！ 次はこの子のお相手を選びましょう。`);
+    milestone(s,'purchase','最初の仲間を迎えました',`${b.name}、ようこそ${s.naming?.ranchName||DEFAULT_NAMING.ranchName}へ！ この子と過ごす春が楽しみですね。`);
     return b;
   }
   function sellMareReason(s,b) {
@@ -1310,7 +1310,7 @@
     if(date(s.week).week===1) {
       refreshMarket(s);
       const ids=own(s).filter(b=>b.role==='young'&&age(s,b)===2).map(b=>b.id);
-      if(ids.length)report(s,'registration','競走羽登録',`今年2歳になる${ids.length}羽の名前を決めましょう！`,{birdIds:ids,expression:'happy'});
+      if(ids.length)report(s,'registration','競走羽登録',`今年は${ids.length}羽がデビューです。大きくなりましたね！`,{birdIds:ids,expression:'happy'});
     }
     if(date(s.week).week===5&&own(s).some(b=>b.role==='mare'))notes.push('繁殖牝羽セールが始まりました（3月第4週まで）。');
     // Short reactions only: race rows already show placings and prize money.
