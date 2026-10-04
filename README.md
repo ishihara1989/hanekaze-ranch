@@ -12,6 +12,12 @@ node server.cjs
 
 [源流の遺伝情報・公開段階プレビュー](http://127.0.0.1:4173/genetics-preview.html) では32羽の源流と4公開段階を切り替え、並べて比較できます。セーブデータには触れません。`public/genetics-preview.html` を直接開くこともできます。
 
+## PLiCyへの公開
+
+Python 3.10以上で `python tools/package-plicy.py`（または `npm run package:plicy`）を実行すると、`index.html` を直下に置いたアップロード用ZIPを `dist/hanekaze-ranch-plicy.zip` に生成します。追加パッケージは不要です。
+
+[ZIPの確認・アップロード・更新手順とCanvas対応の確認事項](docs/PLICY_PUBLISH.md)を参照してください。
+
 ## 遊び方
 
 1. 牧場名と冠名（1〜7文字のカタカナ）、冠名を前・後ろのどちらにつけるかを設定。3月第1週、瞬発力が持ち味の2歳牝羽1羽、20,000 Gからスタート。競走羽はモーグリの自動管理済み。シロマの案内で繁殖牝羽セールへ。

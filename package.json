@@ -5,6 +5,8 @@
   "description": "配合・血統・レース観戦を楽しむ牧場ゲームのプロトタイプ",
   "scripts": {
     "start": "node server.cjs",
+    "package:plicy": "python tools/package-plicy.py",
+    "test:plicy": "python -m unittest discover -s tests -p plicy_package_test.py",
     "test": "node tools/run-tests.cjs",
     "test:ranch": "node tools/run-tests.cjs tests/ranch.test.cjs tests/ranch-ui.test.cjs tests/ranch-storage.test.cjs tests/ranch-resume.test.cjs tests/ranch-economy.test.cjs tests/roots.test.cjs tests/genetics.test.cjs tests/stall-inheritance.test.cjs tests/breeding.test.cjs tests/hatch-report.test.cjs tests/course-aptitude.test.cjs tests/opening-balance.test.cjs",
     "test:long": "node tools/run-tests.cjs tests/long/ranch-world.cjs",
