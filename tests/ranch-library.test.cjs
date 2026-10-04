@@ -11,6 +11,9 @@ test('manual distinguishes same-year crowns, farm-wide eight races and direct-of
   for(const name of R.EIGHT)assert.ok(honors.includes(name));
   for(const names of Object.values(R.TITLES))for(const name of names)assert.ok(honors.includes(name));
   assert.match(honors,/同じ羽が同一年/);assert.match(honors,/複数の羽・複数の年/);
+  assert.match(honors,/牧場手帳に上の8競走すべての制覇記録がそろう/);
+  assert.match(honors,/売却・返還して牧場にいなくなっても、制覇記録は建設条件の対象に残ります/);
+  assert.doesNotMatch(honors,/現在自牧場が所有する羽|建設条件の対象から外れます/);
   assert.match(honors,/春古羽三冠・秋古羽三冠は銅像の建設条件には含まれません/);
   const founders=body('founders');
   assert.match(founders,/自家製種牡羽/);assert.match(founders,/3羽以上/);assert.match(founders,/合計7勝以上/);

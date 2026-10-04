@@ -12,7 +12,7 @@ function champion(){
 }
 function win(s,b,level,name,startWeek=97){
   const event=Array.from({length:R.YEAR},(_,i)=>W.calendar(i+startWeek)).flat()
-    .find(e=>e.level===level&&(!name||e.name===name)&&e.minAge<=3&&e.maxAge>=3&&(!e.sex||e.sex===b.sex));
+    .find(e=>e.level===level&&(!name||e.name===name)&&R.eligible({...s,week:e.week},b,e));
   assert.ok(event);s.week=event.week;Object.assign(b,{condition:100,strain:0,health:0,lastRace:-100});
   const result=R.race(s,b,event);assert.equal(result.rank,1);assert.equal(result.finished,true);
   return result;
@@ -55,6 +55,50 @@ test('legacy saves recover the earliest victory and race-time name, including so
   // Pre-replay saves still have our sold bird's result field and its original name.
   delete s.firstWins;s.journal=[];s.reports=[];b.records.forEach(r=>delete r.replay);
   R.upgradeState(s);assert.deepEqual(s.firstWins,original);assert.ok(R.validState(s));
+});
+
+test('museum uses farm notebook victories across birds and years after sale, return and save reload',()=>{
+  const {s,b}=champion();b.sex='F';
+  const successor={...structuredClone(b),id:`bird-${s.serial++}`,name:'コウケイノヒカリ',sex:'M',wins:4,races:4};
+  s.birds.push(successor);
+  for(const name of R.EIGHT.slice(0,5))win(s,b,'GI',name);
+  R.retire(s,b.id);R.sellMare(s,b.id);
+  assert.match(R.facilityReason(s,'museum'),/8大競走/);
+  for(const name of R.EIGHT.slice(5))win(s,successor,'GI',name,145);
+  R.retire(s,successor.id);R.releaseStud(s,successor.id);
+  assert.equal(b.owner,'archive');assert.equal(successor.owner,'archive');
+  assert.ok(R.EIGHT.every(name=>s.firstWins[`g1:${name}`]));
+  const saved=R.serializeState(s);
+  assert.equal(R.facilityReason(s,'museum'),'');
+  assert.equal(R.serializeState(s),saved,'checking facilities leaves the notebook and game state untouched');
+  for(const legacy of [false,true]){
+    const loaded=R.deserializeState(saved);
+    if(legacy){delete loaded.firstWins;loaded.journal=[];loaded.reports=[];}
+    R.upgradeState(loaded);
+    assert.ok(R.validState(loaded));assert.deepEqual(loaded.firstWins,s.firstWins);
+    const balance=loaded.money;
+    loaded.money=0;assert.match(R.facilityReason(loaded,'museum'),/ギルが足りません/);loaded.money=balance;
+    assert.equal(R.facilityReason(loaded,'museum'),'');
+    R.build(loaded,'museum');
+    assert.equal(loaded.facilities.museum,1);assert.equal(loaded.money,balance-R.FACILITIES.museum.cost);
+  }
+});
+
+test('museum stays locked without all notebook victories even if owned birds have matching race records',()=>{
+  const s=R.initial(),b=R.own(s)[0];s.money=1e9;
+  const last=R.EIGHT.at(-1);
+  for(const name of R.EIGHT.slice(0,-1))s.firstWins[`g1:${name}`]={week:s.week,birdId:b.id,birdName:b.name,raceName:name};
+  const result={week:s.week,year:1,name:last,level:'GI',rank:1,finished:true,field:[]};
+  for(const [rank,finished] of [[2,true],[1,false],[1,true]]){
+    b.records=[{...result,rank,finished}];
+    assert.match(R.facilityReason(s,'museum'),/8大競走/);
+    assert.throws(()=>R.build(s,'museum'),/8大競走/);
+    assert.equal(s.facilities.museum,0);
+  }
+  const npc=s.birds.find(x=>x.farm);npc.records=[result];
+  b.records=[];delete s.firstWins;R.upgradeState(s);
+  assert.equal(s.firstWins[`g1:${last}`],undefined);
+  assert.match(R.facilityReason(s,'museum'),/8大競走/);
 });
 
 test('import validation rejects malformed first-victory data while accepting older saves',()=>{

@@ -65,7 +65,7 @@
     meadow:{name:'穏やかな平原',cost:8000000,max:3,description:'自制心と賢さが育つ放牧地。'},
     forest:{name:'過酷な森',cost:8000000,max:3,description:'走る意欲と刺激への慣れが育つ放牧地。'},
     shop:{name:'グッズ販売所',cost:25000000,max:3,description:'GⅠ勝者のファンから毎月グッズ収入が入ります。'},
-    lab:{name:'研究所',cost:25000,max:1,description:'適性・成長・羽色の遺伝と、詳しい競走情報がわかります。産み分けの実も使えます。',lock:'レース初勝利'},
+    lab:{name:'研究所',cost:25000,max:1,description:'適性・成長・羽色の遺伝と、詳しい競走情報がわかります。GⅠ制覇で全遺伝の座位も公開。産み分けの実も使えます。',lock:'レース初勝利'},
     statue:{name:'銅像',cost:50000000,max:1,description:'三冠の記念像。研究所とあわせて遺伝の数値がわかります。記念館もそろうと能力も数値で見られます。',lock:'三冠制覇'},
     museum:{name:'記念館',cost:100000000,max:1,description:'8大競走制覇の記念館。研究所とあわせて遺伝の数値がわかります。銅像もそろうと能力も数値で見られます。',lock:'8大競走制覇'},
   };
@@ -924,7 +924,7 @@
     if (s.facilities[key]>=f.max) return '最大まで拡張済みです。';
     if (key==='lab'&&!s.milestones.win) return 'レース初勝利で建設できます。';
     if (key==='statue'&&!s.birds.some(b=>b.owner==='player'&&b.titles.some(t=>/^(triple|filly):/.test(t)))) return '三冠制覇で建設できます。';
-    if (key==='museum'&&!EIGHT.every(n=>s.birds.some(b=>b.owner==='player'&&b.records.some(r=>r.rank===1&&r.name===n)))) return '牧場で8大競走を制覇すると建設できます。';
+    if (key==='museum'&&!EIGHT.every(n=>s.firstWins?.[`g1:${n}`])) return '牧場で8大競走を制覇すると建設できます。';
     if (s.money<facilityCost(s,key)) return 'ギルが足りません。';
     return '';
   }

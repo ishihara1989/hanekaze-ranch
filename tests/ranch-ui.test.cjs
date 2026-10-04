@@ -687,7 +687,7 @@ test('details disclose ratings, racing traits, all genetic loci and current numb
   assert.match(html(g),/得意羽場：|成長と加齢の遺伝/);assert.doesNotMatch(html(g),/data-score|<meter|<summary>遺伝の座位情報|金因子/);
   for(const monument of ['museum','statue']){
     g.h.state.facilities[monument]=1;g.h.render();
-    assert.match(html(g),/遺伝の座位情報（全因子）|座位 32|金因子|潜性の欠点の全座位/);
+    assert.match(html(g),/遺伝の座位情報（全因子）|32座位|金因子|潜性の欠点の全座位/);
     assert.doesNotMatch(status(),/data-score|<meter|成熟したときの伸びしろ/);
     g.h.state.facilities[monument]=0;
   }
@@ -710,7 +710,35 @@ test('both breeding parents show aggregate genetic ratings before building resea
   assert.equal((html(g).match(/<summary>遺伝<\/summary>/g)||[]).length,2);
   assert.match(html(g),/能力の遺伝/);assert.doesNotMatch(html(g),/data-score|<meter|遺伝の座位情報/);
   g.h.state.facilities.lab=1;g.h.state.facilities.museum=1;g.h.render();
-  assert.equal((html(g).match(/遺伝の座位情報（全因子）/g)||[]).length,2);
+  assert.equal((html(g).match(/父母の遺伝座位を比較/g)||[]).length,1);
+  assert.doesNotMatch(html(g),/遺伝の座位情報（全因子）/);
+});
+test('G1 research shows one shared locus comparison and updates the father and mother on selection',async()=>{
+  const g=await boot();await purchase(g);const s=g.h.state;
+  s.money=100000000;
+  const second=s.sale.find(id=>R.bird(s,id).owner==='sale');
+  await g.click('buy-dialog',{id:second});await g.click('buy-confirm',{id:second});await g.click('ack');
+  await g.click('nav',{page:'breed'});
+  s.milestones.g1=9;g.h.render();assert.doesNotMatch(html(g),/gene-comparison/);
+  s.facilities.lab=1;g.h.render();
+  const sequences=()=>{
+    const speed=html(g).split('data-locus-key="quality.speed"')[1].split('<div class="gene-row"')[0];
+    return [...speed.matchAll(/<b class="gene-sequence"[^>]*>([\s\S]*?)<\/b>/g)].map(m=>m[1].replace(/<[^>]+>/g,''));
+  };
+  const symbols=b=>b.genome.quality.speed.map(pair=>['◯','◎','☆'][pair[0]+pair[1]]).join('');
+  const mares=R.own(s).filter(b=>b.role==='mare'),sires=R.sires(s).filter(b=>b.kind==='root');
+  const before=JSON.stringify(s);
+  assert.equal((html(g).match(/class="paper gene-comparison"/g)||[]).length,1);
+  assert.deepEqual(sequences(),[symbols(sires[0]),symbols(mares[0])]);
+  assert.doesNotMatch(html(g),/data-score|遺伝の座位情報（全因子）/);
+  await g.click('select-sire',{id:sires[1].id});
+  assert.deepEqual(sequences(),[symbols(sires[1]),symbols(mares[0])]);
+  await g.change('dam-choice',mares[1].id);
+  assert.deepEqual(sequences(),[symbols(sires[1]),symbols(mares[1])]);
+  assert.equal(JSON.stringify(s),before);
+  await g.click('detail',{id:mares[1].id});assert.match(html(g),/遺伝の座位情報（全因子）/);
+  await g.click('close');await g.click('nav',{page:'market'});assert.match(html(g),/遺伝の座位情報（全因子）/);
+  assert.doesNotMatch(html(g),/data-score/);
 });
 test('details, sale and parents show only aggregate genetics and retain the numeric gate',async()=>{
   const g=await boot(),b=R.own(g.h.state)[0];

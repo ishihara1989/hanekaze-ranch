@@ -11,6 +11,7 @@
   const STAGES=Object.freeze([
     {label:'研究所なし',description:'ステータスへの遺伝効果を合算した5段階評価。',lab:0,museum:0,statue:0},
     {label:'研究所',description:'羽場・コーナー・直線・成長・羽色の遺伝と、詳しい競走情報。',lab:1,museum:0,statue:0},
+    {label:'研究所＋GⅠ制覇',description:'全遺伝の座位。有利系・不利系を1座位1文字の記号列で確認できます。',lab:1,museum:0,statue:0,g1:true},
     {label:'研究所＋記念館または銅像',description:'全遺伝の数値と座位。各座位は折りたたみを開いて確認できます。',lab:1,museum:1,statue:0},
     {label:'研究所＋記念館＋銅像',description:'全情報を公開。現在ステータスの表示も確認すると、数値と伸びしろが見えます。',lab:1,museum:1,statue:1},
   ]);
@@ -22,8 +23,8 @@
   function view(state,bird,stage,{compare=false,showStatus=false}={}){
     const stages=compare?STAGES.map((_,index)=>index):[stage];
     return `<div class="preview-grid ${compare?'comparison':''}">${stages.map(index=>{
-      const selected=STAGES[index],context={...state,facilities:{...state.facilities,lab:selected.lab,museum:selected.museum,statue:selected.statue}};
-      return `<article class="paper preview-stage" data-preview-stage="${index}"><header><span class="eyebrow">STAGE ${index+1} / 4</span><h2>${selected.label}</h2><p>${selected.description}</p></header>${Observation.genetics(context,bird)}${showStatus?`<div class="preview-current"><h2>現在ステータスの見え方</h2>${Observation.status(context,bird)}</div>`:''}</article>`;
+      const selected=STAGES[index],context={...state,milestones:{g1:selected.g1?state.week:0},facilities:{...state.facilities,lab:selected.lab,museum:selected.museum,statue:selected.statue}};
+      return `<article class="paper preview-stage" data-preview-stage="${index}"><header><span class="eyebrow">STAGE ${index+1} / ${STAGES.length}</span><h2>${selected.label}</h2><p>${selected.description}</p></header>${Observation.genetics(context,bird)}${showStatus?`<div class="preview-current"><h2>現在ステータスの見え方</h2>${Observation.status(context,bird)}</div>`:''}</article>`;
     }).join('')}</div>`;
   }
   function mount(doc){

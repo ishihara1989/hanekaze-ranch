@@ -27,17 +27,43 @@
     }).join('')}</div>`;
   }
   const traitScores=group=>Object.fromEntries(Object.entries(group).map(([key,pair])=>[key,50+mean(pair)*100]));
-  function geneLoci(b) {
+  // Existing monument disclosures remain available; GⅠ now opens loci earlier.
+  const lociUnlocked=state=>R.labLevel(state)>=2||R.labLevel(state)>=1&&Boolean(state.milestones?.g1);
+  function locusGroups(b) {
     const g=b.genome;
-    const pair=(values,format=value=>String(value))=>values.map(value=>esc(format(value))).join(' / ');
-    const loci=(label,pairs,format)=>`<details class="gene-group"><summary>${esc(label)} <small>${pairs.length}座位</small></summary><ol class="gene-loci">${pairs.map((values,index)=>`<li><span>座位 ${String(index+1).padStart(2,'0')}</span><b>${pair(values,format)}</b></li>`).join('')}</ol></details>`;
-    const traitPairs=(group,labels)=>Object.entries(labels).map(([key,label])=>loci(label,[group[key]])).join('');
-    return `<details class="gene-details"><summary>遺伝の座位情報（全因子）</summary><h3>身体・管理の遺伝品質</h3>${Object.entries(g.quality).map(([key,pairs])=>loci(traitLabels[key],pairs,value=>value?'A':'a')).join('')}<h3>生来の性格</h3>${traitPairs(g.character,R.PERSONALITY)}<h3>体質と出力配分</h3>${loci('筋・代謝構成',[g.distance])}${loci('出力配分',[g.release])}<h3>羽場・コースと成長</h3>${traitPairs(g.traits.aptitude,R.Genetics.APTITUDES)}${traitPairs(g.traits.development,R.Genetics.DEVELOPMENT)}<h3>羽色因子</h3>${loci('通常羽色',[g.traits.body],color=>R.Genetics.COLORS[color])}${loci('金因子',[g.traits.gold])}<p class="muted">額羽の継承因子：${esc(R.Genetics.CRESTS[g.traits.crest])}</p><h3>潜性の欠点の全座位</h3>${Object.entries(R.DEFECTS).map(([id,d])=>loci(`${R.DEFECT_LABELS[d.trait]}（${R.ROOTS.find(p=>p.lineage===d.source).name}）`,g.defects[id]||Array.from({length:R.Breeding.DEFECT_LOCI},()=>[0,0]),value=>value?'a':'A')).join('')}</details>`;
+    const row=(key,label,pairs,mode='pair',format=String)=>({key,label,pairs,mode,format});
+    const traits=(group,labels,prefix)=>Object.entries(labels).map(([key,label])=>row(`${prefix}.${key}`,label,[group[key]]));
+    return [
+      {label:'身体・管理の遺伝品質',rows:Object.keys({...abilityLabels,...R.MANAGEMENT}).map(key=>row(`quality.${key}`,traitLabels[key],g.quality[key],'favorable'))},
+      {label:'生来の性格',rows:traits(g.character,R.PERSONALITY,'character')},
+      {label:'体質と出力配分',rows:[row('distance','筋・代謝構成',[g.distance]),row('release','出力配分',[g.release])]},
+      {label:'羽場・コースと成長',rows:[...traits(g.traits.aptitude,R.Genetics.APTITUDES,'aptitude'),...traits(g.traits.development,R.Genetics.DEVELOPMENT,'development')]},
+      {label:'羽色因子',rows:[row('body','通常羽色',[g.traits.body],'pair',color=>R.Genetics.COLORS[color]),row('gold','金因子',[g.traits.gold]),row('crest','額羽の継承因子',[[g.traits.crest]],'pair',crest=>R.Genetics.CRESTS[crest])]},
+      {label:'潜性の欠点の全座位',rows:Object.entries(R.DEFECTS).map(([id,d])=>row(`defects.${id}`,`${R.DEFECT_LABELS[d.trait]}（${R.ROOTS.find(p=>p.lineage===d.source).name}）`,g.defects[id]||Array.from({length:R.Breeding.DEFECT_LOCI},()=>[0,0]),'unfavorable'))},
+    ];
   }
-  function geneticResearch(state,b,{open=true,compact=false}={}) {
+  function locusValue(row) {
+    if(row.mode==='pair')return `<b class="gene-pair">${row.pairs.map(pair=>pair.map(value=>esc(row.format(value))).join(' / ')).join(' ・ ')}</b>`;
+    // Defect alleles use 1=a, while favorable quality alleles use 1=A.
+    const symbols=row.mode==='favorable'?['◯','◎','☆']:['◯','△','X'];
+    const sequence=row.pairs.map(pair=>symbols[pair[0]+pair[1]]).join('');
+    return `<b class="gene-sequence" aria-label="${esc(row.label)}：${row.pairs.length}座位、${sequence}">${[...sequence].map(symbol=>`<span>${symbol}</span>`).join('')}</b>`;
+  }
+  function locusContent(birds) {
+    const groups=birds.map(({bird})=>locusGroups(bird));
+    return groups[0].map((group,index)=>`<details class="gene-category"${index===0?' open':''}><summary>${group.label}</summary><div class="gene-rows">${group.rows.map((row,i)=>`<div class="gene-row" data-locus-key="${row.key}"><div class="gene-row-label">${esc(row.label)}${row.key==='crest'?'':` <small>${row.pairs.length}座位</small>`}</div><div class="gene-strip-scroll" tabindex="0" role="region" aria-label="${esc(row.label)}の座位">${birds.map(({label},j)=>`<div class="gene-parent-row">${label?`<span class="gene-parent-label">${label}</span>`:''}${locusValue(groups[j][index].rows[i])}</div>`).join('')}</div></div>`).join('')}</div></details>`).join('');
+  }
+  function geneLoci(b) {
+    return `<details class="gene-details"><summary>遺伝の座位情報（全因子）</summary>${locusContent([{bird:b}])}</details>`;
+  }
+  function locusComparison(state,sire,dam) {
+    if(!sire||!dam||!lociUnlocked(state))return '';
+    return `<details class="paper gene-comparison" open><summary>父母の遺伝座位を比較</summary><p class="gene-comparison-parents">父：${esc(sire.name)}<br>母：${esc(dam.name)}</p>${locusContent([{bird:sire,label:'父'},{bird:dam,label:'母'}])}</details>`;
+  }
+  function geneticResearch(state,b,{open=true,compact=false,showLoci=true}={}) {
     const level=R.labLevel(state),traits=b.genome.traits,growth=R.Genetics.growth(traits);
     const numeric=level>=2;
-    const extra=`${level>=1?`<h3>羽色の遺伝</h3><p class="muted">${colorText(b)}</p><p class="muted">${R.profile(b).distance} / ${R.profile(b).style} / 成長型：${{early:'早熟',normal:'普通',late:'晩成'}[b.growth]}</p>`:''}${numeric?`<p class="muted">成熟の目安 ${growth.maturityYears.toFixed(1)}歳 / 衰え始め ${growth.declineStart.toFixed(1)}歳 / 以後の低下 年${(growth.declineRate*100).toFixed(1)}%</p>${defectResearch(b)}${geneLoci(b)}`:''}`;
+    const extra=`${level>=1?`<h3>羽色の遺伝</h3><p class="muted">${colorText(b)}</p><p class="muted">${R.profile(b).distance} / ${R.profile(b).style} / 成長型：${{early:'早熟',normal:'普通',late:'晩成'}[b.growth]}</p>`:''}${numeric?`<p class="muted">成熟の目安 ${growth.maturityYears.toFixed(1)}歳 / 衰え始め ${growth.declineStart.toFixed(1)}歳 / 以後の低下 年${(growth.declineRate*100).toFixed(1)}%</p>${defectResearch(b)}`:''}${showLoci&&lociUnlocked(state)?geneLoci(b):''}`;
     return `<details class="research genetics"${open?' open':''}><summary>遺伝</summary><h3>能力の遺伝</h3>${ratingTable(R.geneticScores(b),statLabels,{numeric,genetic:true})}${level>=1?`<h3>羽場適性の遺伝</h3>${ratingTable(traitScores(traits.aptitude),R.Genetics.SURFACE_APTITUDES,{numeric,genetic:true})}<h3>コーナー・直線適性の遺伝</h3>${ratingTable(traitScores(traits.aptitude),R.Genetics.COURSE_APTITUDES,{numeric,genetic:true})}<h3>成長と加齢の遺伝</h3>${ratingTable(traitScores(traits.development),R.Genetics.DEVELOPMENT,{numeric,genetic:true})}`:''}${compact&&extra?`<details class="genetic-notes"><summary>羽色・体質・遺伝因子</summary>${extra}</details>`:extra}</details>`;
   }
   function status(state,b) {
@@ -62,5 +88,5 @@
     }).join('')}</div>`;
     return `<section class="birth-genetics"><h4>生まれ持った素質</h4><p class="muted">結果 / 範囲</p><h5>身体・管理・性格</h5>${table(statLabels)}${level>=1?`<h5>羽場適性</h5>${table(R.Genetics.SURFACE_APTITUDES)}${Object.keys(R.Genetics.COURSE_APTITUDES).some(key=>report.geneticLottery[key])?`<h5>コーナー・直線適性</h5>${table(R.Genetics.COURSE_APTITUDES)}`:''}<h5>成長と加齢</h5>${table(R.Genetics.DEVELOPMENT)}`:''}</section>`;
   }
-  return Object.freeze({genetics:geneticResearch,status,birthGenetics});
+  return Object.freeze({genetics:geneticResearch,status,birthGenetics,locusComparison});
 });
