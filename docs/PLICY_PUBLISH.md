@@ -43,7 +43,7 @@ hanekaze-ranch-plicy.zip
 
 試作・プレビューページ、旧ゲームUI、バランスラボ、Blender制作ファイル、生成プロンプト、元画像・マスク、素材ZIP、テスト、セーブデータ、`node_modules/`、`server.cjs` は含めません。
 
-ZIP内のHTML・JSでは、`/assets/`・`/js/`・`/vendor/` で始まる参照を用途に応じた相対パスへ変換します。WebGL観戦には撮影用の `preserveDrawingBuffer: true` を付けます。`public/` の原本は変更しません。新しい素材カテゴリを導入した場合は、スクリプトの `ASSETS`・`ASSET_PATTERNS` も確認してください。
+ZIP内のHTML・JSでは、`/assets/`・`/js/`・`/vendor/` で始まる参照を用途に応じた相対パスへ変換します。WebGL観戦には撮影用の `preserveDrawingBuffer: true` を付けます。`public/` の原本は変更しません。新しい素材カテゴリを導入した場合は、共通処理 `tools/lib/static_site.py` の `ASSETS`・`ASSET_PATTERNS` も確認してください。
 
 ## 2. ZIPから動作を確認する
 

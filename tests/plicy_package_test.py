@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,6 +11,7 @@ from zipfile import ZipFile
 
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "tools"))
 spec = importlib.util.spec_from_file_location("package_plicy", REPO / "tools/package-plicy.py")
 package = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(package)

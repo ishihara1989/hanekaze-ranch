@@ -5,6 +5,8 @@
   "description": "配合・血統・レース観戦を楽しむ牧場ゲームのプロトタイプ",
   "scripts": {
     "start": "node server.cjs",
+    "build:pages": "python tools/build-pages.py",
+    "test:pages": "python -m unittest discover -s tests -p pages_build_test.py",
     "package:plicy": "python tools/package-plicy.py",
     "test:plicy": "python -m unittest discover -s tests -p plicy_package_test.py",
     "test": "node tools/run-tests.cjs",
