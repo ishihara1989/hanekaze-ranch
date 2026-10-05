@@ -134,6 +134,10 @@ test('short turf and dirt graded races can be chosen automatically and settled f
   const s=R.initial(),b=R.own(s)[0];s.stage='running';s.week=38;s.money=1000000;
   Object.assign(b,{wins:3,races:3,birthYear:-2,lastRace:-100,policy:'challenge',condition:100,strain:0,health:0});
   b.genome.distance=[-.8,-.8];
+  Object.assign(b.potential,{speed:150,cardio:65,power:150,reserve:150,legs:65,economy:65,start:150,resilience:65});
+  for(const key in b.training)b.training[key]=1;
+  for(const key in b.personality)b.personality[key]=100;
+  for(const key in b.genome.traits.aptitude)b.genome.traits.aptitude[key]=[.5,.5];
   for(const [surface,week] of [['turf',32],['dirt',38]]){
     s.week=week;b.genome.traits.aptitude[surface]=[1,1];b.genome.traits.aptitude[surface==='turf'?'dirt':'turf']=[0,0];
     const e=R.nextRace(s,b);assert.ok(/^G/.test(e.level),e.name);assert.equal(e.surface,surface);assert.ok(e.distance<=1600);

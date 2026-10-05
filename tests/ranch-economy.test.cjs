@@ -123,7 +123,9 @@ test('two player runners share the same G1 field and produce only one winner',()
   b.genome.distance=[.5,.5];
   b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
   const second=copy(b);second.id=`bird-${s.serial++}`;second.name='ハネカゼノツバサ';s.birds.push(second);
-  assert.equal(R.nextRace(s,b).name,'チョコボダービー');
+  const derby=R.raceOptions(s,b,s.week).find(e=>e.name==='チョコボダービー');
+  for(const runner of [b,second])R.setSchedule(s,runner.id,s.week,{mode:'race',eventId:derby.id});
+  assert.equal(R.nextRace(s,b).id,derby.id);
   const restored=copy(s);R.advance(s);R.advance(restored);assert.deepEqual(s,restored);
   assert.equal(b.records.length,1);assert.equal(second.records.length,1);
   assert.deepEqual(b.records[0].field,second.records[0].field);assert.notEqual(b.records[0].rank,second.records[0].rank);

@@ -10,8 +10,12 @@ const openContender=()=>{
   const {s,b}=ranch();Object.assign(s,{week:11,money:1000000000,reports:[]});
   Object.assign(b,{birthYear:-3,wins:4,races:4,lastRace:7});
   b.genome.distance=[0,0];b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
-  for(const key in b.potential){b.potential[key]=150;b.training[key]=1;}
-  return {s,b,g2:R.calendar(11).find(e=>e.name==='金色リヴァイアサン賞'),g1:R.calendar(13).find(e=>e.name==='リヴァイアサン記念')};
+  Object.assign(b.potential,{speed:80,cardio:120,power:60,reserve:80,legs:150,economy:140,start:150,resilience:150});
+  for(const key in b.training)b.training[key]=1;
+  for(const key in b.personality)b.personality[key]=100;
+  for(const key in b.genome.traits.aptitude)b.genome.traits.aptitude[key]=[.5,.5];
+  b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
+  return {s,b,g2:R.calendar(11).find(e=>e.name==='天空大賞典'),g1:R.calendar(13).find(e=>e.name==='リヴァイアサン記念')};
 };
 
 test('breeding only permits all eight spring weeks, including boundaries and later years',()=>{
@@ -208,7 +212,9 @@ test('a G1 three weeks away replaces G2, but an exact four-week gap keeps both r
     const {s,b,g1}=openContender();b.policy=policy;s.week=10;
     assert.equal(R.nextRace(s,b).id,g1.id,'three weeks after the earlier target');
     s.week=9;b.lastRace=5;
-    const prep=R.nextRace(s,b);assert.equal(prep.week,9);assert.equal(prep.level,'GII');
+    const prep=R.raceOptions(s,b,9).find(e=>e.level==='GII');
+    R.setSchedule(s,b.id,9,{mode:'race',eventId:prep.id});
+    assert.equal(R.nextRace(s,b).id,prep.id);
     b.lastRace=9;s.week=10;assert.equal(R.nextRace(s,b).id,g1.id,'four weeks after the prep');
   }
 });

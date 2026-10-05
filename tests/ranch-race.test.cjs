@@ -210,6 +210,8 @@ test('multiple player entrants share one gate draw in the same graded race',()=>
   first.genome.distance=[.5,.5];
   first.genome.traits.aptitude.turf=[1,1];first.genome.traits.aptitude.dirt=[0,0];
   const second={...structuredClone(first),id:`bird-${s.serial++}`,name:'ハネカゼノツバサ'};s.birds.push(second);
+  const derby=R.raceOptions(s,first,s.week).find(e=>e.name==='チョコボダービー');
+  for(const runner of [first,second])R.setSchedule(s,runner.id,s.week,{mode:'race',eventId:derby.id});
   R.advance(s);
   const a=first.records.at(-1),b=second.records.at(-1);
   assert.equal(a.name,'チョコボダービー');assert.equal(b.name,a.name);

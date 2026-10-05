@@ -47,7 +47,9 @@ test('breeding inherits genes, never parent training or learned personality',()=
   assert.deepEqual(ca.genome,cb.genome);assert.deepEqual(ca.potential,cb.potential);assert.deepEqual(ca.inborn,cb.inborn);
 });
 test('reload keeps random stream, reports, finances and races deterministic without double payment',()=>{
-  const {s,b}=racer();const loaded=copy(s);R.advance(s);R.advance(loaded);assert.deepEqual(s,loaded);assert.ok(R.validState(s));
+  const {s,b}=racer(),event=R.raceOptions(s,b,s.week)[0];
+  R.setSchedule(s,b.id,s.week,{mode:'race',eventId:event.id});
+  const loaded=copy(s);R.advance(s);R.advance(loaded);assert.deepEqual(s,loaded);assert.ok(R.validState(s));
   const result=b.records[0],paid=s.money;assert.ok(result);assert.throws(()=>R.race(s,b,W.calendar(result.week)[0]));assert.equal(s.money,paid);
 });
 test('winning unlocks one-time conversations, fan bonuses and research; race settlement is guarded',()=>{

@@ -4,6 +4,15 @@ const assert=require('node:assert/strict');
 const R=require('../tools/lib/ranch-fixtures.cjs').R;
 const W=require('../public/js/world.js');
 const copy=x=>structuredClone(x);
+const endurance={speed:70,cardio:150,power:60,reserve:60,legs:150,economy:150,start:100,resilience:150};
+const sprint={speed:150,cardio:65,power:150,reserve:150,legs:65,economy:65,start:150,resilience:65};
+function trainedProfile(b,abilities){
+  Object.assign(b,{birthYear:-3,condition:100,strain:0,health:0});
+  Object.assign(b.potential,abilities);
+  for(const key in b.training)b.training[key]=1;
+  for(const key in b.personality)b.personality[key]=100;
+  for(const key in b.genome.traits.aptitude)b.genome.traits.aptitude[key]=[.5,.5];
+}
 
 test('every class offers suitable distances on both surfaces, preserving legacy event IDs',()=>{
   for(let week=1;week<=48;week++){
@@ -21,15 +30,14 @@ test('every class offers suitable distances on both surfaces, preserving legacy 
   }
 });
 
-test('automatic racing stays within distance aptitude at every class and under either policy',()=>{
+test('automatic racing respects entry conditions and spacing at every class and under either policy',()=>{
   const s=R.initial(),b=R.own(s)[0],before=s.rng;
-  for(const policy of ['steady','challenge'])for(const [tendency,min,max] of [[-.85,1000,1600],[0,1600,2200],[.5,2200,3600],[.85,2200,3600]]){
-    b.policy=policy;b.genome.distance=[tendency,tendency];
+  for(const policy of ['steady','challenge']){
+    b.policy=policy;
     for(let wins=0;wins<=6;wins++)for(const races of wins?[wins]:[0,1])for(let week=1;week<=48;week++){
       Object.assign(b,{wins,races,birthYear:-2,lastRace:week-4});s.week=week;
       const e=R.nextRace(s,b);
-      assert.ok(e,`${policy}/${tendency}/${wins}/${week}`);
-      assert.ok(e.distance>=min&&e.distance<=max,`${policy}/${tendency}/${wins}/${week}: ${e.name} ${e.distance}`);
+      assert.ok(e,`${policy}/${wins}/${week}`);
       assert.ok(e.week-b.lastRace>=4);
       assert.ok(R.eligible({...s,week:e.week},b,e));
     }
@@ -37,18 +45,64 @@ test('automatic racing stays within distance aptitude at every class and under e
   assert.equal(s.rng,before);
 });
 
-test('challenge policy cannot outweigh a pronounced surface preference or distance mismatch',()=>{
+test('abilities can override body constitution in either direction across ordinary classes and policies',()=>{
+  const s=R.initial(),b=R.own(s)[0];
+  for(const policy of ['steady','challenge'])for(const [tendency,abilities,distance] of [[-.85,endurance,3000],[.85,sprint,1400]]){
+    trainedProfile(b,abilities);b.policy=policy;b.genome.distance=[tendency,tendency];
+    for(const [races,wins] of [[0,0],[1,0],[1,1],[2,2],[3,3]]){
+      Object.assign(b,{races,wins,lastRace:s.week-4});
+      const before=JSON.stringify(s),e=R.nextRace(s,b);
+      assert.equal(e.distance,distance,`${policy}/${tendency}/${wins}`);
+      assert.equal(JSON.stringify(s),before);
+      const loaded=R.deserializeState(R.serializeState(s));
+      assert.equal(R.nextRace(loaded,R.bird(loaded,b.id)).id,e.id);
+    }
+  }
+});
+
+test('changing body constitution alone does not override unchanged current abilities',()=>{
+  const s=R.initial(),b=R.own(s)[0];trainedProfile(b,endurance);
+  const first=R.nextRace(s,b);
+  for(const tendency of [-1,0,1]){
+    b.genome.distance=[tendency,tendency];assert.equal(R.nextRace(s,b).id,first.id);
+  }
+  // Re-evaluate the same save after its actual ability balance changes.
+  trainedProfile(b,sprint);assert.equal(R.nextRace(s,b).distance,1400);
+});
+
+test('distance selection follows current training rather than untrained potential',()=>{
+  const s=R.initial(),b=R.own(s)[0];
+  trainedProfile(b,{...endurance,speed:120,power:100,reserve:100});
+  const potential=copy(b.potential);
+  for(const key of ['cardio','legs','economy','resilience'])b.training[key]=0;
+  assert.equal(R.nextRace(s,b).distance,1400);
+  for(const key in b.training)b.training[key]=1;
+  assert.equal(R.nextRace(s,b).distance,3000);
+  assert.deepEqual(b.potential,potential);
+});
+
+test('short-distance constitution does not exclude a winnable long-distance G1',()=>{
+  const s=R.initial(),b=R.own(s)[0];trainedProfile(b,endurance);
+  Object.assign(s,{week:17,money:1000000000});
+  Object.assign(b,{wins:4,races:4,lastRace:13});b.genome.distance=[-1,-1];
+  b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
+  for(const policy of ['steady','challenge']){
+    b.policy=policy;const e=R.nextRace(s,b);
+    assert.equal(e.level,'GI');assert.equal(e.distance,3200);assert.equal(e.week,17);
+    assert.equal(R.raceOutlook(s,b,e).contender,true);
+  }
+});
+
+test('challenge policy preserves a pronounced surface preference while considering all distances',()=>{
   const s=R.initial(),b=R.own(s)[0];
   Object.assign(b,{wins:2,races:2,birthYear:-2,policy:'challenge'});b.genome.distance=[-.8,-.8];
   for(const surface of ['turf','dirt']){
     b.genome.traits.aptitude[surface]=[1,1];b.genome.traits.aptitude[surface==='turf'?'dirt':'turf']=[0,0];
     for(let week=1;week<=48;week++){
       s.week=week;const e=R.nextRace(s,b);
-      assert.equal(e.surface,surface);assert.ok(e.distance<=1600);
+      assert.equal(e.surface,surface);
     }
   }
-  s.week=21;b.genome.distance=[.5,.5];b.genome.traits.aptitude.turf=[1,1];b.genome.traits.aptitude.dirt=[0,0];
-  assert.equal(R.nextRace(s,b).name,'チョコボダービー');
 });
 
 test('future plans apply next calendar year age restrictions and keep the four-week interval',()=>{

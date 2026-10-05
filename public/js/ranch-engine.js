@@ -1010,18 +1010,17 @@
       if(e)return e;
       if(Number(week)===s.week)return null;
     }
-    const tendency=mean(b.genome.distance),preferred=tendency>.65?3000:tendency>.3?2400:tendency<-.3?1400:1800;
-    const [minDistance,maxDistance]=tendency>.3?[2200,3600]:tendency<-.3?[1000,1600]:[1600,2200];
     const bestSurface=Math.max(mean(b.genome.traits.aptitude.turf),mean(b.genome.traits.aptitude.dirt));
     const candidates=[];
     // Include three extra weeks to compare races blocked by a late target.
     for(let week=s.week;week<s.week+15;week++) {
       if (!scheduledGap(b,week)||b.schedule?.[week]) continue;
       for(const e of calendar(week)) if(eligible({...s,week},b,e)) {
-        if(e.distance<minDistance||e.distance>maxDistance||mean(b.genome.traits.aptitude[e.surface])<bestSurface-.15)continue;
+        if(mean(b.genome.traits.aptitude[e.surface])<bestSurface-.15)continue;
         const graded=/^G/.test(e.level);
-        const footing=Ground.efficiency(b.genome.traits,e);
-        candidates.push({event:e,score:Math.abs(e.distance-preferred)/800+(week-s.week)*.13+8*(1-footing.traction)-(b.policy==='challenge'&&graded?3:0)-(e.opponents==='general'?.1:0)});
+        const fit=raceSuitability({...s,week},b,e);
+        if(!Number.isFinite(fit))continue;
+        candidates.push({event:e,score:fit+(week-s.week)*.13-(b.policy==='challenge'&&graded?3:0)-(e.opponents==='general'?.1:0)});
       }
     }
     if(b.policy==='steady')for(const c of candidates)if(/^G/.test(c.event.level))c.score-=2;
@@ -1047,6 +1046,30 @@
     return target.event;
   }
   const outlookRosters=new WeakMap(),outlookTimes=new Map();
+  const standardAbilities=Object.fromEntries(Mapping.ABILITIES.map(({key})=>[key,100]));
+  const standardPersonality=Object.fromEntries(Object.keys(PERSONALITY).map(key=>[key,100]));
+  const standardAptitude=Object.fromEntries([...Object.keys(Genetics.SURFACE_APTITUDES),...Object.keys(Genetics.COURSE_APTITUDES)].map(key=>[key,[.5,.5]]));
+  function forecastTime(entry,e) {
+    const track=e.track||Calendar.TRACKS[e.trackId]||{};
+    // Compare every runner from the same inner gate, without predicting the draw.
+    const key=JSON.stringify([e.distance,e.hill,track,entry.p,entry.traits,entry.aptitude,entry.cruise,entry.state,entry.ground]);
+    if(!outlookTimes.has(key)){
+      const run=Race.simulate([{...entry,lane:0}],e,{track})[0];
+      if(outlookTimes.size>=2048)outlookTimes.delete(outlookTimes.keys().next().value);
+      outlookTimes.set(key,run.finished?run.time:Infinity);
+    }
+    return outlookTimes.get(key);
+  }
+  function raceSuitability(s,b,e) {
+    const time=forecastTime(raceEntry(s,b,e),e);
+    const reference={...b,filler:false,condition:100,strain:0,personality:standardPersonality,
+      genome:{...b.genome,traits:{...b.genome.traits,aptitude:standardAptitude}}};
+    const standardTime=forecastTime(raceEntry(s,reference,e,standardAbilities),e);
+    // Relative times make different distances comparable. Body constitution is
+    // already reflected in abilities; do not impose a second distance restriction.
+    // A 1% performance advantage is worth roughly three weeks of waiting.
+    return 40*(time/standardTime-1);
+  }
   function raceOutlook(s,b,e) {
     const snapshot={...s,week:e.week},year=date(e.week).year,route=worldRoute(e),group=worldGroup(route||e);
     let rivals=route?s.birds.filter(r=>r.owner==='npc'&&r.season===year&&r.worldGroup===group):[];
@@ -1060,17 +1083,7 @@
       rivals=cache.groups.get(key);
     }
     rivals=rivals.filter(r=>age(snapshot,r)>=e.minAge&&age(snapshot,r)<=e.maxAge&&(!e.sex||r.sex===e.sex)).slice(0,11);
-    const timeFor=runner=>{
-      const entry=raceEntry(snapshot,runner,e),track=e.track||Calendar.TRACKS[e.trackId]||{};
-      // Compare every runner from the same inner gate, without predicting the draw.
-      const key=JSON.stringify([e.distance,e.hill,track,entry.p,entry.traits,entry.aptitude,entry.cruise,entry.state,entry.ground]);
-      if(!outlookTimes.has(key)){
-        const run=Race.simulate([{...entry,lane:0}],e,{track})[0];
-        if(outlookTimes.size>=2048)outlookTimes.delete(outlookTimes.keys().next().value);
-        outlookTimes.set(key,run.finished?run.time:Infinity);
-      }
-      return outlookTimes.get(key);
-    };
+    const timeFor=runner=>forecastTime(raceEntry(snapshot,runner,e),e);
     const time=timeFor(b),bestRivalTime=Math.min(...rivals.map(timeFor));
     // Within 1% of the fastest opponent is a plausible winning contest, not a guarantee.
     return {time,bestRivalTime,contender:rivals.length>0&&Number.isFinite(time)&&Number.isFinite(bestRivalTime)&&time<=bestRivalTime*1.01};
@@ -1096,8 +1109,8 @@
     }
     return rows;
   }
-  function raceEntry(s,b,e) {
-    const abilities=currentAbilities(s,b),base=Mapping.toPhysics(abilities);
+  function raceEntry(s,b,e,abilities=currentAbilities(s,b)) {
+    const base=Mapping.toPhysics(abilities);
     // General entrants have a lower physical ceiling even when a debutant is
     // still near the minimum ability score. Results still come from simulation.
     const p=b.filler?Physics.parameters({...base,criticalSpeed:base.criticalSpeed*.8,maxSpeed:base.maxSpeed*.65}):base;
