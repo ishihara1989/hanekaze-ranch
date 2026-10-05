@@ -26,7 +26,7 @@ async function boot(raw,seeds=[12345,67890,13579],slots=new Map()){
     requestAnimationFrame:fn=>fn(),setTimeout:fn=>{fn();return 1;},window:{scrollTo(){},addEventListener(){}}});
   const source=fs.readFileSync(require.resolve('../public/js/ranch-ui.js'),'utf8');
   await vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.hooks={get state(){return state},get modal(){return modal},render};})();`),ctx);
-  return {h:ctx.hooks,storage,get entropyCalls(){return entropyCalls;},
+  return {h:ctx.hooks,storage,html:()=>node('#app').innerHTML,get entropyCalls(){return entropyCalls;},
     async click(action,data={}){await handlers.click({target:{closest:()=>({dataset:{action,...data},disabled:false})}});},
     async import(raw){await handlers.change({target:{id:'import-file',value:'',dataset:{},files:[{size:raw.length,text:async()=>raw}],matches(){return false;}}});}};
 }
@@ -120,6 +120,30 @@ test('legacy slot summaries are backfilled once without rewriting good or damage
     const views=await g.storage.readSummaries([slotKey(1),slotKey(2)]);
     assert.equal(views.get(slotKey(1)).week,9);assert.equal(views.get(slotKey(2)).invalid,true);
   }finally{R.deserializeState=deserialize;g.storage.close();}
+});
+
+test('old autumn reservations recover through autosave, slots and file import without overwriting backups',async()=>{
+  const s=R.initial();s.week=38;R.upgradeState(s);
+  const b=R.own(s)[0];b.schedule={41:{mode:'race',eventId:'41:stakes'}};
+  const raw=R.serializeState(s),expected=R.upgradeState(structuredClone(s));
+  const slot=JSON.stringify({version:1,savedAt:'2026-10-05T00:00:00Z',data:raw});
+  const g=await boot(raw,undefined,new Map([[slotKey(1),slot]]));
+  try{
+    assert.equal(snapshot(g.h.state),snapshot(expected));
+    assert.doesNotMatch(g.html(),/保存データを読み込めませんでした/);
+    await g.storage.write(slotKey(1),slot,slot,{version:1,invalid:true});
+    await g.click('nav',{page:'settings'});
+    assert.doesNotMatch(g.html(),/データを読み込めません/);
+    const summary=(await g.storage.readSummaries([slotKey(1)])).get(slotKey(1));
+    assert.equal(summary.week,38);assert.equal(summary.invalid,undefined);
+    assert.equal(await g.storage.read(slotKey(1)),slot);
+    await g.click('slot-load',{slot:'1'});assert.equal(g.h.modal.type,'slot-load');
+    await g.click('slot-load-confirm');assert.equal(snapshot(g.h.state),snapshot(expected));
+    assert.ok(R.validState(g.h.state));assert.equal(await g.storage.read(slotKey(1)),slot);
+    await g.import(raw);assert.equal(g.h.modal.type,'import');
+    await g.click('import-confirm');assert.equal(snapshot(g.h.state),snapshot(expected));
+    assert.ok(R.validState(g.h.state));assert.equal(await g.storage.read(slotKey(1)),slot);
+  }finally{g.storage.close();}
 });
 
 test('damaged or unwritable summary metadata cannot prevent loading an intact snapshot',async()=>{

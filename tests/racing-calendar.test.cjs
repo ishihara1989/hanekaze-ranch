@@ -84,6 +84,41 @@ test('moving autumn Odin preserves the IDs of other October and November stakes'
   }
 });
 
+test('legacy autumn Odin bookings load and migrate without changing other saved progress',()=>{
+  for(const year of [0,1,10]){
+    const s=R.initial(),offset=year*48;
+    s.week=38+offset;R.upgradeState(s);
+    const b=R.own(s)[0];b.lastRace=36+offset;
+    b.schedule={[41+offset]:{mode:'race',eventId:`${41+offset}:stakes`},[42+offset]:{mode:'rest'}};
+    const expected=structuredClone(s);
+    expected.birds.find(r=>r.id===b.id).schedule={
+      [40+offset]:{mode:'race',eventId:`${40+offset}:stakes-odin-autumn`},[42+offset]:{mode:'rest'},
+    };
+    const restored=R.deserializeState(R.serializeState(s));
+    assert.ok(R.validState(restored),'old reservation remains readable before upgrade');
+    R.upgradeState(restored);
+    assert.ok(R.validState(restored));assert.deepEqual(restored,expected);
+    R.upgradeState(restored);assert.deepEqual(restored,expected);
+  }
+});
+
+test('unavailable legacy autumn bookings cancel only that reservation and invalid IDs stay rejected',()=>{
+  for(const conflict of ['elapsed','rest','lastRace','nearbyRace']){
+    const s=R.initial();s.week=conflict==='elapsed'?41:38;R.upgradeState(s);
+    const b=R.own(s)[0];b.schedule={41:{mode:'race',eventId:'41:stakes'}};
+    if(conflict==='rest')b.schedule[40]={mode:'rest'};
+    if(conflict==='lastRace')b.lastRace=37;
+    if(conflict==='nearbyRace')b.schedule[43]={mode:'race',eventId:R.calendar(43)[0].id};
+    const expected=structuredClone(s);delete expected.birds.find(r=>r.id===b.id).schedule[41];
+    assert.ok(R.validState(s));R.upgradeState(s);
+    assert.ok(R.validState(s));assert.deepEqual(s,expected);
+  }
+  for(const id of ['41:missing','40:stakes-missing','89:stakes']){
+    const s=R.initial();s.week=38;R.own(s)[0].schedule={41:{mode:'race',eventId:id}};
+    assert.equal(R.validState(s),false);
+  }
+});
+
 test('NPC rosters fill every expanded grade and obey age, sex and persistent divisions',()=>{
   const s=R.initial();
   for(const e of annual()){

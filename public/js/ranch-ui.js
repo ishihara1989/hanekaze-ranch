@@ -61,7 +61,7 @@
   let sireGeneticFilters=[{trait:'',rating:'☆'}];
   let state,page='home',modal=null,damId='',sireId='',breedingFruit='none',busy=false,saveOK=true,saveBlocked=false,notice='',birdFilter='all',notebookTab='calendar',returnFocus=null;
   let raceViewer=null,viewerGeneration=0;
-  const SAVE_SLOTS=5,storage=RanchStorage.create();
+  const SAVE_SLOTS=5,SLOT_SUMMARY_VERSION=2,storage=RanchStorage.create();
   const saveKeys=[R.SAVE_KEY,...Array.from({length:SAVE_SLOTS},(_,i)=>slotKey(i+1))];
   let savedValues=new Map(),autosaveRaw=null,storageReady=false,loading=true,persisting=0;
   const slotViews=new Map();
@@ -120,11 +120,11 @@
   }
   function slotView(entry) {
     if(entry.empty)return null;
-    if(entry.invalid)return {version:1,invalid:true};
-    return {version:1,savedAt:entry.savedAt,week:entry.state.week,money:entry.state.money,owned:R.own(entry.state).length};
+    if(entry.invalid)return {version:SLOT_SUMMARY_VERSION,invalid:true};
+    return {version:SLOT_SUMMARY_VERSION,savedAt:entry.savedAt,week:entry.state.week,money:entry.state.money,owned:R.own(entry.state).length};
   }
   function validSlotView(value) {
-    return value?.version===1&&(value.invalid===true||
+    return value?.version===SLOT_SUMMARY_VERSION&&(value.invalid===true||
       typeof value.savedAt==='string'&&Number.isFinite(Date.parse(value.savedAt))&&
       Number.isInteger(value.week)&&value.week>=9&&Number.isFinite(value.money)&&value.money>=0&&
       Number.isInteger(value.owned)&&value.owned>=0);
@@ -132,7 +132,7 @@
   async function writeSlot(slot,expectedRaw) {
     const key=slotKey(slot);
     try {
-      const savedAt=new Date().toISOString(),view={version:1,savedAt,week:state.week,money:state.money,owned:R.own(state).length};
+      const savedAt=new Date().toISOString(),view={version:SLOT_SUMMARY_VERSION,savedAt,week:state.week,money:state.money,owned:R.own(state).length};
       const raw=JSON.stringify({version:1,savedAt,data:R.serializeState(state)});
       await storage.write(key,raw,expectedRaw,view);slotViews.set(key,view);
     }catch(e){throw Error(e.code==='changed'?'このスロットは別のタブで更新されました。確認画面を閉じて選び直してください。':'セーブできませんでした。保存容量やブラウザの保存設定を確認し、必要ならデータを書き出してください。');}
@@ -701,7 +701,7 @@
       for(let slot=1;slot<=SAVE_SLOTS;slot++){
         const key=slotKey(slot),view=views.get(key);
         if(view===null||validSlotView(view)){slotViews.set(key,view);continue;}
-        // Older slots acquire a summary once, without rewriting their snapshot.
+        // Revalidate older summaries, including failures cached before save compatibility fixes.
         try{
           savedValues.set(key,await storage.read(key));
           const entry=readSlot(slot),summary=slotView(entry);

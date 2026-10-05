@@ -679,8 +679,21 @@
     }
     s.worldVersion=1;
   }
+  function legacyAutumnBooking(week,plan) {
+    return date(Number(week)).week===41&&plan?.mode==='race'&&plan.eventId===`${week}:stakes`;
+  }
   function upgradeState(s) {
     s.naming??={...DEFAULT_NAMING};
+    // The old autumn Odin reservation must not make an otherwise intact save unreadable.
+    for(const b of s.birds)for(const [week,plan] of Object.entries(b.schedule||{}))if(legacyAutumnBooking(week,plan)){
+      const movedWeek=Number(week)-1;
+      delete b.schedule[week];
+      // Preserve other plans; an elapsed or conflicting booking is simply cancelled.
+      if(movedWeek>=s.week&&!b.schedule[movedWeek]&&scheduledGap(b,movedWeek)){
+        const event=calendar(movedWeek).find(e=>e.name===TITLES.autumn[0]);
+        b.schedule[movedWeek]={mode:'race',eventId:event.id};
+      }
+    }
     // Refresh the old sale introduction without changing the bird or its abilities.
     for(const b of s.birds)if(b.comment==='おだやかで、人の合図によく耳を傾ける子です。')
       b.comment='おだやかで、周りにつられず自分のペースを保てる子です。';
@@ -1353,7 +1366,7 @@
     const scores=(x,keys)=>x&&keys.every(k=>finite(x[k],50,150));
     const schedule=plans=>plans===undefined||plans&&typeof plans==='object'&&!Array.isArray(plans)&&Object.keys(plans).length<=8&&Object.entries(plans).every(([week,p])=>
       /^\d+$/.test(week)&&Number.isSafeInteger(Number(week))&&Number(week)>=s.week&&Number(week)<s.week+8&&p&&['training','rest','race'].includes(p.mode)&&
-      (p.mode!=='training'||Object.hasOwn(TRAINING_MENUS,p.menu))&&(p.mode!=='race'||typeof p.eventId==='string'&&calendar(Number(week)).some(e=>e.id===p.eventId)));
+      (p.mode!=='training'||Object.hasOwn(TRAINING_MENUS,p.menu))&&(p.mode!=='race'||typeof p.eventId==='string'&&(calendar(Number(week)).some(e=>e.id===p.eventId)||legacyAutumnBooking(week,p))));
     const record=r=>r&&typeof r.name==='string'&&Number.isInteger(r.week)&&Number.isInteger(r.year)&&finite(r.rank,1,12)&&finite(r.time,0,900)&&finite(r.reward,0,1e15)&&['prize','allowance','fee'].every(k=>r[k]===undefined||finite(r[k],0,1e15))&&finite(r.distance,100,10000)&&['turf','dirt'].includes(r.surface)&&typeof r.level==='string'&&Array.isArray(r.field)&&r.field.every(x=>x&&typeof x.name==='string'&&typeof x.id==='string'&&finite(x.time,0,900))&&(r.replay===undefined||Replay.valid(r.replay,r));
     if(!s.birds.every(b=>b&&/^bird-\d+$/.test(b.id)&&typeof b.name==='string'&&b.name.length<=40&&(b.farm===undefined||typeof b.farm==='string'&&b.farm.length<=40)&&(b.season===undefined||Number.isInteger(b.season))&&(b.worldGroup===undefined||typeof b.worldGroup==='string')&&['M','F'].includes(b.sex)&&['player','sale','public','source','archive','npc'].includes(b.owner)&&['young','racing','mare','stud','retired','archived'].includes(b.role)&&['root','founder','home','general'].includes(b.kind)&&Number.isInteger(b.birthYear)&&Number.isInteger(b.bornWeek)&&
       scores(b.potential,Mapping.ABILITIES.map(a=>a.key))&&scores(b.personality,Object.keys(PERSONALITY))&&scores(b.inborn,Object.keys(PERSONALITY))&&scores(b.management,Object.keys(MANAGEMENT))&&b.training&&Mapping.ABILITIES.every(a=>finite(b.training[a.key],0,1))&&schedule(b.schedule)&&finite(b.condition,0,100)&&finite(b.strain,0,100)&&finite(b.health,0,100)&&['steady','challenge'].includes(b.policy)&&['meadow','forest'].includes(b.pasture)&&['early','normal','late'].includes(b.growth)&&Object.hasOwn(Genetics.COLORS,b.color)&&typeof b.registered==='boolean'&&['races','wins','g1','graded','earnings','fans','bredYear'].every(k=>finite(b[k],0,1e15))&&Number.isInteger(b.lastRace)&&Array.isArray(b.records)&&b.records.every(record)&&Array.isArray(b.titles)&&b.titles.every(t=>typeof t==='string')&&
