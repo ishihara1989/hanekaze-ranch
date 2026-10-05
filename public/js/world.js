@@ -28,7 +28,8 @@
     GII:{name:'GⅡ',prize:20000,gain:2400,fee:400,allowance:400},
     GI:{name:'GⅠ',prize:40000,gain:4000,fee:700,allowance:500},
   };
-  // GⅠ follow the current JRA calendar. Names are Chocobo Stallion's counterparts; GⅠ added since then use new FF names.
+  // GⅠ follow the JRA calendar, with autumn Odin moved earlier for four-week spacing.
+  // Names are Chocobo Stallion's counterparts; GⅠ added since then use new FF names.
   // A week may hold several stakes (Dec wk4: Arima and Hopeful).
   const LEGACY_STAKES=[
     [4,'ダイヤモンドダスト杯','GIII','iseki',1800,'turf',4,9],
@@ -49,7 +50,7 @@
     [37,'ラムウステークス','GI','tenku',1200,'turf',3,9],             // スプリンターズS
     [39,'ミスリル賞','GI','mitsurin',2000,'turf',3,3,'F'],             // 秋華賞
     [40,'オメガ賞','GI','iseki',3000,'turf',3,3],                   // 菊花賞
-    [41,'オーディーン賞（秋）','GI','tenku',2000,'turf',3,9],       // 天皇賞（秋）
+    [40,'オーディーン賞（秋）','GI','tenku',2000,'turf',3,9],       // 天皇賞（秋）：秋古羽三冠を4週間隔で走れる10月4週
     [42,'シヴァ女王杯','GI','iseki',2200,'turf',3,9,'F'],           // エリザベス女王杯
     [43,'アレクサンダーカップ','GI','tenku',1600,'turf',3,9],        // マイルCS
     [44,'CRAワールドカップ','GI','tenku',2400,'turf',3,9],          // ジャパンカップ
@@ -218,6 +219,14 @@
     [48,'王宮年末大賞典','GI','oukyu',2000,'dirt',3,9,null,'東京大賞典'],
   ];
   const STAKES=[...LEGACY_STAKES,...CENTRAL_STAKES,...REGIONAL_STAKES];
+  // Keep other stakes' saved IDs when autumn Odin moves from week 41 to week 40.
+  const STAKES_KEYS=new Map(),stakesCounts=new Map();
+  for(const row of STAKES){
+    const moved=row[1]==='オーディーン賞（秋）',originalWeek=moved?41:row[0];
+    const index=stakesCounts.get(originalWeek)||0;
+    stakesCounts.set(originalWeek,index+1);
+    STAKES_KEYS.set(row,moved?'stakes-odin-autumn':index?`stakes${index+1}`:'stakes');
+  }
   const TRAINERS=[
     {id:'apprentice',name:'リナ調教師',weekly:35,hire:150,description:'総合調教と休養を基本に、条件の合う競走へ出走。'},
     {id:'strategist',name:'セドリック調教師',weekly:70,hire:300,description:'適性に合う距離・羽場を優先。能力の不足を重点的に育成。'},
@@ -321,10 +330,9 @@
   function calendar(week){
     const d=date(week),ids=Object.keys(TRACKS),tid=ids[(d.month-1)%ids.length],surface=TRACKS[tid].surface;
     const list=Object.keys(CLASSES).slice(0,6).map((k,i)=>event(week,k,`${CLASSES[k].name} ${i%2?'中長距離':'短距離'}`,k,tid,i%2?2200:1400,surface));
-    // The first stakes keeps the 'stakes' key so saved results stay linked.
-    STAKES.filter(x=>x[0]===d.week).forEach((row,i)=>{
+    STAKES.filter(x=>x[0]===d.week).forEach(row=>{
       const [,n,l,t,dist,s,min,max,sex,referenceName]=row;
-      const e=event(week,i?`stakes${i+1}`:'stakes',n,l,t,dist,s,min,max,sex);
+      const e=event(week,STAKES_KEYS.get(row),n,l,t,dist,s,min,max,sex);
       if(referenceName)Object.assign(e,{referenceName,circuit:REGIONAL_STAKES.includes(row)?'regional':'central'});
       list.push(e);
     });

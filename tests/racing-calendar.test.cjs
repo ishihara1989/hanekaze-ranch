@@ -31,7 +31,8 @@ test('legacy stakes IDs and saved reservations remain linked across years',()=>{
   for(const name of names){
     const old=W.STAKES.find(row=>row[1]===name);
     for(const year of [0,1,10]){
-      const id=`${old[0]+year*48}:${name==='光の戦士ステークス'?'stakes2':'stakes'}`;
+      const key=name==='オーディーン賞（秋）'?'stakes-odin-autumn':name==='光の戦士ステークス'?'stakes2':'stakes';
+      const id=`${old[0]+year*48}:${key}`;
       assert.equal(W.eventById(id).name,name);assert.equal(R.calendar(old[0]+year*48).find(e=>e.id===id).name,name);
     }
   }
@@ -42,6 +43,45 @@ test('legacy stakes IDs and saved reservations remain linked across years',()=>{
   const loaded=R.upgradeState(R.deserializeState(R.serializeState(s)));
   assert.equal(R.nextRace(loaded,R.bird(loaded,b.id)).name,'チョコボダービー');
   assert.ok(R.validState(loaded));
+});
+
+test('autumn triple crown allows all three bookings at four-week intervals across years',()=>{
+  for(const year of [0,1,10]){
+    const s=R.initial(),b=R.own(s)[0],offset=year*48;
+    Object.assign(s,{week:40+offset,stage:'running'});
+    Object.assign(b,{birthYear:year-3,wins:4,races:4,lastRace:36+offset});
+    const events=R.TITLES.autumn.map(name=>annual().find(e=>e.name===name));
+    assert.deepEqual(events.map(e=>e.week),[40,44,48]);
+    assert.deepEqual(R.date(events[0].week),{year:1,week:40,month:10,monthWeek:4});
+    for(const e of events){
+      const week=e.week+offset,event=R.calendar(week).find(r=>r.name===e.name);
+      s.week=week;
+      assert.ok(R.raceOptions(s,b,week).some(r=>r.id===event.id),e.name);
+      R.setSchedule(s,b.id,week,{mode:'race',eventId:event.id});
+      assert.equal(R.nextRace(s,b).id,event.id);
+      if(e.week<48){
+        const next=events[events.indexOf(e)+1],nextWeek=next.week+offset;
+        R.setSchedule(s,b.id,nextWeek,{mode:'race',eventId:R.calendar(nextWeek).find(r=>r.name===next.name).id});
+      }
+      b.lastRace=week;
+      delete b.schedule[week];
+    }
+    assert.ok(!R.calendar(41+offset).some(e=>e.name===R.TITLES.autumn[0]));
+  }
+});
+
+test('moving autumn Odin preserves the IDs of other October and November stakes',()=>{
+  const expected=[
+    [40,'stakes','オメガ賞'],[40,'stakes2','アルテミスセイレーン賞'],
+    [40,'stakes3','オニオンファンタジー賞'],[40,'stakes4','若羽エーデルワイス賞'],
+    [41,'stakes2','若羽王冠スプリント'],[41,'stakes3','王宮みやこステークス'],
+    [41,'stakes4','CRAダート若羽優駿'],[41,'stakes5','CRAダートレディスクラシック'],
+    [41,'stakes6','CRAダートスプリント'],[41,'stakes7','CRAダートクラシック'],
+  ];
+  for(const year of [0,1,10]){
+    for(const [week,key,name] of expected)assert.equal(W.eventById(`${week+year*48}:${key}`).name,name);
+    assert.equal(W.eventById(`${41+year*48}:stakes`),undefined);
+  }
 });
 
 test('NPC rosters fill every expanded grade and obey age, sex and persistent divisions',()=>{
