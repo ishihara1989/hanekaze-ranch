@@ -213,6 +213,40 @@ test('founder offers show their source and the predecessor being replaced in the
   assert.match(html(g),/この源流の始祖：コウケイ/);
 });
 
+test('pending founder offers lead mixed reports, celebrate each candidate and stop after acceptance',async()=>{
+  const g=await boot(),s=g.h.state,roots=R.sires(s).filter(b=>b.kind==='root');
+  const add=(source,options)=>{const b={...JSON.parse(JSON.stringify(source)),id:`bird-${s.serial++}`,owner:'player',...options};s.birds.push(b);return b;};
+  const candidates=roots.slice(0,2).map((root,index)=>{
+    const b=add(root,{kind:'home',name:index?'ツギノツバサ':'コウケイ<&>',parents:[root.id]});
+    for(let i=0;i<3;i++)add(root,{kind:'home',role:'retired',parents:[b.id],g1:i?1:5});
+    s.founderOffers.push(b.id);return b;
+  });
+  const award={year:1,title:'年度代表羽',birdId:candidates[0].id,name:candidates[0].name,farm:s.naming.ranchName,points:180};
+  s.reports=[{id:'annual',type:'annual',week:s.week,title:'年末',text:'おめでとう！',awards:[award]},...candidates.map(b=>({id:`offer-${b.id}`,type:'founder',week:s.week,title:'始祖入りのオファー',text:'推薦されました。',birdId:b.id,expression:'overjoyed'}))];
+  // Repeated reports must never duplicate an offer or its acceptance control.
+  s.reports.push({...s.reports[1],id:'duplicate-offer'});
+  const before=JSON.stringify(s),saved=g.storage.get(R.SAVE_KEY);
+  await g.click('reports');
+  assert.match(html(g),/report-modal celebration-founder/);assert.match(html(g),/FOUNDER OFFER/);
+  assert.ok(html(g).indexOf('founder-banner')<html(g).indexOf('award-banner'));
+  assert.equal([...html(g).matchAll(/class="founder-banner /g)].length,2);
+  assert.equal([...html(g).matchAll(/data-action="promote"/g)].length,2);
+  assert.match(html(g),/コウケイ&lt;&amp;&gt;/);assert.doesNotMatch(html(g),/コウケイ<&>/);
+  assert.match(html(g),/GⅠ勝利産駒 <strong>3<small>羽/);assert.match(html(g),/産駒のGⅠ通算 <strong>7<small>勝/);
+  assert.match(html(g),/この源流には、まだ始祖がいません/);
+  assert.equal(JSON.stringify(s),before);assert.equal(g.storage.get(R.SAVE_KEY),saved);
+  await g.click('promote',{id:candidates[0].id});
+  assert.match(html(g),/report-modal celebration-founder/);
+  assert.equal([...html(g).matchAll(/class="founder-banner /g)].length,1);
+  await g.click('promote',{id:candidates[1].id});
+  assert.match(html(g),/report-modal celebration-annual-champion/);
+  assert.doesNotMatch(html(g),/founder-banner|data-action="promote"/);
+  // A retained old offer report is informational after the candidate became a founder.
+  s.reports=[{id:'old-offer',type:'founder',week:s.week,title:'過去のオファー',text:'推薦されました。',birdId:candidates[0].id}];
+  await g.click('reports');assert.match(html(g),/report-modal celebration-report/);
+  assert.doesNotMatch(html(g),/founder-banner|data-action="promote"/);
+});
+
 test('research unlocks optional sex-selection fruit, updates the total and reviews it before payment',async()=>{
   for(const [fruit,label,sex] of [['karabu','カラブの実','M'],['zeio','ゼイオの実','F']]) {
     const g=await boot();await purchase(g);await g.click('nav',{page:'breed'});
